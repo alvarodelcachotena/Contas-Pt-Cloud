@@ -1,0 +1,144 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: 210 11% 98%; /* #F5F7FA */
+    --foreground: 217 32% 17%; /* #1E293B */
+    --card: 0 0% 100%;
+    --card-foreground: 217 32% 17%;
+    --popover: 0 0% 100%;
+    --popover-foreground: 217 32% 17%;
+    --primary: 208 100% 42%; /* #0066CC - Portuguese Blue */
+    --primary-foreground: 0 0% 98%;
+    --secondary: 210 40% 96%;
+    --secondary-foreground: 217 32% 17%;
+    --muted: 210 40% 96%;
+    --muted-foreground: 217 13% 46%;
+    --accent: 210 40% 96%;
+    --accent-foreground: 217 32% 17%;
+    --destructive: 0 84% 60%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 214 32% 91%;
+    --input: 214 32% 91%;
+    --ring: 208 100% 42%;
+    --radius: 0.5rem;
+  }
+
+  .dark {
+    --background: 217 32% 17%;
+    --foreground: 213 31% 91%;
+    --card: 217 32% 17%;
+    --card-foreground: 213 31% 91%;
+    --popover: 217 32% 17%;
+    --popover-foreground: 213 31% 91%;
+    --primary: 208 100% 42%;
+    --primary-foreground: 0 0% 98%;
+    --secondary: 217 32% 27%;
+    --secondary-foreground: 213 31% 91%;
+    --muted: 217 32% 27%;
+    --muted-foreground: 217 13% 65%;
+    --accent: 217 32% 27%;
+    --accent-foreground: 213 31% 91%;
+    --destructive: 0 62% 30%;
+    --destructive-foreground: 0 0% 98%;
+    --border: 217 32% 27%;
+    --input: 217 32% 27%;
+    --ring: 208 100% 42%;
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+  }
+}
+
+/* Portuguese Business Interface Components */
+@layer components {
+  .portuguese-card {
+    @apply bg-card border border-border rounded-lg shadow-sm p-6 text-card-foreground;
+  }
+  
+  .portuguese-header {
+    @apply bg-card border-b border-border shadow-sm;
+  }
+  
+  .portuguese-sidebar {
+    @apply bg-card border-r border-border shadow-sm;
+  }
+  
+  .metric-card {
+    @apply bg-card rounded-xl border border-border p-6 shadow-sm hover:shadow-md transition-shadow text-card-foreground;
+  }
+  
+  .nav-item {
+    @apply flex items-center px-3 py-2 text-sm font-medium rounded-md transition-colors;
+  }
+  
+  .nav-item-active {
+    @apply bg-primary text-primary-foreground;
+  }
+  
+  .nav-item-inactive {
+    @apply text-muted-foreground hover:bg-accent hover:text-accent-foreground;
+  }
+
+  /* Portuguese form styling */
+  .form-section {
+    @apply bg-card rounded-lg border border-border p-6 space-y-4;
+  }
+
+  .form-header {
+    @apply text-lg font-semibold text-foreground pb-2 border-b border-border;
+  }
+
+  /* Portuguese table styling */
+  .portuguese-table {
+    @apply bg-card rounded-lg border border-border shadow-sm overflow-hidden;
+  }
+
+  .table-header {
+    @apply bg-muted border-b border-border;
+  }
+
+  .table-row {
+    @apply border-b border-border hover:bg-muted/50 transition-colors;
+  }
+
+  /* Button Portuguese styling */
+  .btn-primary {
+    @apply bg-primary hover:bg-primary/90 text-primary-foreground font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  .btn-secondary {
+    @apply bg-secondary hover:bg-secondary/80 text-secondary-foreground font-medium px-4 py-2 rounded-lg transition-colors;
+  }
+
+  /* Status badges Portuguese styling */
+  .status-paid {
+    @apply bg-green-100 text-green-800 px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  .status-pending {
+    @apply bg-yellow-100 text-yellow-800 px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  .status-overdue {
+    @apply bg-red-100 text-red-800 px-2 py-1 rounded-full text-xs font-medium;
+  }
+
+  /* Portuguese currency formatting */
+  .currency {
+    @apply font-mono font-medium;
+  }
+
+  /* Loading states */
+  .loading-skeleton {
+    @apply animate-pulse bg-muted rounded;
+  }
+}
