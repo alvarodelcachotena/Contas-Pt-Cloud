@@ -5,6 +5,8 @@ import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
 import WebhookCredentials from "@/components/WebhookCredentials"
 import WebhookConfigManager from "@/components/webhook-config-manager"
+import WebhookTestingPanel from "@/components/webhook-testing-panel"
+import WebhookAnalyticsDashboard from "@/components/webhook-analytics-dashboard"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -27,7 +29,8 @@ import {
   Upload,
   HardDrive,
   FileText,
-  Webhook
+  Webhook,
+  BarChart3
 } from 'lucide-react'
 
 export default function AdminPage() {
@@ -602,7 +605,54 @@ export default function AdminPage() {
                     <p className="text-muted-foreground">Configure integrações de webhook para WhatsApp, Gmail e Dropbox</p>
                   </div>
                 </div>
-                <WebhookConfigManager />
+                
+                {/* Webhook Testing Panel */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Webhook className="w-5 h-5" />
+                      <span>Teste e Monitoramento</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Teste a conectividade e monitore a atividade dos webhooks
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <WebhookTestingPanel />
+                  </CardContent>
+                </Card>
+                
+                {/* Webhook Configuration */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Settings className="w-5 h-5" />
+                      <span>Configuração de Serviços</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Configure credenciais e parâmetros dos webhooks
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <WebhookConfigManager />
+                  </CardContent>
+                </Card>
+                
+                {/* Webhook Analytics */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <BarChart3 className="w-5 h-5" />
+                      <span>Análises e Relatórios</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Análises detalhadas de performance e uso dos webhooks
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <WebhookAnalyticsDashboard />
+                  </CardContent>
+                </Card>
               </div>
             )}
 
