@@ -78,3 +78,26 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const tenantId = request.headers.get('x-tenant-id') || '1'
+    
+    // Delete all expenses for the tenant
+    const { error } = await supabase
+      .from('expenses')
+      .delete()
+      .eq('tenant_id', tenantId)
+
+    if (error) {
+      console.error('Error deleting expenses:', error)
+      return NextResponse.json({ error: 'Failed to delete expenses' }, { status: 500 })
+    }
+
+    console.log(`🗑️ Deleted all expenses for tenant ${tenantId}`)
+    return NextResponse.json({ message: 'All expenses deleted successfully' })
+  } catch (error) {
+    console.error('Delete expenses error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
