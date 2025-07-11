@@ -7,6 +7,7 @@ import WebhookCredentials from "@/components/WebhookCredentials"
 import WebhookConfigManager from "@/components/webhook-config-manager"
 import WebhookTestingPanel from "@/components/webhook-testing-panel"
 import WebhookAnalyticsDashboard from "@/components/webhook-analytics-dashboard"
+import WebhookCredentialForm from "@/components/webhook-credential-form"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -622,15 +623,31 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
                 
-                {/* Webhook Configuration */}
+                {/* Webhook Credential Form */}
                 <Card>
                   <CardHeader>
                     <CardTitle className="flex items-center space-x-2">
                       <Settings className="w-5 h-5" />
-                      <span>Configuração de Serviços</span>
+                      <span>Configuração de Credenciais</span>
                     </CardTitle>
                     <CardDescription>
-                      Configure credenciais e parâmetros dos webhooks
+                      Configure credenciais dos webhooks diretamente no banco de dados
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent>
+                    <WebhookCredentialForm />
+                  </CardContent>
+                </Card>
+                
+                {/* Webhook Configuration Manager */}
+                <Card>
+                  <CardHeader>
+                    <CardTitle className="flex items-center space-x-2">
+                      <Settings className="w-5 h-5" />
+                      <span>Gestão Avançada</span>
+                    </CardTitle>
+                    <CardDescription>
+                      Configurações avançadas e gestão de webhooks existentes
                     </CardDescription>
                   </CardHeader>
                   <CardContent>
