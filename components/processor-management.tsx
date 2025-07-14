@@ -31,6 +31,7 @@ export default function ProcessorManagement() {
   const [testFile, setTestFile] = useState<File | null>(null)
   const [testResults, setTestResults] = useState<any>(null)
   const [selectedProcessor, setSelectedProcessor] = useState<string>('')
+  const [activeTab, setActiveTab] = useState('overview')
   const { toast } = useToast()
 
   useEffect(() => {
@@ -179,7 +180,7 @@ export default function ProcessorManagement() {
         </p>
       </div>
 
-      <Tabs defaultValue="overview" className="space-y-4">
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="space-y-4">
         <TabsList>
           <TabsTrigger value="overview">Visão Geral</TabsTrigger>
           <TabsTrigger value="testing">Teste de Processamento</TabsTrigger>
