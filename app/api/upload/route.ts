@@ -13,10 +13,10 @@ const SUPABASE_ANON_KEY = getSupabaseAnonKey()
 // Use anon key from .env file as requested by user
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
-// Import the real CloudDocumentProcessor
-import { CloudDocumentProcessor } from '../../../server/agents/CloudDocumentProcessor'
+// Import the enhanced ProcessorManager
+import { ProcessorManager } from '../../../server/agents/ProcessorManager'
 
-const cloudProcessor = new CloudDocumentProcessor()
+const processorManager = new ProcessorManager()
 
 export async function POST(request: NextRequest) {
   try {
@@ -109,8 +109,8 @@ export async function POST(request: NextRequest) {
       processing_status: 'processing'
     }
 
-    // Process document with AI
-    const processingResult = await cloudProcessor.processDocument(tenantId, buffer, file.type, filename)
+    // Process document with enhanced AI processing system
+    const processingResult = await processorManager.processDocument(tenantId, buffer, file.type, filename)
     
     // Update document with processing results - use only confirmed schema fields
     const { error: updateError } = await supabase

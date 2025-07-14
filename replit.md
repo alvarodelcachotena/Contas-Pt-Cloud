@@ -44,8 +44,11 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 ### AI Processing Pipeline
 - **Primary Engine**: Google Gemini-2.5-Flash-Preview for document extraction
 - **Secondary Engine**: OpenAI GPT-4o-Mini for fallback processing
+- **External Processors**: VisionParser, Mindee, Klippa, Azure Form Recognizer, Google Document AI, Veryfi
+- **Advanced Vision Processing**: Table extraction, handwriting detection, stamp recognition, signature detection
 - **Multi-Model Consensus**: Combines results for maximum accuracy with real confidence scoring
-- **Cloud-Only Strategy**: Uses exclusively cloud AI services with no local processing
+- **Intelligent Routing**: Automatic processor selection based on document type and accuracy requirements
+- **Cost Optimization**: Balances accuracy vs. cost with configurable thresholds
 - **Enhanced Processing**: Structured outputs, vision capabilities, and placeholder detection
 - **Real-time Updates**: WebSocket integration for live processing status
 - **Quality Assurance**: Authentic data extraction with validation against generic placeholders
@@ -142,6 +145,17 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Created**: June 23, 2025
 
 ## Recent Changes
+- July 14, 2025: **ADVANCED EXTERNAL DOCUMENT PROCESSORS INTEGRATION COMPLETED** - Comprehensive multi-service processing system implemented
+  - Integrated 6 external document processing APIs: VisionParser, Mindee, Klippa, Azure Form Recognizer, Google Document AI, Veryfi
+  - Created advanced VisionParser with table extraction, handwriting detection, stamp recognition, and signature detection
+  - Built specialized TableParser for structured data extraction and invoice line item parsing
+  - Implemented intelligent ProcessorManager with automatic service selection based on document type and accuracy requirements
+  - Added cost optimization features balancing accuracy vs. processing cost with configurable thresholds
+  - Created comprehensive processor management UI for testing and configuration of external APIs
+  - Enhanced upload system to automatically route documents to best available processor with smart fallback chains
+  - Added processor capabilities comparison with accuracy rates, processing times, and cost per document
+  - Integrated advanced vision processing features including layout analysis, element detection, and multi-language support
+  - System now supports both internal AI models (Gemini/OpenAI) and external specialized services for maximum flexibility
 - January 10, 2025: **COMPREHENSIVE MULTI-TENANT WEBHOOK SYSTEM COMPLETED** - Complete isolation and background processing implemented
   - Created complete multi-tenant webhook management system with encrypted credential storage per user
   - Implemented WhatsApp, Gmail, and Dropbox webhook integrations with AES-256 encryption
