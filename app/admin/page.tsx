@@ -8,6 +8,7 @@ import WebhookConfigManager from "@/components/webhook-config-manager"
 import WebhookTestingPanel from "@/components/webhook-testing-panel"
 import WebhookAnalyticsDashboard from "@/components/webhook-analytics-dashboard"
 import WebhookCredentialForm from "@/components/webhook-credential-form"
+import ProcessorManagement from "@/components/processor-management"
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
@@ -31,7 +32,8 @@ import {
   HardDrive,
   FileText,
   Webhook,
-  BarChart3
+  BarChart3,
+  Cpu
 } from 'lucide-react'
 
 export default function AdminPage() {
@@ -241,6 +243,14 @@ export default function AdminPage() {
                 onClick={() => setActiveTab('webhooks')}
               >
                 Webhooks
+              </Button>
+              <Button
+                variant={activeTab === 'processors' ? 'default' : 'ghost'}
+                size="sm"
+                onClick={() => setActiveTab('processors')}
+              >
+                <Cpu className="w-4 h-4 mr-1" />
+                Processadores
               </Button>
               <Button
                 variant={activeTab === 'settings' ? 'default' : 'ghost'}
@@ -671,6 +681,23 @@ export default function AdminPage() {
                   </CardContent>
                 </Card>
               </div>
+            )}
+
+            {activeTab === 'processors' && (
+              <Card>
+                <CardHeader>
+                  <CardTitle className="flex items-center space-x-2">
+                    <Cpu className="w-5 h-5" />
+                    <span>Gestão de Processadores de Documentos</span>
+                  </CardTitle>
+                  <CardDescription>
+                    Configure e teste processadores externos para melhorar a precisão da extração
+                  </CardDescription>
+                </CardHeader>
+                <CardContent>
+                  <ProcessorManagement />
+                </CardContent>
+              </Card>
             )}
 
             {activeTab === 'settings' && (

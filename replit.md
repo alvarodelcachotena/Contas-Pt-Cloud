@@ -151,7 +151,7 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
   - Built specialized TableParser for structured data extraction and invoice line item parsing
   - Implemented intelligent ProcessorManager with automatic service selection based on document type and accuracy requirements
   - Added cost optimization features balancing accuracy vs. processing cost with configurable thresholds
-  - Created comprehensive processor management UI for testing and configuration of external APIs
+  - Created comprehensive processor management UI integrated into admin panel for testing and configuration of external APIs
   - Enhanced upload system to automatically route documents to best available processor with smart fallback chains
   - Added processor capabilities comparison with accuracy rates, processing times, and cost per document
   - Integrated advanced vision processing features including layout analysis, element detection, and multi-language support
