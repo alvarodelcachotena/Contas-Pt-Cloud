@@ -134,7 +134,7 @@ export class TableParser {
     options: TableParsingOptions
   ): Promise<TableParsingResult> {
     const model = this.genai.getGenerativeModel({ 
-      model: "gemini-2.5-flash-preview",
+      model: "gemini-1.5-flash",
       generationConfig: {
         responseMimeType: "application/json"
       }
