@@ -42,8 +42,9 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Documents**: AI-processed document storage and extraction
 
 ### AI Processing Pipeline
-- **Primary Engine**: Google Gemini-2.5-Flash-Preview for document extraction
-- **Secondary Engine**: OpenAI GPT-4o-Mini for fallback processing
+- **Priority 1**: Google Gemini-2.5-Flash-Preview (Primary AI for all document processing)
+- **Priority 2**: OpenAI GPT-4o-Mini (Secondary fallback and validation)
+- **Processing Order**: Always Gemini first → OpenAI second → External processors third
 - **External Processors**: VisionParser, Mindee, Klippa, Azure Form Recognizer, Google Document AI, Veryfi
 - **Advanced Vision Processing**: Table extraction, handwriting detection, stamp recognition, signature detection
 - **Multi-Model Consensus**: Combines results for maximum accuracy with real confidence scoring

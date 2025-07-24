@@ -11,8 +11,8 @@ import { ExtractionResult } from '../../shared/types';
  * Implements multi-model consensus for higher accuracy on Portuguese invoices.
  * 
  * ✅ Active Cloud Models:
- *   - OpenAI GPT-4 (Primary)
- *   - Google Gemini-Pro (Secondary)
+ *   - Google Gemini-Pro (Primary)
+ *   - OpenAI GPT-4 (Secondary)
  * 
  * ❌ Local Models (Fallback Only):
  *   - Jetson Ollama models
@@ -139,13 +139,20 @@ export class CloudDocumentProcessor {
     console.log(`📄 Direct cloud processing for: ${filename} (${mimeType})`);
     
     try {
-      // Use Gemini for direct PDF/image processing
+      // Priority 1: Use Gemini for both PDF and image processing (as requested)
       if (this.geminiExtractor && mimeType === 'application/pdf') {
+        console.log(`🔄 Processing PDF with Gemini (priority AI): ${filename}`);
         return await this.geminiExtractor.extractFromPDF(fileBuffer, filename);
       }
       
-      // Use OpenAI for image processing
+      if (this.geminiExtractor && mimeType.startsWith('image/')) {
+        console.log(`🔄 Processing image with Gemini (priority AI): ${filename}`);
+        return await this.geminiExtractor.extractFromImage(fileBuffer, mimeType, filename);
+      }
+      
+      // Priority 2: Use OpenAI as fallback
       if (this.openAIExtractor && mimeType.startsWith('image/')) {
+        console.log(`🔄 Processing image with OpenAI (fallback): ${filename}`);
         return await this.openAIExtractor.extractFromImage(fileBuffer, mimeType, filename);
       }
       
@@ -168,25 +175,25 @@ export class CloudDocumentProcessor {
 
     const extractionPromises: Promise<{ result: ExtractionResult; model: string }>[] = [];
 
-    // Priority 1: OpenAI GPT-4 (Primary model)
-    if (this.openAIExtractor) {
-      extractionPromises.push(
-        this.openAIExtractor.extract(ocrText, filename)
-          .then(result => ({ result, model: 'openai-gpt4' }))
-          .catch(error => {
-            console.error(`❌ OpenAI extraction failed: ${error.message}`);
-            throw error;
-          })
-      );
-    }
-
-    // Priority 2: Gemini-Pro (Secondary model)
+    // Priority 1: Gemini-Pro (Primary model - as requested)
     if (this.geminiExtractor) {
       extractionPromises.push(
         this.geminiExtractor.extract(ocrText, filename)
           .then(result => ({ result, model: 'gemini-pro' }))
           .catch(error => {
             console.error(`❌ Gemini extraction failed: ${error.message}`);
+            throw error;
+          })
+      );
+    }
+
+    // Priority 2: OpenAI GPT-4 (Secondary model)
+    if (this.openAIExtractor) {
+      extractionPromises.push(
+        this.openAIExtractor.extract(ocrText, filename)
+          .then(result => ({ result, model: 'openai-gpt4' }))
+          .catch(error => {
+            console.error(`❌ OpenAI extraction failed: ${error.message}`);
             throw error;
           })
       );

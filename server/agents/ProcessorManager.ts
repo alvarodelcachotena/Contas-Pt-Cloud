@@ -328,8 +328,8 @@ export class ProcessorManager {
     userStrategy?: Partial<ProcessingStrategy>
   ): ProcessingStrategy {
     const defaults: ProcessingStrategy = {
-      primary: this.selectBestProcessor(mimeType, filename),
-      fallbacks: this.getDefaultFallbacks(mimeType, filename),
+      primary: 'gemini-openai', // Always start with Gemini first
+      fallbacks: this.getGeminiFirstFallbacks(mimeType, filename),
       enableTableExtraction: true,
       enableVisionParsing: mimeType.startsWith('image/'),
       confidenceThreshold: 0.3, // Lowered to accept more extraction results
@@ -374,14 +374,28 @@ export class ProcessorManager {
     return available[0][0];
   }
 
-  private getDefaultFallbacks(mimeType: string, filename: string): string[] {
-    const available = Array.from(this.processorCapabilities.entries())
-      .filter(([_, cap]) => cap.isAvailable && cap.supportedFormats.includes(mimeType))
-      .sort((a, b) => b[1].accuracy - a[1].accuracy)
-      .map(([name]) => name);
+  private getGeminiFirstFallbacks(mimeType: string, filename: string): string[] {
+    // Fixed order: Gemini → OpenAI → Vision Parser → External processors
+    const fallbackOrder = [
+      'vision-parser',    // Enhanced vision processing
+      'visionparser',     // External VisionParser.com
+      'mindee',          // External Mindee
+      'klippa',          // External Klippa
+      'google',          // External Google Document AI
+      'azure',           // External Azure Form Recognizer
+      'veryfi'           // External Veryfi
+    ];
+    
+    // Filter to only available processors that support the file type
+    return fallbackOrder.filter(processor => 
+      this.isProcessorAvailable(processor) && 
+      this.processorCapabilities.get(processor)?.supportedFormats.includes(mimeType)
+    ).slice(0, 4); // Max 4 fallbacks
+  }
 
-    const primary = this.selectBestProcessor(mimeType, filename);
-    return available.filter(name => name !== primary).slice(0, 3); // Top 3 fallbacks
+  private getDefaultFallbacks(mimeType: string, filename: string): string[] {
+    // Kept for compatibility - now calls Gemini-first version
+    return this.getGeminiFirstFallbacks(mimeType, filename);
   }
 
   private isProcessorAvailable(processorName: string): boolean {
