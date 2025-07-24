@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnvStrict } from '../../../../lib/env-loader.js'
+import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 import crypto from 'crypto'
 
 loadEnvStrict()
@@ -128,33 +129,21 @@ async function processDropboxFiles(config: any) {
   try {
     console.log(`📁 Processing files in ${config.folder_path} for tenant ${config.tenant_id}`)
     
-    // List files in the Dropbox folder
-    const filesResponse = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        path: config.folder_path,
-        recursive: false,
-        include_media_info: false,
-        include_deleted: false,
-        include_has_explicit_shared_members: false,
-        include_mounted_folders: true,
-        include_non_downloadable_files: true
-      })
-    })
-
-    if (!filesResponse.ok) {
-      console.error('❌ Failed to list Dropbox files:', await filesResponse.text())
-      return
-    }
-
-    const filesData = await filesResponse.json()
+    // Create DropboxApiClient with token refresh capability
+    const dropboxClient = new DropboxApiClient(config.access_token, config.refresh_token)
+    
+    // List files in the Dropbox folder using the API client
+    const filesData = await dropboxClient.listFolder(config.folder_path || '/input')
     const files = filesData.entries.filter((entry: any) => entry['.tag'] === 'file')
     
     console.log(`📄 Found ${files.length} files in Dropbox folder`)
+    
+    // Update stored token if it was refreshed
+    const currentToken = dropboxClient.getCurrentAccessToken()
+    if (currentToken !== config.access_token) {
+      console.log('🔄 Token was refreshed, updating stored credentials...')
+      await updateStoredToken(config.id, currentToken)
+    }
     
     // Process each file
     for (const file of files) {
@@ -167,24 +156,8 @@ async function processDropboxFiles(config: any) {
         continue
       }
       
-      // Download the file
-      const downloadResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${config.access_token}`,
-          'Dropbox-API-Arg': JSON.stringify({
-            path: file.path_lower
-          })
-        }
-      })
-
-      if (!downloadResponse.ok) {
-        console.error(`❌ Failed to download file ${file.name}:`, await downloadResponse.text())
-        continue
-      }
-
-      const fileBuffer = await downloadResponse.arrayBuffer()
-      const fileData = Buffer.from(fileBuffer)
+      // Download the file using the API client
+      const fileData = await dropboxClient.downloadFile(file.path_display)
       
       console.log(`💾 Downloaded ${file.name} (${fileData.length} bytes)`)
       
@@ -194,6 +167,30 @@ async function processDropboxFiles(config: any) {
     
   } catch (error) {
     console.error('Error processing Dropbox files:', error)
+    
+    // If it's a token-related error, log additional details
+    if (error instanceof Error && error.message.includes('expired_access_token')) {
+      console.error('❌ Token expired error - may need to re-authenticate')
+    }
+  }
+}
+
+async function updateStoredToken(configId: number, newAccessToken: string) {
+  try {
+    const supabase = createSupabaseClient()
+    
+    const { error } = await supabase
+      .from('cloud_drive_configs')
+      .update({ access_token: newAccessToken })
+      .eq('id', configId)
+    
+    if (error) {
+      console.error('❌ Error updating stored token:', error)
+    } else {
+      console.log('✅ Successfully updated stored access token')
+    }
+  } catch (error) {
+    console.error('❌ Error in updateStoredToken:', error)
   }
 }
 
