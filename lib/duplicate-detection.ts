@@ -32,23 +32,23 @@ export async function checkForDuplicates(
   try {
     const contentHash = generateFileHash(fileBuffer)
     
-    // Skip content hash check for now due to schema cache issues
-    // Will use filename-based detection only
-    
-    // Second check: Exact filename match
+    // Check filename first (faster)
     const { data: filenameMatch } = await supabase
       .from('documents')
-      .select('id, filename, original_filename')
+      .select('id, filename, original_filename, file_size')
       .eq('tenant_id', tenantId)
       .or(`filename.eq.${filename},original_filename.eq.${filename}`)
-      .single()
+      .maybeSingle()
     
     if (filenameMatch) {
-      return {
-        isDuplicate: true,
-        existingDocumentId: filenameMatch.id,
-        existingDocumentName: filenameMatch.original_filename || filenameMatch.filename,
-        matchType: 'filename'
+      // Also check file size to be more certain
+      if (filenameMatch.file_size === fileBuffer.length) {
+        return {
+          isDuplicate: true,
+          existingDocumentId: filenameMatch.id,
+          existingDocumentName: filenameMatch.original_filename || filenameMatch.filename,
+          matchType: 'filename'
+        }
       }
     }
     

@@ -90,7 +90,7 @@ export async function POST(request: NextRequest) {
           1, // tenant ID
           file.name,
           fileBuffer,
-          { allowDuplicates: true, skipProcessing: false }
+          { allowDuplicates: false, skipProcessing: true }
         )
         
         if (!duplicateCheck.shouldProcess) {
