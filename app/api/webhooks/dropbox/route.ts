@@ -193,10 +193,17 @@ async function processDropboxFiles(config: any) {
         continue
       }
       
+      // Force processing for testing (bypass duplicate check)
+      const forceProcessing = true
+      
       // Check if this file was already processed (additional safety check)
-      if (await isFileAlreadyProcessed(file.name, config.tenant_id)) {
+      if (!forceProcessing && await isFileAlreadyProcessed(file.name, config.tenant_id)) {
         console.log(`⏭️ File ${file.name} already exists, skipping`)
         continue
+      }
+      
+      if (forceProcessing) {
+        console.log(`🔥 Force processing enabled - processing ${file.name} regardless of existing status`)
       }
       
       // Download the file using the API client
@@ -264,20 +271,26 @@ async function isFileAlreadyProcessed(filename: string, tenantId: number): Promi
   try {
     const supabase = createSupabaseClient()
     
+    console.log(`🔍 Checking if file exists: ${filename} for tenant ${tenantId}`)
+    
     // Check if a document with this filename already exists for this tenant
     const { data, error } = await supabase
       .from('documents')
-      .select('id')
+      .select('id, filename, original_filename')
       .eq('tenant_id', tenantId)
       .or(`filename.eq.${filename},original_filename.eq.${filename}`)
       .limit(1)
+    
+    console.log(`🔍 Database query result:`, { data, error })
     
     if (error) {
       console.error('❌ Error checking if file exists:', error)
       return false // If we can't check, assume it's new and try to process
     }
     
-    return data && data.length > 0
+    const exists = data && data.length > 0
+    console.log(`🔍 File ${filename} exists: ${exists}`)
+    return exists
   } catch (error) {
     console.error('❌ Error in isFileAlreadyProcessed:', error)
     return false // If we can't check, assume it's new and try to process
