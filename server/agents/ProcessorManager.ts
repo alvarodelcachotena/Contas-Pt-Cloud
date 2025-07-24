@@ -1,7 +1,6 @@
 import { ExtractionResult } from '../../shared/types';
 import { CloudDocumentProcessor } from './CloudDocumentProcessor';
 import { ExternalDocumentProcessors, ProcessingOptions } from './ExternalDocumentProcessors';
-import { VisionParser } from './VisionParser';
 import { TableParser } from './TableParser';
 
 export interface ProcessorCapabilities {
@@ -28,17 +27,12 @@ export interface ProcessingStrategy {
 export class ProcessorManager {
   private cloudProcessor: CloudDocumentProcessor;
   private externalProcessors: ExternalDocumentProcessors;
-  private visionParser: VisionParser;
   private tableParser: TableParser;
   private processorCapabilities: Map<string, ProcessorCapabilities> = new Map();
 
   constructor() {
     this.cloudProcessor = new CloudDocumentProcessor();
     this.externalProcessors = new ExternalDocumentProcessors();
-    this.visionParser = new VisionParser(
-      process.env.OPENAI_API_KEY, 
-      process.env.GOOGLE_AI_API_KEY
-    );
     this.tableParser = new TableParser(
       process.env.OPENAI_API_KEY, 
       process.env.GOOGLE_AI_API_KEY
@@ -61,17 +55,7 @@ export class ProcessorManager {
       description: 'Internal AI processing with Gemini and OpenAI models'
     });
 
-    this.processorCapabilities.set('vision-parser', {
-      name: 'Advanced Vision Parser',
-      type: 'internal',
-      supportedFormats: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
-      specialties: ['table_extraction', 'handwriting', 'stamps', 'complex_layouts'],
-      avgProcessingTime: 8000,
-      costPerDocument: 0.03,
-      accuracy: 0.95,
-      isAvailable: !!(process.env.GOOGLE_AI_API_KEY || process.env.OPENAI_API_KEY),
-      description: 'Enhanced vision processing with table and element detection'
-    });
+
 
     // External processors
     const externalProcessorConfigs = [
@@ -236,8 +220,6 @@ export class ProcessorManager {
     } else {
       // Use internal processor
       switch (processorName) {
-        case 'vision-parser':
-          return await this.visionParser.extractFromInvoice(fileBuffer, mimeType, filename);
         case 'gemini-openai':
         default:
           return await this.cloudProcessor.processDocument(tenantId, fileBuffer, mimeType, filename);
@@ -286,38 +268,7 @@ export class ProcessorManager {
       }
     }
 
-    // Add vision parsing if enabled and not already present
-    if (strategy.enableVisionParsing && !result.agentResults?.visionParser) {
-      try {
-        const visionResult = await this.visionParser.parseDocument(
-          fileBuffer, mimeType, filename, {
-            enhanceOCR: true,
-            detectHandwriting: true,
-            extractTables: false, // Already handled above
-            multiLanguage: true
-          }
-        );
-
-        enhancedResult.agentResults = {
-          ...enhancedResult.agentResults,
-          visionParser: {
-            model: 'vision-parser',
-            method: 'enhanced-vision',
-            rawResponse: visionResult
-          }
-        };
-
-        // Add detected elements to issues if significant
-        if (visionResult.detectedElements.handwriting.length > 0) {
-          enhancedResult.issues.push(`Detected ${visionResult.detectedElements.handwriting.length} handwritten annotations`);
-        }
-        if (visionResult.detectedElements.stamps.length > 0) {
-          enhancedResult.issues.push(`Detected ${visionResult.detectedElements.stamps.length} stamps or seals`);
-        }
-      } catch (error) {
-        console.warn('Vision parsing enhancement failed:', error instanceof Error ? error.message : String(error));
-      }
-    }
+    // Vision parsing removed - using only cloud processors and external APIs
 
     return enhancedResult;
   }
@@ -375,9 +326,8 @@ export class ProcessorManager {
   }
 
   private getGeminiFirstFallbacks(mimeType: string, filename: string): string[] {
-    // Fixed order: Gemini → OpenAI → Vision Parser → External processors
+    // Fixed order: Gemini → OpenAI → External processors
     const fallbackOrder = [
-      'vision-parser',    // Enhanced vision processing
       'visionparser',     // External VisionParser.com
       'mindee',          // External Mindee
       'klippa',          // External Klippa
