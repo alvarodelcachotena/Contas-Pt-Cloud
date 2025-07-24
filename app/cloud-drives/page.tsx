@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import { useBrowserExtensionCleanup } from "@/components/hydration-boundary"
 
 interface CloudIntegration {
   id: string
@@ -16,6 +17,7 @@ interface CloudIntegration {
 }
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
+
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
@@ -39,6 +41,9 @@ import {
 } from "lucide-react"
 
 export default function CloudDrivesPage() {
+  // Clean up browser extension attributes to prevent hydration mismatches
+  useBrowserExtensionCleanup()
+  
   const [searchTerm, setSearchTerm] = useState('')
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'completed' | 'error'>('completed')
   const [showConnectModal, setShowConnectModal] = useState(false)
@@ -385,7 +390,7 @@ export default function CloudDrivesPage() {
   }
 
   return (
-    <div className="flex h-screen bg-background">
+    <div className="flex h-screen bg-background" suppressHydrationWarning>
       <Sidebar />
       <div className="flex-1 flex flex-col overflow-hidden">
         <Header />
