@@ -328,7 +328,14 @@ export class ProcessorManager {
       maxRetries: 3
     };
 
-    return { ...defaults, ...userStrategy };
+    const strategy = { ...defaults, ...userStrategy };
+    
+    // Filter fallbacks to only include available processors
+    strategy.fallbacks = strategy.fallbacks.filter(processor => this.isProcessorAvailable(processor));
+    
+    console.log(`📋 Processing strategy for ${filename}: primary=${strategy.primary}, fallbacks=[${strategy.fallbacks.join(', ')}]`);
+    
+    return strategy;
   }
 
   private selectBestProcessor(mimeType: string, filename: string): string {

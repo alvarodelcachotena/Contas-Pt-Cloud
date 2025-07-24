@@ -17,6 +17,7 @@ import {
   TrendingUp,
   Bot,
   Cloud,
+  Activity,
   Settings,
   UserCircle
 } from 'lucide-react'
@@ -34,6 +35,7 @@ const navigation = [
   { name: 'Relatórios', href: '/reports', icon: TrendingUp },
   { name: 'Assistente IA', href: '/ai-assistant', icon: Bot },
   { name: 'Drives na Nuvem', href: '/cloud-drives', icon: Cloud },
+  { name: 'Webhooks', href: '/webhooks-monitoring', icon: Activity },
   { name: 'Admin', href: '/admin', icon: Settings },
   { name: 'Perfil', href: '/user-settings', icon: UserCircle },
 ]

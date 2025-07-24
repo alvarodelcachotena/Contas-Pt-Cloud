@@ -374,7 +374,10 @@ export class ExternalDocumentProcessors {
     filename: string,
     options: ProcessingOptions
   ): Promise<ExtractionResult> {
-    const config = this.configs.get('google')!;
+    const config = this.configs.get('google');
+    if (!config) {
+      throw new Error('Google Document AI configuration not found - missing API keys');
+    }
     
     const response = await axios.post(
       `${config.baseUrl}/locations/us/processors/PROCESSOR_ID:process`,

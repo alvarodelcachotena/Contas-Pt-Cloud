@@ -115,7 +115,7 @@ export class VisionParser {
     options: VisionProcessingOptions
   ): Promise<VisionResult> {
     const model = this.genai.getGenerativeModel({ 
-      model: "gemini-2.5-flash-preview",
+      model: "gemini-1.5-flash",
       generationConfig: {
         responseMimeType: "application/json"
       }

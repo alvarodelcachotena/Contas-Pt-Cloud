@@ -210,7 +210,7 @@ export class TableParser {
   }
 
   private buildTableExtractionPrompt(options: TableParsingOptions): string {
-    const prompt = `Extract all table structures from this document with detailed analysis.
+    let prompt = `Extract all table structures from this document with detailed analysis.
 
 REQUIRED JSON OUTPUT FORMAT:
 {
@@ -285,26 +285,26 @@ PORTUGUESE BUSINESS CONTEXT:
 SPECIAL HANDLING:`;
 
     if (options.detectHeaders) {
-      prompt += '\n- Automatically detect table headers even without clear formatting';
+      prompt = prompt + '\n- Automatically detect table headers even without clear formatting';
     }
     
     if (options.mergeSpannedCells) {
-      prompt += '\n- Handle merged cells and complex table layouts';
+      prompt = prompt + '\n- Handle merged cells and complex table layouts';
     }
     
     if (options.preserveFormatting) {
-      prompt += '\n- Preserve cell formatting (bold, italic, alignment, colors)';
+      prompt = prompt + '\n- Preserve cell formatting (bold, italic, alignment, colors)';
     }
     
     if (options.extractNumericData) {
-      prompt += '\n- Extract and parse all numeric data with proper data types';
+      prompt = prompt + '\n- Extract and parse all numeric data with proper data types';
     }
     
     if (options.handleComplexLayouts) {
-      prompt += '\n- Handle complex layouts with nested tables and irregular structures';
+      prompt = prompt + '\n- Handle complex layouts with nested tables and irregular structures';
     }
 
-    prompt += '\n\nReturn only valid JSON without additional text or explanations.';
+    prompt = prompt + '\n\nReturn only valid JSON without additional text or explanations.';
 
     return prompt;
   }
