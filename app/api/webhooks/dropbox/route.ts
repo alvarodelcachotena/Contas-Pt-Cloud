@@ -132,27 +132,66 @@ async function processDropboxFiles(config: any) {
     // Create DropboxApiClient with token refresh capability
     const dropboxClient = new DropboxApiClient(config.access_token, config.refresh_token)
     
-    // List files in the Dropbox folder using the API client
-    const filesData = await dropboxClient.listFolder(config.folder_path || '/input')
-    const files = filesData.entries.filter((entry: any) => entry['.tag'] === 'file')
+    let filesData;
+    let newFiles = [];
     
-    console.log(`📄 Found ${files.length} files in Dropbox folder`)
-    
-    // Update stored token if it was refreshed
-    const currentToken = dropboxClient.getCurrentAccessToken()
-    if (currentToken !== config.access_token) {
-      console.log('🔄 Token was refreshed, updating stored credentials...')
-      await updateStoredToken(config.id, currentToken)
+    // Use delta sync if we have a cursor, otherwise do initial sync
+    if (config.sync_cursor) {
+      console.log('🔄 Using delta sync with existing cursor')
+      try {
+        // Get only changed files since last sync
+        filesData = await dropboxClient.listFolderContinue(config.sync_cursor)
+        
+        // Filter for new/modified files only (not deleted)
+        newFiles = filesData.entries.filter((entry: any) => 
+          entry['.tag'] === 'file' && !entry.hasOwnProperty('.tag') || entry['.tag'] !== 'deleted'
+        )
+        
+        console.log(`📄 Found ${newFiles.length} new/changed files since last sync`)
+      } catch (cursorError) {
+        console.log('⚠️ Cursor invalid, falling back to full sync')
+        // If cursor is invalid, do a full sync
+        filesData = await dropboxClient.listFolder(config.folder_path || '/input')
+        newFiles = filesData.entries.filter((entry: any) => entry['.tag'] === 'file')
+        console.log(`📄 Found ${newFiles.length} files in full sync`)
+      }
+    } else {
+      console.log('📂 Performing initial full sync')
+      // Initial sync - get all files and store cursor
+      filesData = await dropboxClient.listFolder(config.folder_path || '/input')
+      newFiles = filesData.entries.filter((entry: any) => entry['.tag'] === 'file')
+      console.log(`📄 Found ${newFiles.length} files in initial sync`)
     }
     
-    // Process each file
-    for (const file of files) {
-      console.log(`📥 Processing file: ${file.name}`)
+    // Update stored cursor and token if they were refreshed
+    const currentToken = dropboxClient.getCurrentAccessToken()
+    const needsUpdate = currentToken !== config.access_token || filesData.cursor !== config.sync_cursor
+    
+    if (needsUpdate) {
+      console.log('🔄 Updating stored credentials and sync cursor...')
+      await updateStoredTokenAndCursor(config.id, currentToken, filesData.cursor)
+    }
+    
+    // Only process files that we haven't seen before
+    if (newFiles.length === 0) {
+      console.log('✅ No new files to process')
+      return
+    }
+    
+    // Process each new file
+    for (const file of newFiles) {
+      console.log(`📥 Processing new file: ${file.name}`)
       
       // Check if file is a document type we can process
       const fileExtension = file.name.split('.').pop()?.toLowerCase()
       if (!['pdf', 'jpg', 'jpeg', 'png', 'gif', 'webp'].includes(fileExtension || '')) {
         console.log(`⏭️ Skipping unsupported file type: ${file.name}`)
+        continue
+      }
+      
+      // Check if this file was already processed (additional safety check)
+      if (await isFileAlreadyProcessed(file.name, config.tenant_id)) {
+        console.log(`⏭️ File ${file.name} already exists, skipping`)
         continue
       }
       
@@ -191,6 +230,53 @@ async function updateStoredToken(configId: number, newAccessToken: string) {
     }
   } catch (error) {
     console.error('❌ Error in updateStoredToken:', error)
+  }
+}
+
+async function updateStoredTokenAndCursor(configId: number, newAccessToken: string, newCursor: string) {
+  try {
+    const supabase = createSupabaseClient()
+    
+    const { error } = await supabase
+      .from('cloud_drive_configs')
+      .update({ 
+        access_token: newAccessToken,
+        sync_cursor: newCursor,
+        last_sync_at: new Date().toISOString()
+      })
+      .eq('id', configId)
+    
+    if (error) {
+      console.error('❌ Error updating stored token and cursor:', error)
+    } else {
+      console.log('✅ Successfully updated stored access token and sync cursor')
+    }
+  } catch (error) {
+    console.error('❌ Error in updateStoredTokenAndCursor:', error)
+  }
+}
+
+async function isFileAlreadyProcessed(filename: string, tenantId: number): Promise<boolean> {
+  try {
+    const supabase = createSupabaseClient()
+    
+    // Check if a document with this filename already exists for this tenant
+    const { data, error } = await supabase
+      .from('documents')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .or(`filename.eq.${filename},original_filename.eq.${filename}`)
+      .limit(1)
+    
+    if (error) {
+      console.error('❌ Error checking if file exists:', error)
+      return false // If we can't check, assume it's new and try to process
+    }
+    
+    return data && data.length > 0
+  } catch (error) {
+    console.error('❌ Error in isFileAlreadyProcessed:', error)
+    return false // If we can't check, assume it's new and try to process
   }
 }
 
