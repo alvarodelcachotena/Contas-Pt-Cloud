@@ -145,6 +145,14 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Created**: June 23, 2025
 
 ## Recent Changes
+- July 24, 2025: **LOCAL DEVELOPMENT DOCUMENTATION CREATED** - Comprehensive local development setup guide created
+  - Created detailed LOCAL_DEVELOPMENT_SETUP.md with step-by-step instructions for running the project locally
+  - Added troubleshooting guide for common local development issues (port conflicts, environment variables, database connections)
+  - Created package-scripts-info.md explaining all npm scripts and when to use them
+  - Added local-dev-check.js diagnostic script to help identify setup issues
+  - Documented the difference between npm run dev (full stack) vs npm run next:dev (frontend only)
+  - Provided environment variable templates and configuration guidance
+  - Added Windows/macOS/Linux specific troubleshooting instructions
 - July 14, 2025: **ADVANCED EXTERNAL DOCUMENT PROCESSORS INTEGRATION COMPLETED** - Comprehensive multi-service processing system implemented
   - Integrated 6 external document processing APIs: VisionParser, Mindee, Klippa, Azure Form Recognizer, Google Document AI, Veryfi
   - Created advanced VisionParser with table extraction, handwriting detection, stamp recognition, and signature detection
