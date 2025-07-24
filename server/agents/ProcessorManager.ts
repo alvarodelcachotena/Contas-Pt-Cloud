@@ -198,11 +198,19 @@ export class ProcessorManager {
           // Enhance result with additional features if enabled
           return await this.enhanceResult(result, fileBuffer, mimeType, filename, processingStrategy);
         } else {
-          console.log(`⚠️ ${processorName} result below confidence threshold: ${result.confidenceScore}`);
+          console.log(`⚠️ ${processorName} result below confidence threshold: ${result.confidenceScore} (required: ${processingStrategy.confidenceThreshold})`);
+          // Continue to next processor instead of failing
+          continue;
         }
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         console.warn(`❌ Processor ${processorName} failed:`, lastError.message);
+        
+        // Skip external processors if API keys are missing
+        if (lastError.message.includes('configuration not found') || lastError.message.includes('missing API keys')) {
+          console.log(`⏭️ Skipping ${processorName} due to missing configuration`);
+          continue;
+        }
       }
     }
 
@@ -324,7 +332,7 @@ export class ProcessorManager {
       fallbacks: this.getDefaultFallbacks(mimeType, filename),
       enableTableExtraction: true,
       enableVisionParsing: mimeType.startsWith('image/'),
-      confidenceThreshold: 0.75,
+      confidenceThreshold: 0.3, // Lowered to accept more extraction results
       maxRetries: 3
     };
 

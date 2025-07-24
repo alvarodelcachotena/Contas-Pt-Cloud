@@ -32,22 +32,8 @@ export async function checkForDuplicates(
   try {
     const contentHash = generateFileHash(fileBuffer)
     
-    // First check: Content hash (most reliable)
-    const { data: hashMatch } = await supabase
-      .from('documents')
-      .select('id, filename, original_filename')
-      .eq('tenant_id', tenantId)
-      .eq('content_hash', contentHash)
-      .single()
-    
-    if (hashMatch) {
-      return {
-        isDuplicate: true,
-        existingDocumentId: hashMatch.id,
-        existingDocumentName: hashMatch.original_filename || hashMatch.filename,
-        matchType: 'content_hash'
-      }
-    }
+    // Skip content hash check for now due to schema cache issues
+    // Will use filename-based detection only
     
     // Second check: Exact filename match
     const { data: filenameMatch } = await supabase

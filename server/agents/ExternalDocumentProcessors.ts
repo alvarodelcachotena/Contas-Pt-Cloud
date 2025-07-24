@@ -376,6 +376,7 @@ export class ExternalDocumentProcessors {
   ): Promise<ExtractionResult> {
     const config = this.configs.get('google');
     if (!config) {
+      console.log('Google Document AI configuration not found - missing API keys');
       throw new Error('Google Document AI configuration not found - missing API keys');
     }
     

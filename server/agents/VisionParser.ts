@@ -138,10 +138,25 @@ export class VisionParser {
     const analysisText = response.text();
 
     try {
-      const analysis = JSON.parse(analysisText);
+      // Clean up the response text to fix common JSON issues
+      let cleanedText = analysisText.trim();
+      
+      // Remove any potential markdown code blocks
+      if (cleanedText.startsWith('```json')) {
+        cleanedText = cleanedText.replace(/^```json\n?/, '').replace(/\n?```$/, '');
+      }
+      
+      // Fix common JSON issues
+      cleanedText = cleanedText
+        .replace(/([{,]\s*)(\w+):/g, '$1"$2":') // Add quotes to property names
+        .replace(/'/g, '"') // Replace single quotes with double quotes
+        .replace(/,(\s*[}\]])/g, '$1'); // Remove trailing commas
+      
+      const analysis = JSON.parse(cleanedText);
       return this.formatVisionResult(analysis, filename);
     } catch (parseError) {
       console.error('Failed to parse Gemini vision response:', parseError);
+      console.error('Raw response:', analysisText.substring(0, 500) + '...');
       return this.createFallbackVisionResult(analysisText, filename);
     }
   }
