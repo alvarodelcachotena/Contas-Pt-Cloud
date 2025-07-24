@@ -111,6 +111,7 @@ async function processDropboxChanges(accountId: string) {
 
     for (const config of configs) {
       console.log(`🔄 Processing changes for tenant ${config.tenant_id}, config ${config.id}`)
+      console.log(`🔍 Config sync_cursor: ${config.sync_cursor || 'NULL'}`)
       
       // Implement actual file processing logic
       await processDropboxFiles(config)
@@ -135,8 +136,11 @@ async function processDropboxFiles(config: any) {
     let filesData;
     let newFiles = [];
     
+    // Force initial sync for testing (bypass cursor check)
+    const forceInitialSync = true
+    
     // Use delta sync if we have a cursor, otherwise do initial sync
-    if (config.sync_cursor) {
+    if (config.sync_cursor && !forceInitialSync) {
       console.log('🔄 Using delta sync with existing cursor')
       try {
         // Get only changed files since last sync
