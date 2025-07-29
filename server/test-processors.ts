@@ -235,16 +235,19 @@ export class ProcessorTester {
           console.log(`🤖 Testing OpenAI processor...`);
           const openaiStart = Date.now();
           try {
-            // OpenAI can handle both PDFs and images directly with vision capabilities
+            // OpenAI vision API only supports images, not PDFs
             if (mimeType === 'application/pdf') {
-              testResult.openaiResult = await this.openaiExtractor.extractFromImage(fileBuffer, mimeType, doc.name);
+              console.log(`⚠️  OpenAI: Skipping PDF - vision API only supports images`);
+              testResult.openaiError = 'OpenAI vision API does not support PDF files';
+              testResult.processingTime.openai = Date.now() - openaiStart;
             } else {
+              // Process images with OpenAI vision
               testResult.openaiResult = await this.openaiExtractor.extractFromImage(fileBuffer, mimeType, doc.name);
+              testResult.processingTime.openai = Date.now() - openaiStart;
+              report.successfulOpenAI++;
+              report.confidenceScores.openai.push(testResult.openaiResult.confidenceScore);
+              console.log(`✅ OpenAI completed in ${testResult.processingTime.openai}ms (confidence: ${testResult.openaiResult.confidenceScore})`);
             }
-            testResult.processingTime.openai = Date.now() - openaiStart;
-            report.successfulOpenAI++;
-            report.confidenceScores.openai.push(testResult.openaiResult.confidenceScore);
-            console.log(`✅ OpenAI completed in ${testResult.processingTime.openai}ms (confidence: ${testResult.openaiResult.confidenceScore})`);
           } catch (error) {
             testResult.openaiError = error instanceof Error ? error.message : String(error);
             testResult.processingTime.openai = Date.now() - openaiStart;
