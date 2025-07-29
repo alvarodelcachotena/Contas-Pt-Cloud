@@ -182,14 +182,10 @@ async function processDropboxFiles(config: any) {
       return
     }
     
-    console.log(`📂 PROCESSING ${newFiles.length} FILES ONE BY ONE WITH DETAILED LOGGING`)
-    
-    // Process only the first file for detailed debugging
-    const filesToProcess = newFiles.slice(0, 1) // Process only 1 file at a time
-    console.log(`🔍 PROCESSING ONLY FIRST FILE: ${filesToProcess[0]?.name}`)
+    console.log(`📂 PROCESSING ALL ${newFiles.length} FILES WITH DETAILED LOGGING`)
     
     // Process each new file
-    for (const file of filesToProcess) {
+    for (const file of newFiles) {
       console.log(`📥 Processing new file: ${file.name}`)
       
       // Check if file is a document type we can process
