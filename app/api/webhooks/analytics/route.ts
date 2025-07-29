@@ -61,7 +61,7 @@ async function generateWebhookAnalytics(tenantId: number, period: string, servic
       startDate.setDate(startDate.getDate() - 7)
   }
 
-  // Base query
+  // Base query with explicit schema reference
   let query = supabase
     .from('webhook_logs')
     .select('*')

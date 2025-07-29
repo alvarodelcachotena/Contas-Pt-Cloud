@@ -98,8 +98,7 @@ export async function POST(request: NextRequest) {
           continue
         }
         
-        // Create document record - using only fields that exist in database
-        const contentHash = generateFileHash(fileBuffer)
+        // Create document record - using only core fields
         const documentData = {
           tenant_id: 1,
           filename: file.name,
@@ -108,8 +107,7 @@ export async function POST(request: NextRequest) {
           file_size: file.size || fileBuffer.length,
           uploaded_by: 1,
           processing_status: 'processing',
-          extracted_data: JSON.stringify({}),
-          content_hash: contentHash
+          extracted_data: JSON.stringify({})
         }
         
         const { data: document, error: docError } = await supabase

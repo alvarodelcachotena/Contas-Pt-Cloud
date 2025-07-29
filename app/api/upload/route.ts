@@ -81,17 +81,23 @@ export async function POST(request: NextRequest) {
     
     const filename = `${Date.now()}_${file.name}`
     
-    // Create document record using the service function
-    const { data: documentResult, error: docError } = await supabase
-      .rpc('upload_document_bypass_all_rls', {
-        p_tenant_id: tenantId,
-        p_filename: filename,
-        p_original_filename: file.name,
-        p_mime_type: file.type,
-        p_file_size: file.size,
-        p_processing_status: 'processing',
-        p_uploaded_by: 1 // Default to super admin for now
+    // Create document record directly using insert
+    const { data: documentData, error: docError } = await supabase
+      .from('documents')
+      .insert({
+        tenant_id: tenantId,
+        filename: filename,
+        original_filename: file.name,
+        mime_type: file.type,
+        file_size: file.size,
+        processing_status: 'processing',
+        uploaded_by: 1,
+        created_at: new Date().toISOString()
       })
+      .select('id')
+      .single()
+    
+    const documentResult = documentData?.id
     
     console.log('🔍 Document creation result:', { documentResult, error: docError })
 

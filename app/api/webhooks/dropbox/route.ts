@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 import { loadEnvStrict } from '../../../../lib/env-loader.js'
+import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 import crypto from 'crypto'
 
 loadEnvStrict()
@@ -110,6 +111,7 @@ async function processDropboxChanges(accountId: string) {
 
     for (const config of configs) {
       console.log(`🔄 Processing changes for tenant ${config.tenant_id}, config ${config.id}`)
+      console.log(`🔍 Config sync_cursor: ${config.sync_cursor || 'NULL'}`)
       
       // Implement actual file processing logic
       await processDropboxFiles(config)
@@ -128,37 +130,61 @@ async function processDropboxFiles(config: any) {
   try {
     console.log(`📁 Processing files in ${config.folder_path} for tenant ${config.tenant_id}`)
     
-    // List files in the Dropbox folder
-    const filesResponse = await fetch('https://api.dropboxapi.com/2/files/list_folder', {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${config.access_token}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        path: config.folder_path,
-        recursive: false,
-        include_media_info: false,
-        include_deleted: false,
-        include_has_explicit_shared_members: false,
-        include_mounted_folders: true,
-        include_non_downloadable_files: true
-      })
-    })
-
-    if (!filesResponse.ok) {
-      console.error('❌ Failed to list Dropbox files:', await filesResponse.text())
+    // Create DropboxApiClient with token refresh capability
+    const dropboxClient = new DropboxApiClient(config.access_token, config.refresh_token)
+    
+    let filesData;
+    let newFiles = [];
+    
+    // Force initial sync for testing (bypass cursor check)
+    const forceInitialSync = true
+    
+    // Use delta sync if we have a cursor, otherwise do initial sync
+    if (config.sync_cursor && !forceInitialSync) {
+      console.log('🔄 Using delta sync with existing cursor')
+      try {
+        // Get only changed files since last sync
+        filesData = await dropboxClient.listFolderContinue(config.sync_cursor)
+        
+        // Filter for new/modified files only (not deleted)
+        newFiles = filesData.entries.filter((entry: any) => 
+          entry['.tag'] === 'file' && !entry.hasOwnProperty('.tag') || entry['.tag'] !== 'deleted'
+        )
+        
+        console.log(`📄 Found ${newFiles.length} new/changed files since last sync`)
+      } catch (cursorError) {
+        console.log('⚠️ Cursor invalid, falling back to full sync')
+        // If cursor is invalid, do a full sync
+        filesData = await dropboxClient.listFolder(config.folder_path || '/input')
+        newFiles = filesData.entries.filter((entry: any) => entry['.tag'] === 'file')
+        console.log(`📄 Found ${newFiles.length} files in full sync`)
+      }
+    } else {
+      console.log('📂 Performing initial full sync')
+      // Initial sync - get all files and store cursor
+      filesData = await dropboxClient.listFolder(config.folder_path || '/input')
+      newFiles = filesData.entries.filter((entry: any) => entry['.tag'] === 'file')
+      console.log(`📄 Found ${newFiles.length} files in initial sync`)
+    }
+    
+    // Update stored cursor and token if they were refreshed
+    const currentToken = dropboxClient.getCurrentAccessToken()
+    const needsUpdate = currentToken !== config.access_token || filesData.cursor !== config.sync_cursor
+    
+    if (needsUpdate) {
+      console.log('🔄 Updating stored credentials and sync cursor...')
+      await updateStoredTokenAndCursor(config.id, currentToken, filesData.cursor)
+    }
+    
+    // Only process files that we haven't seen before
+    if (newFiles.length === 0) {
+      console.log('✅ No new files to process')
       return
     }
-
-    const filesData = await filesResponse.json()
-    const files = filesData.entries.filter((entry: any) => entry['.tag'] === 'file')
     
-    console.log(`📄 Found ${files.length} files in Dropbox folder`)
-    
-    // Process each file
-    for (const file of files) {
-      console.log(`📥 Processing file: ${file.name}`)
+    // Process each new file
+    for (const file of newFiles) {
+      console.log(`📥 Processing new file: ${file.name}`)
       
       // Check if file is a document type we can process
       const fileExtension = file.name.split('.').pop()?.toLowerCase()
@@ -167,24 +193,14 @@ async function processDropboxFiles(config: any) {
         continue
       }
       
-      // Download the file
-      const downloadResponse = await fetch('https://content.dropboxapi.com/2/files/download', {
-        method: 'POST',
-        headers: {
-          'Authorization': `Bearer ${config.access_token}`,
-          'Dropbox-API-Arg': JSON.stringify({
-            path: file.path_lower
-          })
-        }
-      })
-
-      if (!downloadResponse.ok) {
-        console.error(`❌ Failed to download file ${file.name}:`, await downloadResponse.text())
+      // Check if this file was already processed (additional safety check)
+      if (await isFileAlreadyProcessed(file.name, config.tenant_id)) {
+        console.log(`⏭️ File ${file.name} already exists, skipping`)
         continue
       }
-
-      const fileBuffer = await downloadResponse.arrayBuffer()
-      const fileData = Buffer.from(fileBuffer)
+      
+      // Download the file using the API client
+      const fileData = await dropboxClient.downloadFile(file.path_display)
       
       console.log(`💾 Downloaded ${file.name} (${fileData.length} bytes)`)
       
@@ -194,6 +210,91 @@ async function processDropboxFiles(config: any) {
     
   } catch (error) {
     console.error('Error processing Dropbox files:', error)
+    
+    // If it's a token-related error, log additional details
+    if (error instanceof Error && error.message.includes('expired_access_token')) {
+      console.error('❌ Token expired error - may need to re-authenticate')
+    }
+  }
+}
+
+async function updateStoredToken(configId: number, newAccessToken: string) {
+  try {
+    const supabase = createSupabaseClient()
+    
+    const { error } = await supabase
+      .from('cloud_drive_configs')
+      .update({ access_token: newAccessToken })
+      .eq('id', configId)
+    
+    if (error) {
+      console.error('❌ Error updating stored token:', error)
+    } else {
+      console.log('✅ Successfully updated stored access token')
+    }
+  } catch (error) {
+    console.error('❌ Error in updateStoredToken:', error)
+  }
+}
+
+async function updateStoredTokenAndCursor(configId: number, newAccessToken: string, newCursor: string) {
+  try {
+    const supabase = createSupabaseClient()
+    
+    const { error } = await supabase
+      .from('cloud_drive_configs')
+      .update({ 
+        access_token: newAccessToken,
+        sync_cursor: newCursor,
+        last_sync_at: new Date().toISOString()
+      })
+      .eq('id', configId)
+    
+    if (error) {
+      console.error('❌ Error updating stored token and cursor:', error)
+    } else {
+      console.log('✅ Successfully updated stored access token and sync cursor')
+    }
+  } catch (error) {
+    console.error('❌ Error in updateStoredTokenAndCursor:', error)
+  }
+}
+
+async function isFileAlreadyProcessed(filename: string, tenantId: number): Promise<boolean> {
+  try {
+    const supabase = createSupabaseClient()
+    
+    console.log(`🔍 Checking if file exists: ${filename} for tenant ${tenantId}`)
+    
+    // First, let's check total document count to debug database connection
+    const { count } = await supabase
+      .from('documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+    
+    console.log(`🔍 Total documents in database for tenant ${tenantId}: ${count}`)
+    
+    // Check if a document with this filename already exists for this tenant
+    const { data, error } = await supabase
+      .from('documents')
+      .select('id, filename, original_filename')
+      .eq('tenant_id', tenantId)
+      .or(`filename.eq.${filename},original_filename.eq.${filename}`)
+      .limit(1)
+    
+    console.log(`🔍 Database query result:`, { data, error })
+    
+    if (error) {
+      console.error('❌ Error checking if file exists:', error)
+      return false // If we can't check, assume it's new and try to process
+    }
+    
+    const exists = data && data.length > 0
+    console.log(`🔍 File ${filename} exists: ${exists}`)
+    return exists
+  } catch (error) {
+    console.error('❌ Error in isFileAlreadyProcessed:', error)
+    return false // If we can't check, assume it's new and try to process
   }
 }
 

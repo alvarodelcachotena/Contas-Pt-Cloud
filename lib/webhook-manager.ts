@@ -1,5 +1,17 @@
-import { Pool } from 'pg'
+import { createClient } from '@supabase/supabase-js'
+import { loadEnvStrict } from './env-loader.js'
 import { getServiceCredentials } from './webhook-credentials'
+
+loadEnvStrict()
+
+function createSupabaseClient() {
+  const url = process.env.SUPABASE_URL!
+  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
+  
+  return createClient(url, key, {
+    auth: { autoRefreshToken: false, persistSession: false }
+  })
+}
 
 interface WebhookConfig {
   tenantId: number
@@ -19,12 +31,13 @@ export class MultiTenantWebhookManager {
   private static instance: MultiTenantWebhookManager
   private activeConfigs: Map<string, WebhookConfig[]> = new Map()
   private processingIntervals: Map<string, NodeJS.Timeout> = new Map()
-  private pool: Pool
+  private supabase = createSupabaseClient()
 
   private constructor() {
-    this.pool = new Pool({
-      connectionString: process.env.DATABASE_URL
-    })
+    // Use Supabase instead of direct PostgreSQL pool
+    // this.pool = new Pool({
+    //   connectionString: process.env.DATABASE_URL
+    // })
   }
 
   static getInstance(): MultiTenantWebhookManager {
@@ -42,11 +55,14 @@ export class MultiTenantWebhookManager {
       console.log('🔄 Loading active webhook configurations...')
       
       // Get all active tenants
-      const { rows: tenants } = await this.pool.query(
-        'SELECT id, name FROM tenants WHERE id > 0'
-      )
+      const { data: tenants, error: tenantsError } = await this.supabase
+        .from('tenants')
+        .select('id, name')
+        .gt('id', 0)
+      
+      if (tenantsError) throw tenantsError
 
-      for (const tenant of tenants) {
+      for (const tenant of tenants || []) {
         const tenantConfigs: WebhookConfig[] = []
         
         // Load configurations for each service type
@@ -261,12 +277,11 @@ export class MultiTenantWebhookManager {
    */
   private async updateLastProcessedTime(tenantId: number, serviceType: string): Promise<void> {
     try {
-      await this.pool.query(
-        `UPDATE webhook_configs 
-         SET last_triggered_at = NOW() 
-         WHERE tenant_id = $1 AND webhook_type = $2`,
-        [tenantId, serviceType]
-      )
+      await this.supabase
+        .from('webhook_configs')
+        .update({ last_triggered_at: new Date().toISOString() })
+        .eq('tenant_id', tenantId)
+        .eq('webhook_type', serviceType)
     } catch (error) {
       console.error('Error updating last processed time:', error)
     }

@@ -15,22 +15,20 @@ export async function GET(request: NextRequest) {
   try {
     const tenantId = request.headers.get('x-tenant-id') || '1'
 
-    // Get current month metrics
+    // Get current month metrics for comparison
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
 
-    // Total invoices this month
+    // Total invoices (all time)
     const { count: invoicesCount } = await supabase
       .from('invoices')
       .select('id', { count: 'exact' })
       .eq('tenant_id', tenantId)
-      .gte('invoice_date', `${currentMonth}-01`)
 
-    // Total expenses this month
+    // Total expenses (all time)
     const { count: expensesCount } = await supabase
       .from('expenses')
       .select('id', { count: 'exact' })
       .eq('tenant_id', tenantId)
-      .gte('expense_date', `${currentMonth}-01`)
 
     // Total documents processed
     const { count: documentsCount } = await supabase
@@ -44,22 +42,20 @@ export async function GET(request: NextRequest) {
       .select('id', { count: 'exact' })
       .eq('tenant_id', tenantId)
 
-    // Revenue calculation (sum of invoice amounts)
+    // Revenue calculation (sum of all invoice amounts)
     const { data: revenueData } = await supabase
       .from('invoices')
       .select('total_amount')
       .eq('tenant_id', tenantId)
-      .gte('invoice_date', `${currentMonth}-01`)
 
     const totalRevenue = revenueData?.reduce((sum, invoice) => 
       sum + (parseFloat(invoice.total_amount) || 0), 0) || 0
 
-    // Expenses calculation
+    // Expenses calculation (all expenses)
     const { data: expenseData } = await supabase
       .from('expenses')
       .select('amount')
       .eq('tenant_id', tenantId)
-      .gte('expense_date', `${currentMonth}-01`)
 
     const totalExpenses = expenseData?.reduce((sum, expense) => 
       sum + (parseFloat(expense.amount) || 0), 0) || 0

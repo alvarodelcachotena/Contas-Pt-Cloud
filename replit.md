@@ -42,10 +42,11 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Documents**: AI-processed document storage and extraction
 
 ### AI Processing Pipeline
-- **Primary Engine**: Google Gemini-2.5-Flash-Preview for document extraction
-- **Secondary Engine**: OpenAI GPT-4o-Mini for fallback processing
-- **External Processors**: VisionParser, Mindee, Klippa, Azure Form Recognizer, Google Document AI, Veryfi
-- **Advanced Vision Processing**: Table extraction, handwriting detection, stamp recognition, signature detection
+- **Priority 1**: Google Gemini-2.5-Flash-Preview (Primary AI for all document processing)
+- **Priority 2**: OpenAI GPT-4o-Mini (Secondary fallback and validation)
+- **Processing Order**: Always Gemini first → OpenAI second → External processors third
+- **External Processors**: VisionParser.com, Mindee, Klippa, Azure Form Recognizer, Google Document AI, Veryfi
+- **Table Processing**: Dedicated TableParser for structured data extraction
 - **Multi-Model Consensus**: Combines results for maximum accuracy with real confidence scoring
 - **Intelligent Routing**: Automatic processor selection based on document type and accuracy requirements
 - **Cost Optimization**: Balances accuracy vs. cost with configurable thresholds
@@ -145,6 +146,14 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Created**: June 23, 2025
 
 ## Recent Changes
+- July 24, 2025: **LOCAL DEVELOPMENT DOCUMENTATION CREATED** - Comprehensive local development setup guide created
+  - Created detailed LOCAL_DEVELOPMENT_SETUP.md with step-by-step instructions for running the project locally
+  - Added troubleshooting guide for common local development issues (port conflicts, environment variables, database connections)
+  - Created package-scripts-info.md explaining all npm scripts and when to use them
+  - Added local-dev-check.js diagnostic script to help identify setup issues
+  - Documented the difference between npm run dev (full stack) vs npm run next:dev (frontend only)
+  - Provided environment variable templates and configuration guidance
+  - Added Windows/macOS/Linux specific troubleshooting instructions
 - July 14, 2025: **ADVANCED EXTERNAL DOCUMENT PROCESSORS INTEGRATION COMPLETED** - Comprehensive multi-service processing system implemented
   - Integrated 6 external document processing APIs: VisionParser, Mindee, Klippa, Azure Form Recognizer, Google Document AI, Veryfi
   - Created advanced VisionParser with table extraction, handwriting detection, stamp recognition, and signature detection

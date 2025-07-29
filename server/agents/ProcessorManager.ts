@@ -1,7 +1,6 @@
 import { ExtractionResult } from '../../shared/types';
 import { CloudDocumentProcessor } from './CloudDocumentProcessor';
 import { ExternalDocumentProcessors, ProcessingOptions } from './ExternalDocumentProcessors';
-import { VisionParser } from './VisionParser';
 import { TableParser } from './TableParser';
 
 export interface ProcessorCapabilities {
@@ -28,17 +27,12 @@ export interface ProcessingStrategy {
 export class ProcessorManager {
   private cloudProcessor: CloudDocumentProcessor;
   private externalProcessors: ExternalDocumentProcessors;
-  private visionParser: VisionParser;
   private tableParser: TableParser;
   private processorCapabilities: Map<string, ProcessorCapabilities> = new Map();
 
   constructor() {
     this.cloudProcessor = new CloudDocumentProcessor();
     this.externalProcessors = new ExternalDocumentProcessors();
-    this.visionParser = new VisionParser(
-      process.env.OPENAI_API_KEY, 
-      process.env.GOOGLE_AI_API_KEY
-    );
     this.tableParser = new TableParser(
       process.env.OPENAI_API_KEY, 
       process.env.GOOGLE_AI_API_KEY
@@ -61,17 +55,7 @@ export class ProcessorManager {
       description: 'Internal AI processing with Gemini and OpenAI models'
     });
 
-    this.processorCapabilities.set('vision-parser', {
-      name: 'Advanced Vision Parser',
-      type: 'internal',
-      supportedFormats: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
-      specialties: ['table_extraction', 'handwriting', 'stamps', 'complex_layouts'],
-      avgProcessingTime: 8000,
-      costPerDocument: 0.03,
-      accuracy: 0.95,
-      isAvailable: !!(process.env.GOOGLE_AI_API_KEY || process.env.OPENAI_API_KEY),
-      description: 'Enhanced vision processing with table and element detection'
-    });
+
 
     // External processors
     const externalProcessorConfigs = [
@@ -198,11 +182,19 @@ export class ProcessorManager {
           // Enhance result with additional features if enabled
           return await this.enhanceResult(result, fileBuffer, mimeType, filename, processingStrategy);
         } else {
-          console.log(`⚠️ ${processorName} result below confidence threshold: ${result.confidenceScore}`);
+          console.log(`⚠️ ${processorName} result below confidence threshold: ${result.confidenceScore} (required: ${processingStrategy.confidenceThreshold})`);
+          // Continue to next processor instead of failing
+          continue;
         }
       } catch (error) {
         lastError = error instanceof Error ? error : new Error(String(error));
         console.warn(`❌ Processor ${processorName} failed:`, lastError.message);
+        
+        // Skip external processors if API keys are missing
+        if (lastError.message.includes('configuration not found') || lastError.message.includes('missing API keys')) {
+          console.log(`⏭️ Skipping ${processorName} due to missing configuration`);
+          continue;
+        }
       }
     }
 
@@ -228,8 +220,6 @@ export class ProcessorManager {
     } else {
       // Use internal processor
       switch (processorName) {
-        case 'vision-parser':
-          return await this.visionParser.extractFromInvoice(fileBuffer, mimeType, filename);
         case 'gemini-openai':
         default:
           return await this.cloudProcessor.processDocument(tenantId, fileBuffer, mimeType, filename);
@@ -278,38 +268,7 @@ export class ProcessorManager {
       }
     }
 
-    // Add vision parsing if enabled and not already present
-    if (strategy.enableVisionParsing && !result.agentResults?.visionParser) {
-      try {
-        const visionResult = await this.visionParser.parseDocument(
-          fileBuffer, mimeType, filename, {
-            enhanceOCR: true,
-            detectHandwriting: true,
-            extractTables: false, // Already handled above
-            multiLanguage: true
-          }
-        );
-
-        enhancedResult.agentResults = {
-          ...enhancedResult.agentResults,
-          visionParser: {
-            model: 'vision-parser',
-            method: 'enhanced-vision',
-            rawResponse: visionResult
-          }
-        };
-
-        // Add detected elements to issues if significant
-        if (visionResult.detectedElements.handwriting.length > 0) {
-          enhancedResult.issues.push(`Detected ${visionResult.detectedElements.handwriting.length} handwritten annotations`);
-        }
-        if (visionResult.detectedElements.stamps.length > 0) {
-          enhancedResult.issues.push(`Detected ${visionResult.detectedElements.stamps.length} stamps or seals`);
-        }
-      } catch (error) {
-        console.warn('Vision parsing enhancement failed:', error instanceof Error ? error.message : String(error));
-      }
-    }
+    // Vision parsing removed - using only cloud processors and external APIs
 
     return enhancedResult;
   }
@@ -320,15 +279,22 @@ export class ProcessorManager {
     userStrategy?: Partial<ProcessingStrategy>
   ): ProcessingStrategy {
     const defaults: ProcessingStrategy = {
-      primary: this.selectBestProcessor(mimeType, filename),
-      fallbacks: this.getDefaultFallbacks(mimeType, filename),
+      primary: 'gemini-openai', // Always start with Gemini first
+      fallbacks: this.getGeminiFirstFallbacks(mimeType, filename),
       enableTableExtraction: true,
       enableVisionParsing: mimeType.startsWith('image/'),
-      confidenceThreshold: 0.75,
+      confidenceThreshold: 0.3, // Lowered to accept more extraction results
       maxRetries: 3
     };
 
-    return { ...defaults, ...userStrategy };
+    const strategy = { ...defaults, ...userStrategy };
+    
+    // Filter fallbacks to only include available processors
+    strategy.fallbacks = strategy.fallbacks.filter(processor => this.isProcessorAvailable(processor));
+    
+    console.log(`📋 Processing strategy for ${filename}: primary=${strategy.primary}, fallbacks=[${strategy.fallbacks.join(', ')}]`);
+    
+    return strategy;
   }
 
   private selectBestProcessor(mimeType: string, filename: string): string {
@@ -359,14 +325,27 @@ export class ProcessorManager {
     return available[0][0];
   }
 
-  private getDefaultFallbacks(mimeType: string, filename: string): string[] {
-    const available = Array.from(this.processorCapabilities.entries())
-      .filter(([_, cap]) => cap.isAvailable && cap.supportedFormats.includes(mimeType))
-      .sort((a, b) => b[1].accuracy - a[1].accuracy)
-      .map(([name]) => name);
+  private getGeminiFirstFallbacks(mimeType: string, filename: string): string[] {
+    // Fixed order: Gemini → OpenAI → External processors
+    const fallbackOrder = [
+      'visionparser',     // External VisionParser.com
+      'mindee',          // External Mindee
+      'klippa',          // External Klippa
+      'google',          // External Google Document AI
+      'azure',           // External Azure Form Recognizer
+      'veryfi'           // External Veryfi
+    ];
+    
+    // Filter to only available processors that support the file type
+    return fallbackOrder.filter(processor => 
+      this.isProcessorAvailable(processor) && 
+      this.processorCapabilities.get(processor)?.supportedFormats.includes(mimeType)
+    ).slice(0, 4); // Max 4 fallbacks
+  }
 
-    const primary = this.selectBestProcessor(mimeType, filename);
-    return available.filter(name => name !== primary).slice(0, 3); // Top 3 fallbacks
+  private getDefaultFallbacks(mimeType: string, filename: string): string[] {
+    // Kept for compatibility - now calls Gemini-first version
+    return this.getGeminiFirstFallbacks(mimeType, filename);
   }
 
   private isProcessorAvailable(processorName: string): boolean {
