@@ -52,13 +52,26 @@ export class ProcessorTester {
   constructor(accessToken: string, refreshToken: string) {
     this.dropboxClient = new DropboxApiClient(accessToken, refreshToken);
     
-    // Initialize extractors if API keys are available
+    // Force environment loading to ensure .env file values are used
+    require('../lib/env-loader');
+    
+    // Initialize extractors if API keys are available  
+    console.log('🔑 Checking API keys from environment...');
+    console.log(`🤖 Gemini API key available: ${!!process.env.GOOGLE_AI_API_KEY} (ends with: ${process.env.GOOGLE_AI_API_KEY?.slice(-10)})`);
+    console.log(`🤖 OpenAI API key available: ${!!process.env.OPENAI_API_KEY} (ends with: ${process.env.OPENAI_API_KEY?.slice(-10)})`);
+    
     if (process.env.GOOGLE_AI_API_KEY) {
       this.geminiExtractor = new AgentExtractorGemini(process.env.GOOGLE_AI_API_KEY);
+      console.log('✅ Gemini extractor initialized');
+    } else {
+      console.log('❌ Gemini API key not found');
     }
     
     if (process.env.OPENAI_API_KEY) {
       this.openaiExtractor = new AgentExtractorOpenAI(process.env.OPENAI_API_KEY);
+      console.log('✅ OpenAI extractor initialized');
+    } else {
+      console.log('❌ OpenAI API key not found');
     }
   }
 
@@ -70,16 +83,12 @@ export class ProcessorTester {
   private async performOCR(buffer: Buffer, mimeType: string): Promise<string> {
     try {
       if (mimeType === 'application/pdf') {
-        // For PDF files, we'll extract text directly since Tesseract is for images
-        return "PDF content would be extracted here - using placeholder for now";
+        // For PDF files, we'll let the AI processors handle them directly
+        return "PDF - will be processed directly by AI";
       }
       
-      // For image files, use Tesseract
-      const result = await Tesseract.recognize(buffer, 'por', {
-        logger: () => {} // Disable logging
-      });
-      
-      return result.data.text;
+      // For image files, we'll also let AI processors handle them directly
+      return "Image - will be processed directly by AI vision";
     } catch (error) {
       console.error('OCR failed:', error);
       return '';

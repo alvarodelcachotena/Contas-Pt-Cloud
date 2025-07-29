@@ -1,9 +1,13 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { ProcessorTester } from '../../../server/test-processors';
 
+// Force environment loading to ensure .env file values are used
+require('../../../lib/env-loader');
+
 export async function POST(request: NextRequest) {
   try {
     console.log('🧪 Starting processor testing...');
+    console.log('🔒 Environment loader activated - using .env file values');
     
     // Get Dropbox integration credentials
     const integrationResponse = await fetch('http://localhost:5000/api/cloud-integrations');

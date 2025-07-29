@@ -1,0 +1,32 @@
+
+================================================================================
+📊 PROCESSOR COMPARISON REPORT
+================================================================================
+
+📈 SUMMARY
+-----------
+Total Documents Tested: 3
+Successful Gemini Extractions: 3/3 (100.0%)
+Successful OpenAI Extractions: 0/3 (0.0%)
+Average Processing Time - Gemini: 11086ms
+Average Processing Time - OpenAI: 0ms
+
+Average Confidence - Gemini: 0.10
+
+🔍 FIELD COMPARISON
+------------------
+
+📄 INDIVIDUAL DOCUMENT RESULTS
+-------------------------------
+1. Open IA 14-04-2025.pdf (32.56 KB)
+   Gemini: ✅ Success (11001ms, conf: 0.1)
+   OpenAI: ❌ OpenAI API error: 401 Unauthorized
+
+2. Cursor 6-04-2025.pdf (303.99 KB)
+   Gemini: ✅ Success (14899ms, conf: 0.1)
+   OpenAI: ❌ OpenAI API error: 401 Unauthorized
+
+3. REPLIT-Invoice-E664E044-0002.pdf (167.19 KB)
+   Gemini: ✅ Success (7358ms, conf: 0.1)
+   OpenAI: ❌ OpenAI API error: 401 Unauthorized
+
