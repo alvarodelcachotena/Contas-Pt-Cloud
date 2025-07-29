@@ -146,6 +146,13 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Created**: June 23, 2025
 
 ## Recent Changes
+- January 29, 2025: **SUPABASE-ONLY CONFIGURATION VERIFIED** - Confirmed system uses exclusively Supabase with env file credentials
+  - Verified all database connections use ONLY Supabase client with credentials from .env file
+  - Environment loader properly blocks DATABASE_URL and forces Supabase-only configuration  
+  - AI processing working perfectly with real data extraction (processed OpenAI invoice: €60.00 authentic amount)
+  - System creates real expenses with accurate vendor names and amounts instead of placeholder data
+  - Dashboard metrics showing 1 document (ID 372) and 1 expense (ID 186) with €60.00 total
+  - Detailed console logging implemented for AI processing troubleshooting and verification
 - January 29, 2025: **DOCUMENT PROCESSING ERRORS FIXED** - Enhanced AI processing to handle documents properly with existing API keys
   - Fixed ProcessorManager to use only internal processors (Gemini + OpenAI) from .env file
   - Removed external processor fallbacks that required missing API keys

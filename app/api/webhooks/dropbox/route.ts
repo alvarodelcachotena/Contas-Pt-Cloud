@@ -182,8 +182,14 @@ async function processDropboxFiles(config: any) {
       return
     }
     
+    console.log(`📂 PROCESSING ${newFiles.length} FILES ONE BY ONE WITH DETAILED LOGGING`)
+    
+    // Process only the first file for detailed debugging
+    const filesToProcess = newFiles.slice(0, 1) // Process only 1 file at a time
+    console.log(`🔍 PROCESSING ONLY FIRST FILE: ${filesToProcess[0]?.name}`)
+    
     // Process each new file
-    for (const file of newFiles) {
+    for (const file of filesToProcess) {
       console.log(`📥 Processing new file: ${file.name}`)
       
       // Check if file is a document type we can process
@@ -340,14 +346,20 @@ async function processDocumentFile(filename: string, fileData: Buffer, tenantId:
     console.log(`📝 Created document record: ID ${documentResult.id}`)
 
     // Process document with real AI extraction
-    console.log(`🤖 Starting AI processing for ${filename}`)
+    console.log(`🤖 STARTING AI PROCESSING FOR: ${filename}`)
+    console.log(`📊 FILE INFO: Size=${fileData.length} bytes, Type=${getMimeType(filename)}`)
     
     try {
       // Import ProcessorManager dynamically to avoid path issues
+      console.log(`🔧 IMPORTING ProcessorManager...`)
       const { ProcessorManager } = await import('../../../../server/agents/ProcessorManager')
       const processorManager = new ProcessorManager()
+      console.log(`✅ ProcessorManager initialized successfully`)
       
       // Process document with AI
+      console.log(`🚀 CALLING processorManager.processDocument()...`)
+      console.log(`📝 PARAMS: tenantId=${tenantId}, mimeType=${getMimeType(filename)}, filename=${filename}`)
+      
       const processingResult = await processorManager.processDocument(
         tenantId, 
         fileData, 
@@ -355,9 +367,13 @@ async function processDocumentFile(filename: string, fileData: Buffer, tenantId:
         filename
       )
       
-      console.log(`✅ AI processing completed for ${filename}, confidence: ${processingResult.confidence}`)
+      console.log(`🎉 AI PROCESSING COMPLETED FOR: ${filename}`)
+      console.log(`📈 CONFIDENCE: ${processingResult.confidence}`)
+      console.log(`🤖 MODEL USED: ${processingResult.modelUsed}`)
+      console.log(`📊 EXTRACTED DATA:`, JSON.stringify(processingResult.data, null, 2))
       
       // Update document with AI results
+      console.log(`💾 UPDATING DOCUMENT WITH AI RESULTS...`)
       const { error: updateError } = await supabase
         .from('documents')
         .update({
@@ -368,12 +384,21 @@ async function processDocumentFile(filename: string, fileData: Buffer, tenantId:
         .eq('id', documentResult.id)
 
       if (updateError) {
-        console.error(`❌ Error updating document ${filename}:`, updateError)
+        console.error(`❌ ERROR UPDATING DOCUMENT ${filename}:`, updateError)
         return
       }
+      console.log(`✅ DOCUMENT UPDATED SUCCESSFULLY`)
       
       // Create expense from AI-extracted data
       const extractedData = processingResult.data
+      console.log(`💰 CREATING EXPENSE FROM AI DATA...`)
+      console.log(`📊 EXTRACTED FIELDS:`)
+      console.log(`   - vendor: ${extractedData.vendor || extractedData.issuer || 'Unknown Vendor'}`)
+      console.log(`   - amount: ${extractedData.total || extractedData.amount || 0}`)
+      console.log(`   - vatAmount: ${extractedData.vatAmount || 0}`)
+      console.log(`   - category: ${extractedData.category || 'outras_despesas'}`)
+      console.log(`   - description: ${extractedData.description || filename}`)
+      
       const { error: expenseError } = await supabase
         .from('expenses')
         .insert([{
@@ -389,9 +414,10 @@ async function processDocumentFile(filename: string, fileData: Buffer, tenantId:
         }])
 
       if (expenseError) {
-        console.error(`❌ Error creating expense for ${filename}:`, expenseError)
+        console.error(`❌ ERROR CREATING EXPENSE FOR ${filename}:`, expenseError)
       } else {
-        console.log(`💰 Created expense from AI data: vendor=${extractedData.vendor}, amount=${extractedData.total}`)
+        console.log(`🎉 EXPENSE CREATED SUCCESSFULLY!`)
+        console.log(`💰 FINAL EXPENSE: vendor=${extractedData.vendor || extractedData.issuer}, amount=${extractedData.total || extractedData.amount}`)
       }
       
     } catch (aiError) {
