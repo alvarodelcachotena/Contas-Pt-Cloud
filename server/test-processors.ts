@@ -81,24 +81,12 @@ export class ProcessorTester {
   }
 
   private async performOCR(buffer: Buffer, mimeType: string): Promise<string> {
-    try {
-      if (mimeType === 'application/pdf') {
-        // Use pdf-parse to extract text from PDF
-        const pdfParse = require('pdf-parse');
-        const data = await pdfParse(buffer, {
-          // Disable test dependencies that might be missing
-          max: 0
-        });
-        return data.text || '';
-      }
-      
-      // For image files, we'll let AI processors handle them directly with vision
-      return "Image - will be processed directly by AI vision";
-    } catch (error) {
-      console.error('OCR failed:', error);
-      // Fallback: return empty string so AI can still process with vision
-      return '';
+    // No OCR needed - both AI models can process documents directly
+    // Return a simple indicator for logging purposes
+    if (mimeType === 'application/pdf') {
+      return "PDF - will be processed directly by AI vision";
     }
+    return "Image - will be processed directly by AI vision";
   }
 
   private formatFileSize(bytes: number): string {
@@ -247,9 +235,9 @@ export class ProcessorTester {
           console.log(`🤖 Testing OpenAI processor...`);
           const openaiStart = Date.now();
           try {
+            // OpenAI can handle both PDFs and images directly with vision capabilities
             if (mimeType === 'application/pdf') {
-              // OpenAI doesn't support direct PDF processing, use OCR text
-              testResult.openaiResult = await this.openaiExtractor.extract(testResult.ocrText, doc.name);
+              testResult.openaiResult = await this.openaiExtractor.extractFromImage(fileBuffer, mimeType, doc.name);
             } else {
               testResult.openaiResult = await this.openaiExtractor.extractFromImage(fileBuffer, mimeType, doc.name);
             }
