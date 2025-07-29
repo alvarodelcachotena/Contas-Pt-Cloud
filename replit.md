@@ -146,6 +146,14 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Created**: June 23, 2025
 
 ## Recent Changes
+- January 29, 2025: **SUPABASE DATABASE SCHEMA UPDATED** - Synchronized database with code requirements for full compatibility
+  - Completely removed Neon database connections ensuring ONLY Supabase usage as per user requirements
+  - Created missing database tables: vat_rates, bank_transactions, saft_exports, ai_chat_messages, manager_approvals, extracted_invoice_data, monthly_statement_entries
+  - Added missing fields to documents and expenses tables: issuer_country, issuer_address, issuer_phone
+  - Implemented unique constraint on documents (tenant_id, filename) for duplicate prevention
+  - Inserted Portuguese VAT rates for tax compliance (6%, 13%, 23%)
+  - Verified all 22 database tables exist with proper structure and Portuguese business requirements
+  - System now uses exclusively Supabase client with .env credentials (SUPABASE_URL, SUPABASE_ANON_KEY)
 - January 29, 2025: **DUPLICATE DETECTION SYSTEM ENHANCED** - Fixed critical duplicate processing issues and implemented comprehensive data integrity measures
   - Added unique database constraint on documents table (tenant_id, filename) to prevent duplicate entries at database level
   - Enhanced duplicate detection logic with filename and file size validation for better accuracy
