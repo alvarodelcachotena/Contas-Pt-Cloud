@@ -17,7 +17,11 @@ export async function GET(request: NextRequest) {
       
       case 'capabilities':
         const capabilities = Array.from(processorManager.getProcessorCapabilities().entries())
-          .map(([name, cap]) => ({ name, ...cap }))
+          .map(([name, cap]) => {
+            // Remove name from cap to avoid duplication
+            const { name: _, ...capWithoutName } = cap as any
+            return { name, ...capWithoutName }
+          })
         return NextResponse.json({
           capabilities,
           success: true

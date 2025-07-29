@@ -56,7 +56,10 @@ export async function GET(request: NextRequest) {
     return NextResponse.json({ credentials: credentials || [] })
   } catch (error) {
     console.error('Error in webhook credentials API:', error)
-    return NextResponse.json({ error: 'Erro interno do servidor', details: error.message }, { status: 500 })
+    return NextResponse.json({ 
+      error: 'Erro interno do servidor', 
+      details: error instanceof Error ? error.message : 'Unknown error occurred' 
+    }, { status: 500 })
   }
 }
 

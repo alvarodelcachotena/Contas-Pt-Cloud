@@ -137,11 +137,13 @@ export async function POST(request: NextRequest) {
     
     let tenantData = null
     if (userTenants && userTenants.length > 0) {
-      const firstTenant = userTenants[0]
+      const firstTenant = userTenants[0] as any
+      // Handle tenants as either object or array (Supabase type inconsistency)
+      const tenant = Array.isArray(firstTenant.tenants) ? firstTenant.tenants[0] : firstTenant.tenants
       tenantData = {
-        id: firstTenant.tenants.id,
-        name: firstTenant.tenants.name,
-        tax_id: firstTenant.tenants.tax_id
+        id: tenant?.id || firstTenant.tenant_id,
+        name: tenant?.name || 'Unknown',
+        tax_id: tenant?.tax_id || ''
       }
     } else {
       // Fallback to DIAMOND NXT TRADING LDA if no assignments exist

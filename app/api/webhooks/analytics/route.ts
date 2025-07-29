@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     const tenantId = await getTenantId(request)
     const url = new URL(request.url)
     const period = url.searchParams.get('period') || '7d'
-    const service = url.searchParams.get('service')
+    const service = url.searchParams.get('service') || undefined
 
     const analytics = await generateWebhookAnalytics(tenantId, period, service)
 
@@ -88,14 +88,14 @@ async function generateWebhookAnalytics(tenantId: number, period: string, servic
       averageResponseTime: 0,
       uptime: 0
     },
-    timeSeriesData: [],
-    serviceBreakdown: {},
-    activityBreakdown: {},
-    errorAnalysis: {},
+    timeSeriesData: [] as Array<{ date: string; events: number; success: number; errors: number }>,
+    serviceBreakdown: {} as Record<string, number>,
+    activityBreakdown: {} as Record<string, number>,
+    errorAnalysis: {} as Record<string, number>,
     performanceMetrics: {
-      peakHours: [],
-      slowestOperations: [],
-      mostActiveServices: []
+              peakHours: [] as Array<{ hour: number; events: number }>,
+        slowestOperations: [] as Array<{ operation: string; avgTime: number }>,
+        mostActiveServices: [] as Array<{ service: string; events: number }>
     },
     trends: {
       dailyGrowth: 0,
@@ -141,7 +141,7 @@ async function generateWebhookAnalytics(tenantId: number, period: string, servic
   }
 
   // Generate time series data (daily)
-  const dailyData = {}
+  const dailyData: Record<string, { date: string; events: number; success: number; errors: number }> = {}
   logs.forEach(log => {
     const date = new Date(log.created_at).toISOString().split('T')[0]
     if (!dailyData[date]) {
@@ -160,7 +160,7 @@ async function generateWebhookAnalytics(tenantId: number, period: string, servic
   )
 
   // Calculate hourly distribution for peak hours
-  const hourlyData = {}
+  const hourlyData: Record<number, number> = {}
   logs.forEach(log => {
     const hour = new Date(log.created_at).getHours()
     hourlyData[hour] = (hourlyData[hour] || 0) + 1

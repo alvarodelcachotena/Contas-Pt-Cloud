@@ -60,7 +60,12 @@ async function handleBatchProcessing(tenantId: number, params: any) {
     totalDocuments: documents.length,
     processed: 0,
     failed: 0,
-    results: []
+    results: [] as Array<{
+      documentId: any;
+      success: boolean;
+      message: string;
+      timestamp: string;
+    }>
   }
 
   console.log(`🔄 Starting batch processing of ${documents.length} documents for ${service}`)
@@ -91,7 +96,7 @@ async function handleBatchProcessing(tenantId: number, params: any) {
       results.results.push({
         documentId: document.id,
         success: false,
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
         timestamp: new Date().toISOString()
       })
     }
@@ -179,7 +184,13 @@ async function handleRetryFailed(tenantId: number, params: any) {
     totalAttempts: failedLogs?.length || 0,
     successful: 0,
     failed: 0,
-    results: []
+    results: [] as Array<{
+      logId: any;
+      service: any;
+      success: boolean;
+      message: string;
+      timestamp: string;
+    }>
   }
 
   if (failedLogs) {
@@ -207,7 +218,7 @@ async function handleRetryFailed(tenantId: number, params: any) {
           logId: log.id,
           service: log.service_type,
           success: false,
-          message: error.message,
+          message: error instanceof Error ? error.message : 'Unknown error occurred',
           timestamp: new Date().toISOString()
         })
       }
@@ -225,7 +236,7 @@ async function handleRetryFailed(tenantId: number, params: any) {
 
 async function handleHealthCheck(tenantId: number, params: any) {
   const { services } = params
-  const healthResults = {}
+  const healthResults: Record<string, any> = {}
 
   const servicesToCheck = services || ['whatsapp', 'gmail', 'dropbox']
 
@@ -236,7 +247,7 @@ async function handleHealthCheck(tenantId: number, params: any) {
     } catch (error) {
       healthResults[service] = {
         status: 'error',
-        message: error.message,
+        message: error instanceof Error ? error.message : 'Unknown error occurred',
         timestamp: new Date().toISOString()
       }
     }
@@ -260,7 +271,11 @@ async function handleBulkCredentialUpdate(tenantId: number, params: any) {
     totalUpdates: updates.length,
     successful: 0,
     failed: 0,
-    results: []
+    results: [] as Array<{
+      service: any;
+      success: boolean;
+      message: string;
+    }>
   }
 
   for (const update of updates) {
@@ -302,7 +317,7 @@ async function handleBulkCredentialUpdate(tenantId: number, params: any) {
       results.results.push({
         service: update.service,
         success: false,
-        message: error.message
+        message: error instanceof Error ? error.message : 'Unknown error occurred'
       })
     }
   }
@@ -404,7 +419,7 @@ async function performServiceHealthCheck(tenantId: number, service: string) {
   } catch (error) {
     return {
       status: 'error',
-      message: error.message,
+      message: error instanceof Error ? error.message : 'Unknown error occurred',
       timestamp: new Date().toISOString()
     }
   }

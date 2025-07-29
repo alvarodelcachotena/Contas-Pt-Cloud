@@ -18,7 +18,7 @@ export async function GET(request: NextRequest) {
   try {
     const tenantId = await getTenantId(request)
     const url = new URL(request.url)
-    const service = url.searchParams.get('service')
+    const service = url.searchParams.get('service') || undefined
     const limit = parseInt(url.searchParams.get('limit') || '50')
     const offset = parseInt(url.searchParams.get('offset') || '0')
 
