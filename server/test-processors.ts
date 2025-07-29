@@ -83,14 +83,20 @@ export class ProcessorTester {
   private async performOCR(buffer: Buffer, mimeType: string): Promise<string> {
     try {
       if (mimeType === 'application/pdf') {
-        // For PDF files, we'll let the AI processors handle them directly
-        return "PDF - will be processed directly by AI";
+        // Use pdf-parse to extract text from PDF
+        const pdfParse = require('pdf-parse');
+        const data = await pdfParse(buffer, {
+          // Disable test dependencies that might be missing
+          max: 0
+        });
+        return data.text || '';
       }
       
-      // For image files, we'll also let AI processors handle them directly
+      // For image files, we'll let AI processors handle them directly with vision
       return "Image - will be processed directly by AI vision";
     } catch (error) {
       console.error('OCR failed:', error);
+      // Fallback: return empty string so AI can still process with vision
       return '';
     }
   }

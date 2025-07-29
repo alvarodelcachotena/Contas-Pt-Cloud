@@ -1,0 +1,52 @@
+
+================================================================================
+📊 PROCESSOR COMPARISON REPORT
+================================================================================
+
+📈 SUMMARY
+-----------
+Total Documents Tested: 2
+Successful Gemini Extractions: 2/2 (100.0%)
+Successful OpenAI Extractions: 2/2 (100.0%)
+Average Processing Time - Gemini: 9131ms
+Average Processing Time - OpenAI: 3733ms
+
+Average Confidence - Gemini: 0.20
+Average Confidence - OpenAI: 0.65
+
+🔍 FIELD COMPARISON
+------------------
+vendor         : 0/2 matches (0.0%)
+nif            : 2/2 matches (100.0%)
+nifCountry     : 1/2 matches (50.0%)
+vendorAddress  : 1/2 matches (50.0%)
+vendorPhone    : 2/2 matches (100.0%)
+invoiceNumber  : 1/2 matches (50.0%)
+issueDate      : 1/2 matches (50.0%)
+total          : 0/2 matches (0.0%)
+netAmount      : 0/2 matches (0.0%)
+vatAmount      : 1/2 matches (50.0%)
+vatRate        : 0/2 matches (0.0%)
+category       : 0/2 matches (0.0%)
+description    : 0/2 matches (0.0%)
+
+📄 INDIVIDUAL DOCUMENT RESULTS
+-------------------------------
+1. grupo alsa 28-04-25.jpg (519.82 KB)
+   Gemini: ✅ Success (8111ms, conf: 0.3)
+   OpenAI: ✅ Success (4402ms, conf: 0.8)
+   📊 Key Fields Comparison:
+      vendor: ❌ Gemini:"Grupo Alsa" vs OpenAI:"GRUPO ALSA"
+      nif: ✅ Gemini:"" vs OpenAI:""
+      total: ❌ Gemini:"0" vs OpenAI:"19.19"
+      issueDate: ✅ Gemini:"2025-04-28" vs OpenAI:"2025-04-28"
+
+2. Cursor 6-04-2025.pdf (303.99 KB)
+   Gemini: ✅ Success (10151ms, conf: 0.1)
+   OpenAI: ✅ Success (3064ms, conf: 0.5)
+   📊 Key Fields Comparison:
+      vendor: ❌ Gemini:"Anysphere, Inc." vs OpenAI:""
+      nif: ✅ Gemini:"" vs OpenAI:""
+      total: ❌ Gemini:"0.75" vs OpenAI:"0"
+      issueDate: ❌ Gemini:"2025-04-06" vs OpenAI:"2023-10-01"
+
