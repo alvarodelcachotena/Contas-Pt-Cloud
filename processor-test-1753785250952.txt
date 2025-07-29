@@ -1,0 +1,61 @@
+
+================================================================================
+📊 PROCESSOR COMPARISON REPORT
+================================================================================
+
+📈 SUMMARY
+-----------
+Total Documents Tested: 3
+Successful Gemini Extractions: 3/3 (100.0%)
+Successful OpenAI Extractions: 3/3 (100.0%)
+Average Processing Time - Gemini: 15888ms
+Average Processing Time - OpenAI: 3121ms
+
+Average Confidence - Gemini: 0.10
+Average Confidence - OpenAI: 0.10
+
+🔍 FIELD COMPARISON
+------------------
+vendor         : 0/3 matches (0.0%)
+nif            : 1/3 matches (33.3%)
+nifCountry     : 1/3 matches (33.3%)
+vendorAddress  : 3/3 matches (100.0%)
+vendorPhone    : 3/3 matches (100.0%)
+invoiceNumber  : 0/3 matches (0.0%)
+issueDate      : 1/3 matches (33.3%)
+total          : 1/3 matches (33.3%)
+netAmount      : 1/3 matches (33.3%)
+vatAmount      : 3/3 matches (100.0%)
+vatRate        : 0/3 matches (0.0%)
+category       : 2/3 matches (66.7%)
+description    : 0/3 matches (0.0%)
+
+📄 INDIVIDUAL DOCUMENT RESULTS
+-------------------------------
+1. Rentalcars 13-04-2025.pdf (326.06 KB)
+   Gemini: ✅ Success (12443ms, conf: 0.1)
+   OpenAI: ✅ Success (2767ms, conf: 0.1)
+   📊 Key Fields Comparison:
+      vendor: ❌ Gemini:"Rentalcars.com" vs OpenAI:""
+      nif: ✅ Gemini:"" vs OpenAI:""
+      total: ✅ Gemini:"0" vs OpenAI:"0"
+      issueDate: ❌ Gemini:"2025-03-05" vs OpenAI:"2025-04-13"
+
+2. linode-invoice-2025-04-01 05_48.pdf (62.91 KB)
+   Gemini: ✅ Success (22787ms, conf: 0.1)
+   OpenAI: ✅ Success (3798ms, conf: 0.1)
+   📊 Key Fields Comparison:
+      vendor: ❌ Gemini:"Akamai Technologies International AG" vs OpenAI:""
+      nif: ❌ Gemini:"EU372048842" vs OpenAI:""
+      total: ❌ Gemini:"51.86" vs OpenAI:"0"
+      issueDate: ✅ Gemini:"2025-04-01" vs OpenAI:"2025-04-01"
+
+3. Open IA 07-04-2025.pdf (32.5 KB)
+   Gemini: ✅ Success (12435ms, conf: 0.1)
+   OpenAI: ✅ Success (2799ms, conf: 0.1)
+   📊 Key Fields Comparison:
+      vendor: ❌ Gemini:"OpenAI, LLC" vs OpenAI:""
+      nif: ❌ Gemini:"EU372041333" vs OpenAI:""
+      total: ❌ Gemini:"60" vs OpenAI:"0"
+      issueDate: ❌ Gemini:"2025-04-03" vs OpenAI:"2025-04-07"
+
