@@ -1,0 +1,51 @@
+
+================================================================================
+📊 PROCESSOR COMPARISON REPORT
+================================================================================
+
+📈 SUMMARY
+-----------
+Total Documents Tested: 3
+Successful Gemini Extractions: 3/3 (100.0%)
+Successful OpenAI Extractions: 1/3 (33.3%)
+Average Processing Time - Gemini: 17527ms
+Average Processing Time - OpenAI: 5941ms
+
+Average Confidence - Gemini: 0.37
+Average Confidence - OpenAI: 0.80
+
+🔍 FIELD COMPARISON
+------------------
+vendor         : 0/1 matches (0.0%)
+nif            : 0/1 matches (0.0%)
+nifCountry     : 0/1 matches (0.0%)
+vendorAddress  : 0/1 matches (0.0%)
+vendorPhone    : 0/1 matches (0.0%)
+invoiceNumber  : 0/1 matches (0.0%)
+issueDate      : 0/1 matches (0.0%)
+total          : 0/1 matches (0.0%)
+netAmount      : 0/1 matches (0.0%)
+vatAmount      : 0/1 matches (0.0%)
+vatRate        : 0/1 matches (0.0%)
+category       : 0/1 matches (0.0%)
+description    : 0/1 matches (0.0%)
+
+📄 INDIVIDUAL DOCUMENT RESULTS
+-------------------------------
+1. linode-invoice-2025-04-01 05_48.pdf (62.91 KB)
+   Gemini: ✅ Success (32384ms, conf: 0.1)
+   OpenAI: ❌ OpenAI vision API does not support PDF files
+
+2. N8N 29-04-2025.pdf (115.56 KB)
+   Gemini: ✅ Success (10965ms, conf: 0.1)
+   OpenAI: ❌ OpenAI vision API does not support PDF files
+
+3. street fish 29-04-25.jpg (651.75 KB)
+   Gemini: ✅ Success (9233ms, conf: 0.9)
+   OpenAI: ✅ Success (5941ms, conf: 0.8)
+   📊 Key Fields Comparison:
+      vendor: ❌ Gemini:"STREET FISH" vs OpenAI:"STREET FISH BARCELONA, S.L."
+      nif: ❌ Gemini:"PT252531393" vs OpenAI:"B724936346"
+      total: ❌ Gemini:"4.37" vs OpenAI:"125.1"
+      issueDate: ❌ Gemini:"2024-04-25" vs OpenAI:"2025-04-29"
+

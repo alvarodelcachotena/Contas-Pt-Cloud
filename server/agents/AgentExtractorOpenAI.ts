@@ -540,7 +540,7 @@ ${ocrText.substring(0, 6000)}`,
         issues: extracted.extractionIssues,
         agentResults: {
           extractor: {
-            model: "gpt-4o-mini-2024-07-18",
+            model: "gpt-4.1-mini-2025-04-14",
             method: imageUrl
               ? "openai_vision_structured"
               : "openai_text_structured",
