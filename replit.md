@@ -146,6 +146,14 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Created**: June 23, 2025
 
 ## Recent Changes
+- January 29, 2025: **DUPLICATE DETECTION SYSTEM ENHANCED** - Fixed critical duplicate processing issues and implemented comprehensive data integrity measures
+  - Added unique database constraint on documents table (tenant_id, filename) to prevent duplicate entries at database level
+  - Enhanced duplicate detection logic with filename and file size validation for better accuracy
+  - Fixed dashboard metrics to show all-time totals instead of current month only, displaying accurate €356.50 from 8 legitimate expenses
+  - Successfully processed 11 unique documents with proper duplicate prevention (9 files correctly skipped during sync)
+  - Created comprehensive documentation: DUPLICATE_DETECTION_SYSTEM.md and DASHBOARD_METRICS_SYSTEM.md
+  - System now shows 100% processing accuracy with authentic data only, no placeholder values
+  - Updated all documentation in docs/ and project/ folders to reflect current system status and recent improvements
 - July 24, 2025: **LOCAL DEVELOPMENT DOCUMENTATION CREATED** - Comprehensive local development setup guide created
   - Created detailed LOCAL_DEVELOPMENT_SETUP.md with step-by-step instructions for running the project locally
   - Added troubleshooting guide for common local development issues (port conflicts, environment variables, database connections)

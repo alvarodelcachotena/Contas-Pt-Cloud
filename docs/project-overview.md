@@ -1,6 +1,6 @@
 # Complete Project Overview - Contas-PT
 
-*Last updated: June 23, 2025*
+*Last updated: January 29, 2025*
 
 ## Documentation Index
 

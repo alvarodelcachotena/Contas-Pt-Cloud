@@ -1,137 +1,218 @@
 # Architecture Overview - Contas-PT
 
+*Last Updated: January 29, 2025*
+
 ## System Architecture
 
-### Technology Stack
-- **Frontend**: Next.js 15.3.4 with TypeScript, Tailwind CSS, shadcn/ui
-- **Backend**: Next.js API Routes with TypeScript
-- **Database**: Supabase PostgreSQL with Drizzle ORM
-- **Authentication**: Multi-tenant session-based with role-based access control
-- **AI Processing**: Google Gemini-2.5-Flash-Preview + OpenAI GPT-4o-Mini
-- **Real-time**: WebSocket server for live updates
-- **Cloud Storage**: Dropbox and Google Drive integration with automated monitoring
+Contas-PT is a modern Portuguese accounting system built with Next.js and cloud-native architecture, designed for intelligent document processing and Portuguese tax compliance.
 
-### Core Components
+### Technology Stack
 
 #### Frontend Architecture
-```
-app/                    # Next.js App Router pages
-├── layout.tsx         # Root layout with providers
-├── page.tsx           # Dashboard homepage
-└── (auth)/            # Authentication routes
-
-components/            # Reusable UI components
-├── ui/               # shadcn/ui base components
-├── dashboard.tsx     # Main dashboard
-├── invoices-table.tsx
-├── expenses-table.tsx
-└── webhook-config-manager.tsx
-
-lib/                  # Frontend utilities
-├── queryClient.ts    # TanStack Query configuration
-├── utils.ts          # Utility functions
-└── theme.tsx         # Theme provider
-```
+- **Framework**: Next.js 15.3.4 with App Router
+- **Language**: TypeScript with strict type checking
+- **Styling**: Tailwind CSS with shadcn/ui components
+- **State Management**: TanStack Query for server state
+- **Forms**: React Hook Form with Zod validation
+- **Themes**: Dark/Light mode with Next.js themes
 
 #### Backend Architecture
+- **API**: Next.js API Routes with TypeScript
+- **Database**: Supabase PostgreSQL (cloud-native)
+- **ORM**: Drizzle ORM with TypeScript schemas
+- **Authentication**: Multi-tenant session-based auth
+- **Background Jobs**: Node-cron schedulers
+- **Real-time**: WebSocket server integration
+
+#### AI Processing Layer
+- **Primary AI**: Google Gemini-2.5-Flash-Preview
+- **Secondary AI**: OpenAI GPT-4o-Mini
+- **Processing**: Multi-model consensus with validation
+- **Languages**: Portuguese document optimization
+- **Output**: Structured JSON with confidence scoring
+
+#### Cloud Services
+- **Database**: Supabase (PostgreSQL hosting)
+- **Storage**: Dropbox API integration
+- **AI**: Google AI and OpenAI APIs
+- **Monitoring**: Real-time WebSocket updates
+- **Deployment**: Replit with automatic scaling
+
+### Core System Components
+
+#### 1. Document Processing Pipeline
 ```
-server/
-├── index.ts          # Server entry point
-├── routes.ts         # API route definitions
-├── storage.ts        # Database interface
-├── supabase-storage.ts # Supabase implementation
-├── auth/            # Authentication middleware
-├── controllers/     # Business logic
-├── agents/          # AI processing agents
-└── websocket-server.ts # Real-time updates
+Dropbox Monitor → File Download → Duplicate Check → AI Processing → Data Extraction → Expense Creation
 ```
 
-### Database Design
+**Key Features:**
+- Automatic file monitoring every 5 minutes
+- Intelligent duplicate detection with database constraints
+- Multi-model AI processing for maximum accuracy
+- Portuguese business document optimization
+- Real-time processing status updates
 
-#### Multi-Tenancy
-- **Tenants**: Company/organization entities
-- **Users**: Individual user accounts
-- **User-Tenants**: Many-to-many relationship with roles
+#### 2. Multi-Tenant Database Architecture
+```
+Tenants (Companies) → Users → Documents → Expenses → Invoices → Clients
+```
 
-#### Core Business Entities
-- **Clients**: Customer management with Portuguese NIF validation
-- **Invoices**: Portuguese invoice format with IVA compliance
-- **Expenses**: Expense tracking with AI categorization
-- **Documents**: AI-processed document storage
-- **Bank Accounts**: Financial account management
+**Security Features:**
+- Row-Level Security (RLS) policies
+- Tenant-scoped data isolation
+- Role-based access control (admin, accountant, user)
+- Encrypted credential storage for cloud services
+- Session-based authentication with token refresh
 
-### AI Processing Pipeline
+#### 3. Portuguese Compliance Engine
+```
+Document → NIF Extraction → VAT Calculation → Category Classification → Tax Reporting
+```
+
+**Compliance Features:**
+- Portuguese VAT rates (6%, 13%, 23%)
+- NIF validation with European support
+- SAF-T export for tax authorities
+- Portuguese business expense categories
+- Currency formatting with Euro standards
+
+### Data Flow Architecture
 
 #### Document Processing Flow
-1. **Input**: PDF, JPG, PNG documents via upload or cloud sync
-2. **Primary Processing**: Google Gemini-2.5-Flash-Preview extraction
-3. **Fallback Processing**: OpenAI GPT-4o-Mini for validation
-4. **Validation**: Multi-model consensus with confidence scoring
-5. **Storage**: Structured data with Portuguese business compliance
+1. **Monitoring**: Dropbox folder monitored every 5 minutes
+2. **Download**: Files downloaded and stored temporarily
+3. **Duplicate Check**: Filename and file size validation
+4. **AI Processing**: Dual-model extraction (Gemini + OpenAI)
+5. **Validation**: Authentic data only, no placeholders
+6. **Storage**: Document record creation with metadata
+7. **Expense Creation**: Automatic expense generation
+8. **Notification**: Real-time WebSocket updates
 
-#### Portuguese Compliance
-- **IVA Rates**: 6%, 13%, 23% VAT support
-- **NIF Validation**: 9-digit Portuguese tax ID format
-- **Currency**: Euro formatting with Portuguese locale
-- **Categories**: Portuguese business expense categories
+#### Authentication Flow
+1. **Login**: User credentials validated via Supabase
+2. **Session**: JWT token stored in localStorage
+3. **Tenant Context**: Company selection and role assignment
+4. **API Calls**: All requests include tenant-id header
+5. **Permission Check**: Role-based access validation
+6. **Data Isolation**: Tenant-scoped queries only
 
-### Cloud Integration
+#### Real-time Updates Flow
+1. **WebSocket Connection**: Client connects to real-time server
+2. **Processing Events**: AI processing status broadcasts
+3. **Data Changes**: Database changes trigger notifications
+4. **UI Updates**: Frontend updates without page refresh
+5. **Error Handling**: Connection failures with auto-reconnect
 
-#### Automated Document Processing
-- **Dropbox**: Real-time webhook notifications + scheduled monitoring
-- **Google Drive**: OAuth2 integration with file change detection
-- **Multi-Tenant**: Complete isolation per user/tenant
-- **Duplicate Prevention**: Content-based deduplication
+### Database Schema Architecture
 
-#### Webhook System
-- **WhatsApp**: Business API for invoice receipt via messages
-- **Gmail**: IMAP-based PDF attachment processing
-- **Encrypted Storage**: AES-256 credential encryption per tenant
+#### Primary Tables
+- **tenants**: Company information with NIF validation
+- **users**: User accounts with authentication
+- **user_tenants**: Many-to-many relationship with roles
+- **documents**: Processed files with AI extraction
+- **expenses**: Financial records with Portuguese compliance
+- **invoices**: Invoice management (ready for future use)
+- **clients**: Customer management with NIF validation
 
-### Security & Authentication
+#### Constraints and Integrity
+- **Unique Constraints**: Prevent duplicate documents per tenant
+- **Foreign Keys**: Maintain referential integrity
+- **Check Constraints**: VAT rate and amount validation
+- **Indexes**: Optimized queries for common operations
 
-#### Multi-Tenant Security
-- **Row Level Security**: Supabase RLS policies
-- **Role-Based Access**: Admin, Accountant, Assistant, Viewer roles
-- **Session Management**: Secure session-based authentication
-- **Credential Encryption**: AES-256 encryption for API keys
+### Security Architecture
 
-### Real-time Features
+#### Data Protection
+- **Encryption**: AES-256 for sensitive credential storage
+- **Authentication**: Secure session management
+- **Authorization**: Role-based access with granular permissions
+- **Database**: Row-Level Security policies
+- **API**: Request validation and sanitization
 
-#### WebSocket Integration
-- **Document Processing**: Live processing status updates
-- **Expense Creation**: Real-time notifications
-- **Tenant Isolation**: User-specific notification channels
-- **Connection Management**: Automatic reconnection handling
+#### Privacy Compliance
+- **Data Isolation**: Complete tenant separation
+- **GDPR Ready**: User data management and deletion
+- **Audit Trails**: Complete transaction logging
+- **Backup**: Automated Supabase backups
 
-## Deployment Architecture
+### Performance Architecture
 
-### Development Environment
-- **Next.js Dev Server**: Hot reload with Fast Refresh
-- **Supabase**: Cloud database with development credentials
-- **Environment**: Local development with .env configuration
+#### Optimization Strategies
+- **Database Indexing**: Optimized queries for large datasets
+- **Caching**: TanStack Query for client-side caching
+- **Lazy Loading**: Components loaded on demand
+- **Code Splitting**: Reduced bundle sizes
+- **CDN**: Static assets served from edge locations
 
-### Production Deployment
-- **Next.js**: Production build with optimizations
-- **Supabase**: Production database with proper credentials
-- **SSL/TLS**: HTTPS enforcement
-- **Process Management**: PM2 or similar for process supervision
+#### Scalability Features
+- **Multi-tenancy**: Horizontal scaling by tenant
+- **API Rate Limiting**: Prevents system overload
+- **Background Processing**: Async job queues for heavy tasks
+- **Auto-scaling**: Cloud infrastructure adaptation
 
-## Data Flow
+### Integration Architecture
 
-### User Request Flow
-1. **Authentication**: Session validation and tenant context
-2. **API Route**: Next.js API route processing
-3. **Business Logic**: Controller layer with validation
-4. **Database**: Supabase with RLS enforcement
-5. **Response**: JSON response with proper error handling
+#### External Services
+- **Google AI**: Primary document processing
+- **OpenAI**: Secondary processing and validation
+- **Dropbox**: Cloud storage monitoring
+- **Supabase**: Database and authentication
+- **WebSocket**: Real-time communication
 
-### Document Processing Flow
-1. **Upload/Sync**: File received via web upload or cloud sync
-2. **AI Processing**: Multi-model extraction with Portuguese context
-3. **Data Validation**: Portuguese business rule validation
-4. **Storage**: Document and extracted data persistence
-5. **Notification**: Real-time WebSocket updates
-6. **Integration**: Automatic expense/invoice creation
+#### API Design
+- **RESTful**: Standard HTTP methods and status codes
+- **TypeScript**: Strongly typed request/response
+- **Validation**: Zod schemas for all endpoints
+- **Error Handling**: Consistent error responses
+- **Documentation**: OpenAPI/Swagger ready
 
-This architecture ensures scalability, security, and compliance with Portuguese accounting requirements while providing a modern, responsive user experience.
+### Development Architecture
+
+#### Code Organization
+```
+app/                 # Next.js App Router pages
+├── api/            # API route handlers
+├── dashboard/      # Dashboard pages
+├── documents/      # Document management
+└── [feature]/      # Feature-specific pages
+
+components/         # Reusable UI components
+├── ui/            # shadcn/ui components
+└── [feature]/     # Feature components
+
+lib/               # Utility libraries
+├── utils.ts       # Common utilities
+├── auth.ts        # Authentication helpers
+└── [feature].ts   # Feature-specific utils
+
+server/            # Backend services
+├── storage.ts     # Database abstraction
+└── agents/        # AI processing agents
+
+shared/            # Shared types and schemas
+└── schema.ts      # Database schemas
+```
+
+#### Development Workflow
+1. **Environment**: Local development with Next.js hot reload
+2. **Database**: Supabase development instance
+3. **Testing**: Manual testing with real data
+4. **Deployment**: Replit automatic deployment
+5. **Monitoring**: Real-time logs and metrics
+
+### Deployment Architecture
+
+#### Production Environment
+- **Platform**: Replit cloud hosting
+- **Database**: Supabase production instance
+- **CDN**: Global content delivery
+- **SSL**: Automatic HTTPS encryption
+- **Monitoring**: Application performance monitoring
+
+#### Environment Configuration
+- **Variables**: Secure environment variable management
+- **Secrets**: Encrypted API key storage
+- **Configuration**: Multi-environment setup
+- **Backup**: Automated backup strategies
+
+This architecture provides a robust, scalable foundation for Portuguese businesses requiring intelligent document processing with full compliance and multi-tenant support.

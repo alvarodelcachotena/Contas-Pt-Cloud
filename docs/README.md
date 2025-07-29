@@ -2,7 +2,7 @@
 
 Complete technical reference for the Portuguese accounting system with AI-powered document processing and cloud integration.
 
-**Updated January 10, 2025:** Complete multi-tenant webhook integration system implemented with WhatsApp, Gmail, and Dropbox support. Features include isolated per-user configurations, AES-256 encrypted credential storage, background processing system, and comprehensive webhook management interface.
+**Updated January 29, 2025:** Enhanced duplicate detection system implemented with database constraints and intelligent file validation. Fixed critical dashboard metrics to show accurate all-time totals. System now properly prevents duplicate document processing while maintaining comprehensive Portuguese accounting capabilities.
 
 ## Overview
 
@@ -24,6 +24,8 @@ Contas-PT is an intelligent Portuguese accounting platform that automates financ
 - **[Webhook Integration Status](WEBHOOK_INTEGRATION_STATUS.md)** - Implementation status and configuration guide
 - **[Cloud AI Setup](cloud-ai-setup.md)** - AI service configuration
 - **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
+- **[Duplicate Detection System](DUPLICATE_DETECTION_SYSTEM.md)** - Enhanced duplicate prevention system
+- **[Dashboard Metrics System](DASHBOARD_METRICS_SYSTEM.md)** - Financial metrics and reporting
 
 ## System Architecture
 
