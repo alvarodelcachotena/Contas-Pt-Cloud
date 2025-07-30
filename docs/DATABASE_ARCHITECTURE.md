@@ -1,6 +1,6 @@
 # Database Architecture - Contas-PT
 *Complete Database Documentation - Version 3.0*  
-*Generated: July 2, 2025*
+*Generated: January 29, 2025*
 
 ## Table of Contents
 

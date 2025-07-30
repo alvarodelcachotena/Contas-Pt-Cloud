@@ -213,7 +213,7 @@ Responde APENAS em formato JSON válido:
         issues: extracted.extractionIssues || [],
         agentResults: {
           extractor: {
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             method: "genai_api",
             rawResponse: textResponse.substring(0, 200),
           },
@@ -431,7 +431,7 @@ Responde APENAS em formato JSON válido SEM markdown ou código:
         issues: extracted.extractionIssues || [],
         agentResults: {
           extractor: {
-            model: "gemini-1.5-flash",
+            model: "gemini-2.0-flash",
             method: "genai_pdf_vision",
             rawResponse: textResponse.substring(0, 200),
           },
@@ -451,40 +451,54 @@ Responde APENAS em formato JSON válido SEM markdown ou código:
     filename: string,
   ): Promise<ExtractionResult> {
     const prompt = `
-Analisa esta imagem de documento financeiro (fatura/recibo) e extrai os seguintes campos:
+Look at this invoice/receipt image carefully and extract the visible information.
 
-REGRAS DE EXTRAÇÃO DE NIF/VAT ID EUROPEU:
-- Portugal: PT + 9 dígitos (PT123456789)
-- Itália: IT + 11 dígitos (IT12345678901) 
-- Espanha: ES + 8 dígitos + 1 letra (ES12345678A)
-- França: FR + 11 dígitos (FR12345678901)
-- Alemanha: DE + 9 dígitos (DE123456789)
-- Outros países europeus: código país + número VAT
+STRICT RULES:
+- Extract ONLY data clearly visible in the image
+- If you cannot read a field clearly, leave it empty ("")
+- Never use placeholder or generic data
+- Be precise with numbers and amounts
 
-CAMPOS OBRIGATÓRIOS:
-1. Nome da empresa emissora
-2. NIF/VAT ID com prefixo do país
-3. Data da fatura (formato YYYY-MM-DD)
-4. Valor sem IVA/VAT
-5. Valor do IVA/VAT
-6. Valor total com IVA/VAT
-7. Taxa de IVA/VAT (como decimal: 0.23 para 23%)
-8. Número da fatura
-9. Categoria de despesa
-10. Descrição dos produtos/serviços
+EUROPEAN VAT/NIF FORMAT:
+- Portugal: PT123456789 (PT + 9 digits)
+- Spain: ES12345678A (ES + 8 digits + letter)
+- Italy: IT12345678901 (IT + 11 digits)
+- France: FR12345678901 (FR + 11 digits)
+- Germany: DE123456789 (DE + 9 digits)
 
-Responde APENAS em formato JSON válido SEM markdown ou código:
+EXPENSE CATEGORIES:
+- combustivel: Fuel, gas stations
+- refeicoes: Restaurants, food
+- deslocacoes: Transport, travel
+- material: Office supplies
+- servicos: Professional services
+- outras_despesas: Other expenses
+
+Look for these fields:
+1. Company name (usually at top)
+2. Tax ID/NIF/VAT number
+3. Invoice date 
+4. Net amount (without VAT)
+5. VAT amount
+6. Total amount (with VAT)
+7. VAT rate (as decimal: 0.23 = 23%)
+8. Invoice number
+9. Category based on business type
+10. Brief description of items/services
+
+Return ONLY valid JSON without markdown:
 {
-  "vendor": "nome da empresa",
-  "nif": "NIF com prefixo do país (ex: IT03424760134)", 
-  "invoiceNumber": "número da fatura",
-  "issueDate": "YYYY-MM-DD",
+  "vendor": "exact company name from image",
+  "nif": "tax ID with country prefix if visible",
+  "invoiceNumber": "invoice number if visible",
+  "issueDate": "YYYY-MM-DD if visible",
   "total": 0.00,
   "netAmount": 0.00,
   "vatAmount": 0.00,
   "vatRate": 0.23,
-  "category": "outras_despesas",
-  "description": "descrição breve"
+  "category": "appropriate category",
+  "description": "brief description",
+  "confidence": 0.8
 }
 `;
 

@@ -1,6 +1,6 @@
 # Contas-PT: Complete Project Documentation
-*Portuguese Accounting AI System - Version 3.1*  
-*Generated: July 3, 2025*
+*Portuguese AI-Powered Accounting Platform - Version 3.2*  
+*Generated: January 30, 2025*
 
 ## Table of Contents
 
@@ -26,17 +26,20 @@
 
 ### What is Contas-PT?
 
-Contas-PT is a sophisticated Portuguese accounting platform designed specifically for small to medium businesses in Portugal. The system leverages cutting-edge AI technology to provide intelligent financial document processing, comprehensive enterprise management, and full Portuguese tax compliance.
+Contas-PT is a sophisticated Portuguese accounting platform that revolutionizes financial document management through intelligent processing and comprehensive enterprise solutions. The system delivers advanced multi-tenant support with robust webhook integrations and intelligent document processing capabilities, focusing on seamless document ingestion and automated financial analysis.
+
+Built specifically for Portuguese businesses, it provides complete tax compliance (IVA/VAT), automated document processing with dual AI models, real-time financial analytics, and comprehensive multi-tenant architecture with role-based access control.
 
 ### Key Features
 
-- **AI-Powered Document Processing**: Automatic invoice and expense extraction using Google Gemini and OpenAI
-- **Portuguese Tax Compliance**: Full IVA (VAT) support with 6%, 13%, 23% rates
-- **Multi-Tenant Architecture**: Support for multiple companies with role-based access control
-- **Cloud Storage Integration**: Automated sync with Dropbox and Google Drive
-- **Real-Time Processing**: WebSocket-based live updates and notifications
-- **SAF-T Export**: Portuguese tax authority file generation
-- **Multi-Language Support**: Portuguese interface with English fallback
+- **Advanced AI Document Processing**: Dual AI architecture with Google Gemini-2.5-Flash-Preview + OpenAI GPT-4o-Mini
+- **Complete Portuguese Tax Compliance**: Full IVA/VAT support with 6%, 13%, 23% rates, NIF validation, SAF-T export
+- **Enterprise Multi-Tenant Architecture**: Complete tenant isolation with Row Level Security and role-based access
+- **Comprehensive Integration Ecosystem**: Cloud storage (Google Drive, Dropbox), webhooks, and real-time sync
+- **Advanced Financial Analytics**: Real-time dashboard metrics, revenue tracking, expense management
+- **Security & Compliance**: AES-256 encryption, audit logging, backup management, session security
+- **Admin Panel**: 8 comprehensive management tabs with full system administration
+- **Real-Time Processing**: WebSocket-based live updates and processing notifications
 
 ### Technology Stack
 
