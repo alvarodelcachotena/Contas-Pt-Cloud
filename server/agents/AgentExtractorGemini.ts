@@ -136,7 +136,7 @@ Responde APENAS em formato JSON válido:
 
     try {
       const response = await this.genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: [{ text: prompt }],
       });
 
@@ -214,7 +214,7 @@ Responde APENAS em formato JSON válido:
         issues: extracted.extractionIssues || [],
         agentResults: {
           extractor: {
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             method: "genai_api",
             rawResponse: textResponse.substring(0, 200),
           },
@@ -310,7 +310,7 @@ Responde APENAS em formato JSON válido SEM markdown ou código:
       ];
 
       const response = await this.genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: contents
       });
 
@@ -433,7 +433,7 @@ Responde APENAS em formato JSON válido SEM markdown ou código:
         issues: extracted.extractionIssues || [],
         agentResults: {
           extractor: {
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             method: "genai_pdf_vision",
             rawResponse: textResponse.substring(0, 200),
           },
@@ -504,7 +504,7 @@ Responde APENAS em formato JSON válido SEM markdown ou código:
       ];
 
       const response = await this.genAI.models.generateContent({
-        model: "gemini-1.5-flash",
+        model: "gemini-2.5-flash",
         contents: contents
       });
 
@@ -570,7 +570,7 @@ Responde APENAS em formato JSON válido SEM markdown ou código:
         issues: extracted.extractionIssues || [],
         agentResults: {
           extractor: {
-            model: "gemini-1.5-flash",
+            model: "gemini-2.5-flash",
             method: "genai_image_vision",
             rawResponse: textResponse.substring(0, 200),
           },
