@@ -1,0 +1,24 @@
+
+================================================================================
+📊 PROCESSOR COMPARISON REPORT
+================================================================================
+
+📈 SUMMARY
+-----------
+Total Documents Tested: 1
+Successful Gemini Extractions: 1/1 (100.0%)
+Successful OpenAI Extractions: 0/1 (0.0%)
+Average Processing Time - Gemini: 11835ms
+Average Processing Time - OpenAI: 0ms
+
+Average Confidence - Gemini: 0.10
+
+🔍 FIELD COMPARISON
+------------------
+
+📄 INDIVIDUAL DOCUMENT RESULTS
+-------------------------------
+1. Cursor 6-04-2025.pdf (303.99 KB)
+   Gemini: ✅ Success (11835ms, conf: 0.1)
+   OpenAI: ❌ OpenAI vision API does not support PDF files
+

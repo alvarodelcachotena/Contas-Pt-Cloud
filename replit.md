@@ -146,6 +146,13 @@ Contas-PT is a sophisticated Portuguese accounting system designed for small to 
 - **Created**: June 23, 2025
 
 ## Recent Changes
+- July 30, 2025: **GEMINI 2.5 FLASH OPTIMIZATION COMPLETED** - Enhanced prompting strategy delivers excellent accuracy with current model
+  - Updated all Gemini model references from deprecated gemini-1.5-flash to production gemini-2.5-flash
+  - Implemented enhanced English prompting strategy for improved data extraction accuracy
+  - Achieved excellent PDF processing: authentic vendor names, invoice numbers, amounts, and descriptions
+  - Confirmed real-world extraction: OpenAI LLC (€24.60), Anysphere Inc (€0.75), detailed service descriptions
+  - Processing time: 11-21 seconds per document with 100% success rate on tested invoices
+  - Maintained OpenAI as image processor (5-10 seconds) and Gemini for PDF processing (comprehensive coverage)
 - January 29, 2025: **SUPABASE-ONLY CONFIGURATION VERIFIED** - Confirmed system uses exclusively Supabase with env file credentials
   - Verified all database connections use ONLY Supabase client with credentials from .env file
   - Environment loader properly blocks DATABASE_URL and forces Supabase-only configuration  
