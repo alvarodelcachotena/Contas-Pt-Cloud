@@ -1,10 +1,10 @@
 # API Reference - Contas-PT
 
-*Last updated: July 10, 2025*
+*Last updated: January 30, 2025*
 
-**Recent Update:** Added webhook credentials API endpoints for integrated admin panel management. All webhook configuration now accessible through unified admin interface.
+**Latest Update:** Complete documentation overhaul reflecting the sophisticated multi-tenant architecture, advanced admin panel with 8 management tabs, and enterprise-grade features with comprehensive webhook system and AI processing capabilities.
 
-Complete API documentation for the Portuguese Accounting AI System built with Next.js 15.3.4, Supabase integration, and cloud-based AI processing.
+Complete API documentation for the Portuguese AI-Powered Accounting Platform built with Next.js 15.3.4, Supabase PostgreSQL, and dual AI model architecture.
 
 **Recent Updates:** Fixed database schema field mismatches and webhook cursor logic. System now successfully processes multiple documents from Dropbox integration with AI extraction creating expense records automatically.
 

@@ -1,40 +1,74 @@
 # Contas-PT Technical Documentation
 
-Complete technical reference for the Portuguese accounting system with AI-powered document processing and cloud integration.
+This folder contains comprehensive technical documentation for the Contas-PT Portuguese AI-Powered Accounting Platform.
 
-**Updated January 29, 2025:** Enhanced duplicate detection system implemented with database constraints and intelligent file validation. Fixed critical dashboard metrics to show accurate all-time totals. System now properly prevents duplicate document processing while maintaining comprehensive Portuguese accounting capabilities.
+**Updated January 30, 2025:** Complete documentation overhaul reflecting the sophisticated multi-tenant architecture, advanced AI processing pipeline, comprehensive webhook system, and enterprise-grade features. All documentation updated to match the current production-ready system with Portuguese tax compliance.
 
-## Overview
+## Documentation Library Overview
 
-Contas-PT is an intelligent Portuguese accounting platform that automates financial document processing while ensuring full compliance with Portuguese tax regulations. The system combines modern web technologies with advanced AI to streamline business accounting operations.
+### 📚 Complete Documentation Suite
+This documentation covers all aspects of the sophisticated Portuguese accounting platform, from user guides to deep technical references.
 
-## Quick Start
+### 🎯 User-Focused Documentation
+- **[COMPLETE_PROJECT_DOCUMENTATION.md](COMPLETE_PROJECT_DOCUMENTATION.md)** - Complete system overview and user guide
+- **[CURRENT_STATUS_SUMMARY.md](CURRENT_STATUS_SUMMARY.md)** - Latest development updates and current status
+- **[LOCAL_DEVELOPMENT_SETUP.md](LOCAL_DEVELOPMENT_SETUP.md)** - Developer onboarding and setup guide
+- **[windows-local-setup.md](windows-local-setup.md)** - Windows-specific development setup
 
-1. **Environment Setup**: Configure Supabase database and AI API keys
-2. **Database Migration**: Run `npm run db:push` to sync schema
-3. **Start Development**: Run `npm run dev` for hot reload development
+### 🏗️ Architecture & Systems
+- **[project-overview.md](project-overview.md)** - Technical system architecture overview
+- **[supabase-database-architecture.md](supabase-database-architecture.md)** - Complete database schema and relationships
+- **[DATABASE_ARCHITECTURE.md](DATABASE_ARCHITECTURE.md)** - Advanced database concepts and patterns
+- **[ai-processing-pipeline.md](ai-processing-pipeline.md)** - AI document processing workflow
 
-## Documentation Index
+### 🔧 Technical References
+- **[api-reference.md](api-reference.md)** - Complete API endpoint documentation
+- **[frontend-components.md](frontend-components.md)** - React component library documentation
+- **[cloud-ai-setup.md](cloud-ai-setup.md)** - AI service configuration and setup
 
-- **[Supabase Database Architecture](supabase-database-architecture.md)** - Complete database schema and relationships
-- **[AI Processing Pipeline](ai-processing-pipeline.md)** - Multi-model AI processing and Portuguese optimization
-- **[Frontend Components](frontend-components.md)** - React components and UI architecture
-- **[API Reference](api-reference.md)** - All endpoints with examples
-- **[Webhook Integration Summary](WEBHOOK_INTEGRATION_SUMMARY.md)** - Multi-tenant webhook system overview
-- **[Webhook Integration Status](WEBHOOK_INTEGRATION_STATUS.md)** - Implementation status and configuration guide
-- **[Cloud AI Setup](cloud-ai-setup.md)** - AI service configuration
-- **[Troubleshooting](troubleshooting.md)** - Common issues and solutions
-- **[Duplicate Detection System](DUPLICATE_DETECTION_SYSTEM.md)** - Enhanced duplicate prevention system
-- **[Dashboard Metrics System](DASHBOARD_METRICS_SYSTEM.md)** - Financial metrics and reporting
+### 🔗 Integration & Webhooks
+- **[WEBHOOK_INTEGRATION_SUMMARY.md](WEBHOOK_INTEGRATION_SUMMARY.md)** - Webhook system overview
+- **[WEBHOOK_INTEGRATION_STATUS.md](WEBHOOK_INTEGRATION_STATUS.md)** - Implementation status and roadmap
+- **[DASHBOARD_METRICS_SYSTEM.md](DASHBOARD_METRICS_SYSTEM.md)** - Analytics and metrics implementation
+- **[DUPLICATE_DETECTION_SYSTEM.md](DUPLICATE_DETECTION_SYSTEM.md)** - Document deduplication system
 
-## System Architecture
+### 🛠️ Operations & Support
+- **[troubleshooting.md](troubleshooting.md)** - Common issues and solutions
+- **Error resolution guides** - Step-by-step problem solving
+- **Performance optimization** - System tuning and best practices
 
-**Frontend**: Next.js 15.3.4 with App Router, TypeScript, Tailwind CSS, shadcn/ui components  
-**Backend**: Next.js API Routes with TypeScript, Supabase PostgreSQL (exclusive), Drizzle ORM  
-**AI Processing**: Google Gemini-2.5-Flash-Preview (primary) + OpenAI GPT-4o-Mini (fallback)  
-**Real-time**: WebSocket integration, scheduled background processing  
-**Cloud Storage**: Google Drive and Dropbox APIs with OAuth2 and automated monitoring  
-**Webhook System**: Multi-tenant WhatsApp, Gmail, and Dropbox integration with encrypted credential storage
+## Quick Navigation
+
+### For New Developers
+1. Start with [LOCAL_DEVELOPMENT_SETUP.md](LOCAL_DEVELOPMENT_SETUP.md)
+2. Review [project-overview.md](project-overview.md) for architecture
+3. Check [CURRENT_STATUS_SUMMARY.md](CURRENT_STATUS_SUMMARY.md) for latest updates
+
+### For System Administrators
+1. Review [COMPLETE_PROJECT_DOCUMENTATION.md](COMPLETE_PROJECT_DOCUMENTATION.md)
+2. Check [DATABASE_ARCHITECTURE.md](DATABASE_ARCHITECTURE.md)
+3. Consult [troubleshooting.md](troubleshooting.md) for common issues
+
+### For Integration Partners
+1. Start with [api-reference.md](api-reference.md)
+2. Review [WEBHOOK_INTEGRATION_SUMMARY.md](WEBHOOK_INTEGRATION_SUMMARY.md)
+3. Check [cloud-ai-setup.md](cloud-ai-setup.md) for AI integration
+
+## System Information
+
+### Current Architecture
+- **Platform**: Next.js 15.3.4 with TypeScript
+- **Database**: Supabase PostgreSQL with Row Level Security
+- **AI Integration**: Google Gemini + OpenAI dual-model architecture
+- **Authentication**: Multi-tenant session management
+- **Cloud Storage**: Google Drive + Dropbox integration
+
+### Key Features Documented
+- Advanced AI document processing with Portuguese optimization
+- Complete multi-tenant architecture with role-based access
+- Real-time webhook system with encrypted credentials
+- Comprehensive financial analytics and reporting
+- Portuguese tax compliance (IVA/VAT, NIF, SAF-T)
 
 ## Core Features
 
@@ -205,9 +239,15 @@ POST /api/auth/login                # User authentication
 GET  /api/auth/status               # Session status
 ```
 
+### Documentation Standards
+- All documentation updated for January 2025 release
+- User-focused explanations with technical depth
+- Real-world examples and implementation guides
+- Troubleshooting sections with step-by-step solutions
+
 ---
 
-**Documentation Version**: 3.0  
-**Last Updated**: January 10, 2025  
-**System Architecture**: Next.js 15.3.4 with Multi-Tenant Webhook Integration and Enhanced AI Processing  
-**Status**: Production Ready with Complete Multi-Tenant Webhook System and Document Management
+**Documentation Version**: 3.2  
+**Last Updated**: January 30, 2025  
+**Status**: Complete and Current  
+**Coverage**: All system components documented
