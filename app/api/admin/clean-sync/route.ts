@@ -82,7 +82,10 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('❌ Clean sync error:', error)
     return NextResponse.json(
-      { error: 'Clean sync failed', details: error.message },
+      { 
+        error: 'Clean sync failed', 
+        details: error instanceof Error ? error.message : String(error) 
+      },
       { status: 500 }
     )
   }
