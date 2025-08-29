@@ -426,7 +426,7 @@ export class DropboxScheduler {
       
       console.log(`💼 Parsed values - Amount: ${amount}, Vendor: ${vendor}, Date: ${date}`);
       
-      if (!amount || parseFloat(amount) <= 0) {
+      if (!amount || amount <= 0) {
         console.log('⚠️ No valid amount found, skipping expense creation');
         return;
       }
@@ -434,7 +434,7 @@ export class DropboxScheduler {
       const expense = {
         tenantId,
         vendor: vendor || 'Fornecedor Desconhecido',
-        amount: parseFloat(amount.toString()).toString(),
+        amount: amount.toString(),
         description: `${description} [DOC:${documentId.toString()}]`,
         expenseDate: date,
         category: category,

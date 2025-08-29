@@ -1,14 +1,12 @@
-import { defineConfig } from "drizzle-kit";
-
-if (!process.env.DATABASE_URL) {
-  throw new Error("DATABASE_URL, ensure the database is provisioned");
+// Use Supabase environment variables instead of DATABASE_URL
+if (!process.env.SUPABASE_URL || !process.env.SUPABASE_ANON_KEY) {
+  throw new Error("SUPABASE_URL and SUPABASE_ANON_KEY must be set in environment");
 }
 
-export default defineConfig({
+export default {
   out: "./migrations",
   schema: "./shared/schema.ts",
-  dialect: "postgresql",
   dbCredentials: {
-    url: process.env.DATABASE_URL,
+    url: process.env.SUPABASE_URL,
   },
-});
+};

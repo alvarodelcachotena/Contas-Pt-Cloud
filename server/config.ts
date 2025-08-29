@@ -38,6 +38,26 @@ export const NODE_ENV = process.env.NODE_ENV || 'development';
 export const PORT = parseInt(process.env.PORT || '5000', 10);
 export const SESSION_SECRET = process.env.SESSION_SECRET || 'dev-secret-change-in-production';
 
+// ML Confidence Calibration Feature Flags
+export const ML_CONFIDENCE_CONFIG = {
+  enableLearnedScoring: process.env.ENABLE_ML_CONFIDENCE_SCORING === 'true',
+  enableConsensusDataCollection: process.env.ENABLE_CONSENSUS_DATA_COLLECTION === 'true',
+  enableManualCorrectionCollection: process.env.ENABLE_MANUAL_CORRECTION_COLLECTION === 'true',
+  enableAutomaticRetraining: process.env.ENABLE_AUTOMATIC_RETRAINING === 'true',
+  retrainingThreshold: parseInt(process.env.ML_RETRAINING_THRESHOLD || '100', 10),
+  modelPersistenceEnabled: process.env.ENABLE_MODEL_PERSISTENCE === 'true',
+  maxTrainingDataSize: parseInt(process.env.MAX_TRAINING_DATA_SIZE || '1000', 10)
+};
+
+// Log ML configuration
+console.log('🤖 ML Confidence Calibration Configuration:');
+console.log(`  - Learned Scoring: ${ML_CONFIDENCE_CONFIG.enableLearnedScoring ? '✅ Enabled' : '❌ Disabled'}`);
+console.log(`  - Consensus Data Collection: ${ML_CONFIDENCE_CONFIG.enableConsensusDataCollection ? '✅ Enabled' : '❌ Disabled'}`);
+console.log(`  - Manual Correction Collection: ${ML_CONFIDENCE_CONFIG.enableManualCorrectionCollection ? '✅ Enabled' : '❌ Disabled'}`);
+console.log(`  - Automatic Retraining: ${ML_CONFIDENCE_CONFIG.enableAutomaticRetraining ? '✅ Enabled' : '❌ Disabled'}`);
+console.log(`  - Retraining Threshold: ${ML_CONFIDENCE_CONFIG.retrainingThreshold} samples`);
+console.log(`  - Model Persistence: ${ML_CONFIDENCE_CONFIG.modelPersistenceEnabled ? '✅ Enabled' : '❌ Disabled'}`);
+
 // Validation function to check if required services are configured
 export function validateConfiguration() {
   const warnings: string[] = [];
@@ -59,6 +79,11 @@ export function validateConfiguration() {
 
   if (!GOOGLE_CLIENT_ID || !GOOGLE_CLIENT_SECRET) {
     warnings.push('Google Drive configuration missing - Google Drive integration will be disabled');
+  }
+
+  // Check ML configuration
+  if (ML_CONFIDENCE_CONFIG.enableLearnedScoring && !GOOGLE_AI_API_KEY) {
+    warnings.push('ML confidence scoring enabled but Google AI API key missing - falling back to traditional scoring');
   }
 
   // Log warnings

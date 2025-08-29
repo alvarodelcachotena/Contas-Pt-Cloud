@@ -11,6 +11,12 @@ const supabase = createClient(
   process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
 )
 
+// Helper functions removed - using JSON responses instead of HTML
+
+// function generateSuccessHTML(userEmail: string) {
+//   // Function removed - using JSON responses instead of HTML
+// }
+
 export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url)
@@ -22,58 +28,10 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('❌ Dropbox OAuth error:', error)
-      const errorHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Dropbox Auth Error</title>
-          <style>
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 100vh;
-              margin: 0;
-              background: #f8f9fa;
-            }
-            .error { 
-              text-align: center;
-              padding: 2rem;
-              background: white;
-              border-radius: 8px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            .error-icon {
-              color: #dc3545;
-              font-size: 3rem;
-              margin-bottom: 1rem;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="error">
-            <div class="error-icon">✗</div>
-            <h2>Authentication Cancelled</h2>
-            <p>You can close this window and try again.</p>
-          </div>
-          <script>
-            window.opener.postMessage({
-              type: 'DROPBOX_AUTH_ERROR',
-              error: 'User cancelled authentication'
-            }, '*');
-            
-            setTimeout(() => {
-              window.close();
-            }, 3000);
-          </script>
-        </body>
-        </html>
-      `
-      
-      return new NextResponse(errorHtml, {
-        headers: { 'Content-Type': 'text/html' }
-      })
+      return NextResponse.json({ 
+        success: false, 
+        error: error 
+      }, { status: 400 })
     }
 
     if (action === 'connect') {
@@ -183,60 +141,11 @@ export async function GET(request: NextRequest) {
 
       console.log('✅ Dropbox integration saved to database')
       
-      // Return a page that sends a message to parent window and closes popup
-      const successHtml = `
-        <!DOCTYPE html>
-        <html>
-        <head>
-          <title>Dropbox Connected</title>
-          <style>
-            body { 
-              font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
-              display: flex;
-              align-items: center;
-              justify-content: center;
-              height: 100vh;
-              margin: 0;
-              background: #f8f9fa;
-            }
-            .success { 
-              text-align: center;
-              padding: 2rem;
-              background: white;
-              border-radius: 8px;
-              box-shadow: 0 2px 10px rgba(0,0,0,0.1);
-            }
-            .checkmark {
-              color: #28a745;
-              font-size: 3rem;
-              margin-bottom: 1rem;
-            }
-          </style>
-        </head>
-        <body>
-          <div class="success">
-            <div class="checkmark">✓</div>
-            <h2>Dropbox Connected Successfully!</h2>
-            <p>You can close this window.</p>
-          </div>
-          <script>
-            // Send success message to parent window
-            window.opener.postMessage({
-              type: 'DROPBOX_AUTH_SUCCESS',
-              email: '${userEmail}'
-            }, '*');
-            
-            // Close popup after a short delay
-            setTimeout(() => {
-              window.close();
-            }, 2000);
-          </script>
-        </body>
-        </html>
-      `
-      
-      return new NextResponse(successHtml, {
-        headers: { 'Content-Type': 'text/html' }
+      // Return success response
+      return NextResponse.json({ 
+        success: true, 
+        message: 'Dropbox connected successfully',
+        userEmail: userEmail 
       })
     }
 

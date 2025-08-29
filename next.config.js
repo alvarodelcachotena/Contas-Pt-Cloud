@@ -18,6 +18,20 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: false,
   },
+  // Disable static generation completely
+  experimental: {
+    appDir: true,
+  },
+  // Force dynamic rendering for all pages
+  generateStaticParams: false,
+  // Disable static optimization
+  staticPageGenerationTimeout: 0,
+  // Disable image optimization
+  images: {
+    unoptimized: true,
+  },
+  // Use standalone output for API routes
+  output: 'standalone'
 }
 
 export default nextConfig

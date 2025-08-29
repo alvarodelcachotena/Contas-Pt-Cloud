@@ -1,0 +1,44 @@
+# Configuración de APIs de IA
+# Copie este archivo para .env e preencha com suas chaves reais
+
+# Google AI (Gemini) - Principal
+GOOGLE_AI_API_KEY=sua_chave_api_google_ai_aqui
+
+# OpenAI - Fallback
+OPENAI_API_KEY=sua_chave_api_openai_aqui
+
+# Configuración de Base de Dados
+SUPABASE_URL=sua_url_supabase_aqui
+SUPABASE_ANON_KEY=sua_chave_anonima_supabase_aqui
+SUPABASE_SERVICE_ROLE_KEY=sua_chave_service_role_supabase_aqui
+
+# Configuración de Dropbox
+DROPBOX_APP_KEY=sua_chave_app_dropbox_aqui
+DROPBOX_APP_SECRET=sua_chave_secreta_dropbox_aqui
+
+# Configuración de Google Drive
+GOOGLE_CLIENT_ID=seu_client_id_google_aqui
+GOOGLE_CLIENT_SECRET=seu_client_secret_google_aqui
+
+# Configuración de OneDrive
+ONEDRIVE_CLIENT_ID=seu_client_id_onedrive_aqui
+ONEDRIVE_CLIENT_SECRET=seu_client_secret_onedrive_aqui
+
+# Configuración de Gmail
+GMAIL_CLIENT_ID=seu_client_id_gmail_aqui
+GMAIL_CLIENT_SECRET=seu_client_secret_gmail_aqui
+
+# Configuración de WhatsApp
+WHATSAPP_API_KEY=sua_chave_api_whatsapp_aqui
+WHATSAPP_PHONE_NUMBER=seu_numero_whatsapp_aqui
+
+# Configuração de Webhooks
+WEBHOOK_SECRET=seu_segredo_webhook_aqui
+
+# Configuração de Segurança
+JWT_SECRET=seu_segredo_jwt_aqui
+SESSION_SECRET=seu_segredo_sessao_aqui
+
+# Configuração de Servidor
+PORT=3000
+NODE_ENV=development

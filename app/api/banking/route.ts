@@ -1,47 +1,50 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { loadEnvStrict } from '../../../lib/env-loader.js'
+import { loadEnvStrict, getSupabaseUrl, getSupabaseAnonKey } from '../../../lib/env-loader.js'
 
 // Force loading from .env file only
 loadEnvStrict()
 
-// Use service role key to bypass RLS and avoid infinite recursion
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
-)
+const SUPABASE_URL = getSupabaseUrl()
+const SUPABASE_ANON_KEY = getSupabaseAnonKey()
+
+// Use anon key for API access
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 export async function GET(request: NextRequest) {
   try {
     const tenantId = request.headers.get('x-tenant-id') || '1'
+    console.log('🏦 Fetching banking transactions for tenant:', tenantId)
 
-    const { data: bankAccounts, error } = await supabase
-      .from('bank_accounts')
+    const { data: transactions, error } = await supabase
+      .from('banking_transactions')
       .select('*')
       .eq('tenant_id', tenantId)
-      .order('created_at', { ascending: false })
+      .order('transaction_date', { ascending: false })
 
     if (error) {
-      console.error('Error fetching bank accounts:', error)
-      return NextResponse.json({ error: 'Failed to fetch bank accounts' }, { status: 500 })
+      console.error('❌ Error fetching banking transactions:', error)
+      return NextResponse.json({ error: 'Failed to fetch banking transactions' }, { status: 500 })
     }
 
-    const formattedAccounts = bankAccounts?.map(account => ({
-      id: account.id,
-      bankName: account.bank_name,
-      accountName: account.account_name,
-      accountNumber: account.account_number,
-      iban: account.iban,
-      swift: account.swift,
-      balance: account.balance,
-      currency: account.currency,
-      isActive: account.is_active,
-      createdAt: account.created_at
+    console.log(`✅ Found ${transactions?.length || 0} banking transactions`)
+
+    const formattedTransactions = transactions?.map(transaction => ({
+      id: transaction.id,
+      accountNumber: transaction.account_number,
+      transactionType: transaction.transaction_type,
+      amount: transaction.amount,
+      description: transaction.description,
+      transactionDate: transaction.transaction_date,
+      balance: transaction.balance,
+      category: transaction.category,
+      reference: transaction.reference,
+      createdAt: transaction.created_at
     })) || []
 
-    return NextResponse.json(formattedAccounts)
+    return NextResponse.json(formattedTransactions)
   } catch (error) {
-    console.error('Banking API error:', error)
+    console.error('❌ Banking API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
@@ -49,38 +52,41 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   try {
     const body = await request.json()
-    
-    // Validate Portuguese IBAN format
-    if (body.iban && !body.iban.startsWith('PT50')) {
-      return NextResponse.json({ 
-        error: 'Invalid Portuguese IBAN format' 
-      }, { status: 400 })
+    console.log('🏦 Creating banking transaction for tenant: 1', body)
+
+    // Prepare transaction data
+    const transactionData = {
+      tenant_id: 1,
+      account_number: body.accountNumber,
+      transaction_type: body.transactionType,
+      amount: body.amount,
+      description: body.description,
+      transaction_date: body.transactionDate,
+      balance: body.balance,
+      category: body.category,
+      reference: body.reference
     }
-    
-    const { data: account, error } = await supabase
-      .from('bank_accounts')
-      .insert({
-        tenant_id: 1,
-        bank_name: body.bankName,
-        account_name: body.accountName,
-        account_number: body.accountNumber,
-        iban: body.iban,
-        swift: body.swift,
-        balance: body.balance || '0.00',
-        currency: body.currency || 'EUR',
-        is_active: body.isActive ?? true
-      })
+
+    console.log('📋 Transaction data to insert:', transactionData)
+
+    const { data: transaction, error } = await supabase
+      .from('banking_transactions')
+      .insert(transactionData)
       .select()
       .single()
 
     if (error) {
-      console.error('Error creating bank account:', error)
-      return NextResponse.json({ error: 'Failed to create bank account' }, { status: 500 })
+      console.error('❌ Error creating banking transaction:', error)
+      return NextResponse.json({
+        error: 'Failed to create banking transaction',
+        details: error.message
+      }, { status: 500 })
     }
 
-    return NextResponse.json(account)
+    console.log('✅ Banking transaction created successfully:', transaction.id)
+    return NextResponse.json(transaction)
   } catch (error) {
-    console.error('Create bank account error:', error)
+    console.error('❌ Create banking transaction error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

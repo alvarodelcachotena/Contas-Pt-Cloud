@@ -1,0 +1,40 @@
+// Centralized exports for lib modules
+export * from './enhanced-document-router';
+export * from './ml-document-classifier';
+export * from './formatters';
+export * from './advanced-table-parser';
+export * from './consensus-engine';
+export * from './pdf-layout-router';
+export * from './audit-logging-service';
+export * from './rag-service';
+export * from './webhook-manager';
+export * from './scheduled-indexing-service';
+export * from './embedding-service';
+export * from './document-embedding-pipeline';
+export * from './vector-store';
+export * from './webhook-notification-manager';
+export * from './webhook-credentials';
+export * from './queryClient';
+export * from './tenant-utils';
+export * from './utils';
+export * from './background-services';
+
+// Re-export commonly used utilities
+export { enhancedDocumentRouter } from './enhanced-document-router';
+export { mlDocumentClassifier } from './ml-document-classifier';
+export { advancedTableParser } from './advanced-table-parser';
+export { consensusEngine } from './consensus-engine';
+export { pdfLayoutRouter } from './pdf-layout-router';
+export { auditLoggingService } from './audit-logging-service';
+export { ragService } from './rag-service';
+export { webhookManager } from './webhook-manager';
+export { scheduledIndexingService } from './scheduled-indexing-service';
+export { embeddingService } from './embedding-service';
+export { documentEmbeddingPipeline } from './document-embedding-pipeline';
+export { vectorStoreService as vectorStore } from './vector-store';
+export { WebhookNotificationManager as webhookNotificationManager } from './webhook-notification-manager';
+export * from './webhook-credentials';
+export { queryClient } from './queryClient';
+export * from './tenant-utils';
+export { cn } from './utils';
+export { initializeBackgroundServices, getDropboxScheduler, getWebSocketService } from './background-services';

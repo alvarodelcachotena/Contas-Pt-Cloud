@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { FormModal } from '@/components/ui/modal'
-import { Search, Plus, FileText, Eye } from 'lucide-react'
+import { Search, Plus, FileText, Eye, AlertCircle, Download } from 'lucide-react'
 
 interface Invoice {
   id: number
@@ -35,10 +35,20 @@ interface Invoice {
   createdAt: string
 }
 
+interface Client {
+  id: number
+  name: string
+  email: string | null
+  taxId: string | null
+  createdAt: string
+}
+
 export default function InvoicesTable() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
+  const [clientFound, setClientFound] = useState<{ name: string; taxId: string } | null>(null)
   const [formData, setFormData] = useState({
     clientName: '',
     clientEmail: '',
@@ -48,11 +58,30 @@ export default function InvoicesTable() {
     description: ''
   })
 
+  const queryClient = useQueryClient()
+
   const { data: invoices, isLoading } = useQuery<Invoice[]>({
     queryKey: ['/api/invoices'],
     queryFn: async () => {
-      const response = await fetch('/api/invoices')
+      const response = await fetch('/api/invoices', {
+        headers: {
+          'x-tenant-id': '1'
+        }
+      })
       if (!response.ok) throw new Error('Failed to fetch invoices')
+      return response.json()
+    }
+  })
+
+  const { data: clients } = useQuery<Client[]>({
+    queryKey: ['/api/clients'],
+    queryFn: async () => {
+      const response = await fetch('/api/clients', {
+        headers: {
+          'x-tenant-id': '1'
+        }
+      })
+      if (!response.ok) throw new Error('Failed to fetch clients')
       return response.json()
     }
   })
@@ -63,6 +92,48 @@ export default function InvoicesTable() {
     invoice.description?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || []
 
+  const autoCompleteClientNIF = (fieldName: string, value: string) => {
+    if (!clients || !value.trim() || value.length < 2) return
+
+    // Buscar cliente por nombre o email (búsqueda más inteligente)
+    const foundClient = clients.find(client => {
+      if (fieldName === 'clientName') {
+        // Buscar por nombre completo o parcial
+        return client.name.toLowerCase().includes(value.toLowerCase()) ||
+          value.toLowerCase().includes(client.name.toLowerCase())
+      } else if (fieldName === 'clientEmail') {
+        // Buscar por email completo o parcial
+        return client.email && (
+          client.email.toLowerCase().includes(value.toLowerCase()) ||
+          value.toLowerCase().includes(client.email.toLowerCase())
+        )
+      }
+      return false
+    })
+
+    // Si se encuentra un cliente, auto-completar sus datos
+    if (foundClient) {
+      setFormData(prev => ({
+        ...prev,
+        clientName: foundClient.name,
+        clientEmail: foundClient.email || '',
+        clientTaxId: foundClient.taxId || ''
+      }))
+
+      // Mostrar información del cliente encontrado
+      setClientFound({
+        name: foundClient.name,
+        taxId: foundClient.taxId || ''
+      })
+
+      // Mostrar mensaje de confirmación
+      console.log(`✅ Cliente encontrado: ${foundClient.name} (NIF: ${foundClient.taxId})`)
+    } else {
+      // Limpiar estado si no se encuentra cliente
+      setClientFound(null)
+    }
+  }
+
   const handleOpenModal = () => {
     setFormData({
       clientName: '',
@@ -72,6 +143,8 @@ export default function InvoicesTable() {
       vatRate: '23',
       description: ''
     })
+    setError(null) // Limpiar errores anteriores
+    setClientFound(null) // Limpiar cliente encontrado
     setIsModalOpen(true)
   }
 
@@ -85,6 +158,8 @@ export default function InvoicesTable() {
       vatRate: '23',
       description: ''
     })
+    setError(null) // Limpiar errores al cerrar
+    setClientFound(null) // Limpiar cliente encontrado
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
@@ -93,31 +168,40 @@ export default function InvoicesTable() {
       ...prev,
       [name]: value
     }))
+
+    // Limpiar error cuando el usuario empiece a escribir
+    if (error) setError(null)
+
+    // Auto-completar NIF cuando se escribe nombre o email del cliente
+    if (name === 'clientName' || name === 'clientEmail') {
+      autoCompleteClientNIF(name, value)
+    }
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validation
+
+    // Validation without alerts
     if (!formData.clientName.trim()) {
-      alert('Nome do cliente é obrigatório')
+      setError('Nome do cliente é obrigatório')
       return
     }
     if (!formData.clientTaxId.trim()) {
-      alert('NIF do cliente é obrigatório')
+      setError('NIF do cliente é obrigatório')
       return
     }
     if (!formData.amount.trim() || isNaN(Number(formData.amount))) {
-      alert('Valor deve ser um número válido')
+      setError('Valor deve ser um número válido')
       return
     }
     if (!['6', '13', '23'].includes(formData.vatRate)) {
-      alert('Taxa de IVA inválida. Use 6, 13 ou 23')
+      setError('Taxa de IVA inválida. Use 6, 13 ou 23')
       return
     }
 
     setIsSubmitting(true)
-    
+    setError(null)
+
     try {
       // Calculate VAT and total
       const baseAmount = Number(formData.amount)
@@ -145,17 +229,60 @@ export default function InvoicesTable() {
       })
 
       if (!response.ok) {
-        throw new Error('Erro ao criar fatura')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao criar fatura')
       }
 
-      alert(`Fatura criada com sucesso!\nValor: €${baseAmount.toFixed(2)}\nIVA (${formData.vatRate}%): €${vatAmount.toFixed(2)}\nTotal: €${totalAmount.toFixed(2)}`)
+      // Fatura criada com sucesso
       handleCloseModal()
-      window.location.reload()
+
+      // Invalidar e recarregar os dados automaticamente
+      await queryClient.invalidateQueries({ queryKey: ['/api/invoices'] })
+
     } catch (error) {
       console.error('Erro:', error)
-      alert('Erro ao criar fatura')
+      setError(error instanceof Error ? error.message : 'Erro ao criar fatura')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleExport = async () => {
+    try {
+      if (!invoices || invoices.length === 0) {
+        setError('Não há faturas para exportar')
+        return
+      }
+
+      // Prepare CSV data
+      const csvContent = [
+        ['Número', 'Cliente', 'NIF', 'Valor Base', 'IVA', 'Total', 'Data Emissão', 'Vencimento', 'Estado', 'Descrição'].join(','),
+        ...invoices.map((invoice) => [
+          `"${invoice.number}"`,
+          `"${invoice.clientName}"`,
+          `"${invoice.clientTaxId || ''}"`,
+          invoice.amount.toFixed(2),
+          invoice.vatAmount.toFixed(2),
+          invoice.totalAmount.toFixed(2),
+          invoice.issueDate,
+          invoice.dueDate,
+          `"${invoice.status}"`,
+          `"${invoice.description || ''}"`
+        ].join(','))
+      ].join('\n')
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `faturas_${new Date().toISOString().split('T')[0]}.csv`
+      link.click()
+      URL.revokeObjectURL(link.href)
+
+      console.log('✅ Faturas exportadas com sucesso')
+    } catch (error) {
+      console.error('❌ Erro ao exportar:', error)
+      setError('Erro ao exportar faturas')
     }
   }
 
@@ -211,7 +338,7 @@ export default function InvoicesTable() {
           <h1 className="text-3xl font-bold text-foreground">Faturas</h1>
           <p className="text-muted-foreground mt-1">Gestão e emissão de faturas</p>
         </div>
-        <Button 
+        <Button
           className="flex items-center space-x-2"
           onClick={handleOpenModal}
         >
@@ -230,46 +357,27 @@ export default function InvoicesTable() {
             className="pl-10"
           />
         </div>
-        <Button 
+        <Button
           variant="outline"
           className="flex items-center space-x-2"
-          onClick={() => {
-            // Fetch invoices and export as CSV
-            fetch('/api/invoices')
-              .then(response => response.json())
-              .then(data => {
-                const csvContent = [
-                  ['Número', 'Cliente', 'NIF', 'Valor Base', 'IVA', 'Total', 'Data Emissão', 'Vencimento', 'Estado'].join(','),
-                  ...data.map((invoice: any) => [
-                    `"${invoice.number}"`,
-                    `"${invoice.clientName}"`,
-                    invoice.clientTaxId,
-                    invoice.amount,
-                    invoice.vatAmount,
-                    invoice.totalAmount,
-                    invoice.issueDate,
-                    invoice.dueDate,
-                    `"${invoice.status}"`
-                  ].join(','))
-                ].join('\n')
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-                const link = document.createElement('a')
-                link.href = URL.createObjectURL(blob)
-                link.download = `faturas_${new Date().toISOString().split('T')[0]}.csv`
-                link.click()
-                URL.revokeObjectURL(link.href)
-              })
-              .catch(error => {
-                console.error('Erro ao exportar:', error)
-                alert('Erro ao exportar faturas')
-              })
-          }}
+          onClick={handleExport}
         >
           <FileText className="w-4 h-4" />
           <span>Exportar</span>
         </Button>
       </div>
+
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Erro!</strong>
+          <span className="block sm:inline"> {error}</span>
+          <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
+            <button onClick={() => setError(null)} className="text-red-700">
+              <svg className="fill-current h-6 w-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.15 2.759 3.152z" /></svg>
+            </button>
+          </span>
+        </div>
+      )}
 
       <div className="bg-white rounded-lg border shadow-sm">
         <Table>
@@ -316,17 +424,17 @@ export default function InvoicesTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
-                        onClick={() => alert(`Ver detalhes da fatura ${invoice.number}`)}
+                        onClick={() => console.log(`Ver detalhes da fatura ${invoice.number}`)}
                       >
                         <Eye className="w-4 h-4" />
                       </Button>
-                      <Button 
-                        variant="ghost" 
+                      <Button
+                        variant="ghost"
                         size="sm"
-                        onClick={() => alert(`Gerar PDF da fatura ${invoice.number}`)}
+                        onClick={() => console.log(`Gerar PDF da fatura ${invoice.number}`)}
                       >
                         PDF
                       </Button>
@@ -340,7 +448,7 @@ export default function InvoicesTable() {
       </div>
 
       <div className="text-sm text-gray-500">
-        Total: {filteredInvoices.length} fatura(s) • 
+        Total: {filteredInvoices.length} fatura(s) •
         Valor Total: €{filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount.toString()), 0).toFixed(2)}
       </div>
 
@@ -356,6 +464,17 @@ export default function InvoicesTable() {
         size="lg"
       >
         <div className="space-y-4">
+          {/* Mensaje de error general */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+                <p className="text-sm text-red-800 font-medium">
+                  {error}
+                </p>
+              </div>
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="clientName" className="block mb-1">
@@ -370,6 +489,9 @@ export default function InvoicesTable() {
                 placeholder="Nome do cliente ou empresa"
                 required
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Digite o nome para auto-completar os dados
+              </p>
             </div>
 
             <div>
@@ -384,8 +506,24 @@ export default function InvoicesTable() {
                 onChange={handleInputChange}
                 placeholder="email@exemplo.pt"
               />
+              <p className="text-xs text-muted-foreground mt-1">
+                Digite o email para auto-completar os dados
+              </p>
             </div>
           </div>
+
+          {/* Indicador de cliente encontrado */}
+          {clientFound && (
+            <div className="bg-green-50 border border-green-200 rounded-md p-3">
+              <div className="flex items-center">
+                <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
+                <p className="text-sm text-green-800">
+                  <span className="font-medium">Cliente encontrado:</span> {clientFound.name}
+                  <span className="ml-2 text-green-600">(NIF: {clientFound.taxId})</span>
+                </p>
+              </div>
+            </div>
+          )}
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>

@@ -175,25 +175,30 @@ export class ExternalDocumentProcessors {
     return {
       data: {
         vendor: data.merchant_name || data.vendor || '',
+        nif: '',
+        nifCountry: '',
+        vendorAddress: '',
+        vendorPhone: '',
         total: this.parseAmount(data.total || data.amount),
         netAmount: this.parseAmount(data.subtotal),
-        vatAmount: this.parseAmount(data.tax_amount),
-        vatRate: this.parseVatRate(data.tax_rate),
+        vatAmount: this.parseAmount(data.tax || data.vat),
+        vatRate: this.parseVatRate(data.tax_rate || data.vat_rate),
         invoiceNumber: data.invoice_number || data.receipt_number || '',
-        issueDate: this.parseDate(data.date),
-        description: data.description || '',
-        category: this.categorizeExpense(data.category || data.merchant_name)
+        issueDate: data.date || new Date().toISOString().split('T')[0],
+        description: data.description || data.notes || '',
+        category: this.categorizeExpense(data),
+        lineItems: [],
       },
-      confidenceScore: data.confidence || 0.85,
-      issues: data.warnings || [],
+      confidenceScore: 0.7,
+      issues: [],
       agentResults: {
         extractor: {
-          model: 'visionparser-api',
-          method: 'external-api',
-          rawResponse: data
-        }
+          model: "external_processor",
+          method: "api_integration",
+          rawResponse: JSON.stringify(data).substring(0, 200),
+        },
       },
-      processedAt: new Date()
+      processedAt: new Date(),
     };
   }
 
@@ -222,14 +227,18 @@ export class ExternalDocumentProcessors {
       data: {
         vendor: prediction.supplier_name?.value || '',
         nif: prediction.supplier_company_registrations?.[0]?.value || '',
+        nifCountry: '',
+        vendorAddress: prediction.supplier_address?.value || '',
+        vendorPhone: prediction.supplier_phone?.value || '',
         total: prediction.total_amount?.value || 0,
         netAmount: prediction.total_net?.value || 0,
         vatAmount: prediction.total_tax?.value || 0,
         vatRate: this.parseVatRate(prediction.taxes?.[0]?.rate),
         invoiceNumber: prediction.invoice_number?.value || '',
         issueDate: this.parseDate(prediction.date?.value),
-        dueDate: this.parseDate(prediction.due_date?.value),
-        description: prediction.line_items?.map((item: any) => item.description).join(', ') || ''
+        description: prediction.line_items?.map((item: any) => item.description).join(', ') || '',
+        category: this.categorizeExpense(prediction),
+        lineItems: [],
       },
       confidenceScore: prediction.supplier_name?.confidence || 0.85,
       issues: [],
@@ -237,10 +246,10 @@ export class ExternalDocumentProcessors {
         extractor: {
           model: 'mindee-invoice-v4',
           method: 'external-api',
-          rawResponse: prediction
-        }
+          rawResponse: JSON.stringify(prediction).substring(0, 200),
+        },
       },
-      processedAt: new Date()
+      processedAt: new Date(),
     };
   }
 
@@ -269,14 +278,18 @@ export class ExternalDocumentProcessors {
       data: {
         vendor: data.supplier_name || '',
         nif: data.supplier_vat_number || '',
+        nifCountry: '',
+        vendorAddress: data.supplier_address || '',
+        vendorPhone: data.supplier_phone || '',
         total: this.parseAmount(data.amount),
         netAmount: this.parseAmount(data.amount_ex_vat),
         vatAmount: this.parseAmount(data.vat_amount),
         vatRate: this.parseVatRate(data.vat_percentage),
         invoiceNumber: data.invoice_number || '',
         issueDate: this.parseDate(data.date),
-        dueDate: this.parseDate(data.due_date),
-        description: data.description || ''
+        description: data.description || '',
+        category: this.categorizeExpense(data),
+        lineItems: [],
       },
       confidenceScore: data.confidence || 0.85,
       issues: [],
@@ -284,10 +297,10 @@ export class ExternalDocumentProcessors {
         extractor: {
           model: 'klippa-ocr',
           method: 'external-api',
-          rawResponse: data
-        }
+          rawResponse: JSON.stringify(data).substring(0, 200),
+        },
       },
-      processedAt: new Date()
+      processedAt: new Date(),
     };
   }
 
@@ -345,15 +358,20 @@ export class ExternalDocumentProcessors {
       data: {
         vendor: fields.VendorName?.valueString || '',
         nif: fields.VendorTaxId?.valueString || '',
+        nifCountry: '',
+        vendorAddress: fields.VendorAddress?.valueString || '',
+        vendorPhone: fields.VendorPhone?.valueString || '',
         total: fields.InvoiceTotal?.valueNumber || 0,
         netAmount: fields.SubTotal?.valueNumber || 0,
         vatAmount: fields.TotalTax?.valueNumber || 0,
+        vatRate: this.parseVatRate(fields.TaxRate?.valueNumber),
         invoiceNumber: fields.InvoiceId?.valueString || '',
         issueDate: this.parseDate(fields.InvoiceDate?.valueDate),
-        dueDate: this.parseDate(fields.DueDate?.valueDate),
         description: fields.Items?.valueArray?.map((item: any) => 
           item.valueObject.Description?.valueString
-        ).join(', ') || ''
+        ).join(', ') || '',
+        category: this.categorizeExpense(fields),
+        lineItems: [],
       },
       confidenceScore: doc.confidence || 0.85,
       issues: [],
@@ -361,10 +379,10 @@ export class ExternalDocumentProcessors {
         extractor: {
           model: 'azure-form-recognizer',
           method: 'external-api',
-          rawResponse: result
-        }
+          rawResponse: JSON.stringify(result).substring(0, 200),
+        },
       },
-      processedAt: new Date()
+      processedAt: new Date(),
     };
   }
 
@@ -459,12 +477,19 @@ export class ExternalDocumentProcessors {
     return {
       data: {
         vendor: data.vendor?.name || '',
+        nif: data.vendor?.tax_id || '',
+        nifCountry: '',
+        vendorAddress: data.vendor?.address || '',
+        vendorPhone: data.vendor?.phone || '',
         total: data.total || 0,
         netAmount: data.subtotal || 0,
         vatAmount: data.tax || 0,
+        vatRate: this.parseVatRate(data.tax_rate),
         invoiceNumber: data.invoice_number || '',
         issueDate: this.parseDate(data.date),
-        description: data.line_items?.map((item: any) => item.description).join(', ') || ''
+        description: data.line_items?.map((item: any) => item.description).join(', ') || '',
+        category: this.categorizeExpense(data),
+        lineItems: [],
       },
       confidenceScore: 0.85,
       issues: [],
@@ -472,10 +497,10 @@ export class ExternalDocumentProcessors {
         extractor: {
           model: 'veryfi-api',
           method: 'external-api',
-          rawResponse: data
-        }
+          rawResponse: JSON.stringify(data).substring(0, 200),
+        },
       },
-      processedAt: new Date()
+      processedAt: new Date(),
     };
   }
 
@@ -505,25 +530,30 @@ export class ExternalDocumentProcessors {
   private isValidResult(result: ExtractionResult, threshold?: number): boolean {
     const minThreshold = threshold || 0.7;
     return result.confidenceScore >= minThreshold && 
-           (result.data.vendor || result.data.total || result.data.invoiceNumber);
+           !!(result.data.vendor || result.data.total || result.data.invoiceNumber);
   }
 
   private parseAmount(value: any): number {
+    if (!value) return 0;
     if (typeof value === 'number') return value;
     if (typeof value === 'string') {
-      const cleanValue = value.replace(/[€$£¥,\s]/g, '').replace(',', '.');
-      return parseFloat(cleanValue) || 0;
+      const cleaned = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+      return parseFloat(cleaned) || 0;
     }
     return 0;
   }
 
   private parseVatRate(value: any): number {
-    if (typeof value === 'number') return value > 1 ? value / 100 : value;
+    if (!value) return 0.23; // Default Portuguese VAT rate
+    if (typeof value === 'number') {
+      return value > 1 ? value / 100 : value;
+    }
     if (typeof value === 'string') {
-      const rate = parseFloat(value.replace('%', ''));
+      const cleaned = value.replace(/[^0-9.,]/g, '').replace(',', '.');
+      const rate = parseFloat(cleaned) || 23;
       return rate > 1 ? rate / 100 : rate;
     }
-    return 0.23; // Default Portuguese VAT
+    return 0.23;
   }
 
   private parseDate(value: any): string {
@@ -538,15 +568,28 @@ export class ExternalDocumentProcessors {
     }
   }
 
-  private categorizeExpense(category?: string): string {
-    if (!category) return 'outras_despesas';
+  private categorizeExpense(data: any): string {
+    const text = `${data.merchant_name || ''} ${data.vendor || ''} ${data.description || ''} ${data.category || ''}`.toLowerCase();
     
-    const cat = category.toLowerCase();
-    if (cat.includes('fuel') || cat.includes('combustível')) return 'combustiveis_lubrificantes';
-    if (cat.includes('food') || cat.includes('restaurant') || cat.includes('refeições')) return 'refeicoes';
-    if (cat.includes('travel') || cat.includes('hotel') || cat.includes('deslocações')) return 'deslocacoes_estadas';
-    if (cat.includes('material') || cat.includes('office') || cat.includes('escritório')) return 'material_escritorio';
-    
+    if (text.includes('restaurante') || text.includes('café') || text.includes('aliment')) {
+      return 'alimentacao';
+    }
+    if (text.includes('gasolina') || text.includes('combustivel') || text.includes('bp') || text.includes('galp')) {
+      return 'combustivel';
+    }
+    if (text.includes('hotel') || text.includes('alojamento') || text.includes('booking')) {
+      return 'alojamento';
+    }
+    if (text.includes('taxi') || text.includes('uber') || text.includes('transporte')) {
+      return 'transporte';
+    }
+    if (text.includes('papel') || text.includes('caneta') || text.includes('escritorio')) {
+      return 'material_escritorio';
+    }
+    if (text.includes('consultoria') || text.includes('servico') || text.includes('manutencao')) {
+      return 'servicos';
+    }
+
     return 'outras_despesas';
   }
 
@@ -556,9 +599,104 @@ export class ExternalDocumentProcessors {
 
   getProcessorStatus(): Record<string, boolean> {
     const status: Record<string, boolean> = {};
-    for (const [name] of this.configs) {
+    Array.from(this.configs.entries()).forEach(([name]) => {
       status[name] = true; // Could add health checks here
-    }
+    });
     return status;
+  }
+
+  private async processVeryfiPrediction(prediction: any): Promise<ExtractionResult> {
+    return {
+      data: {
+        vendor: prediction.supplier_name?.value || '',
+        nif: prediction.supplier_company_registrations?.[0]?.value || '',
+        nifCountry: '',
+        vendorAddress: prediction.supplier_address?.value || '',
+        vendorPhone: prediction.supplier_phone?.value || '',
+        total: prediction.total_amount?.value || 0,
+        netAmount: prediction.subtotal_amount?.value || 0,
+        vatAmount: prediction.tax_amount?.value || 0,
+        vatRate: this.parseVatRate(prediction.tax_rate?.value),
+        invoiceNumber: prediction.invoice_number?.value || '',
+        issueDate: this.parseDate(prediction.date?.value),
+        description: prediction.line_items?.map((item: any) => item.description).join(', ') || '',
+        category: this.categorizeExpense(prediction),
+        lineItems: [],
+      },
+      confidenceScore: prediction.supplier_name?.confidence || 0.85,
+      issues: [],
+      agentResults: {
+        extractor: {
+          model: "veryfi",
+          method: "api_integration",
+          rawResponse: JSON.stringify(prediction).substring(0, 200),
+        },
+      },
+      processedAt: new Date(),
+    };
+  }
+
+  private async processTabscannerPrediction(data: any): Promise<ExtractionResult> {
+    return {
+      data: {
+        vendor: data.merchant_name || '',
+        nif: data.tax_id || '',
+        nifCountry: '',
+        vendorAddress: data.merchant_address || '',
+        vendorPhone: data.merchant_phone || '',
+        invoiceNumber: data.invoice_number || '',
+        issueDate: this.parseDate(data.date),
+        total: this.parseAmount(data.total),
+        netAmount: this.parseAmount(data.subtotal),
+        vatAmount: this.parseAmount(data.tax),
+        vatRate: this.parseVatRate(data.tax_rate),
+        category: this.categorizeExpense(data),
+        description: data.description || '',
+        lineItems: [],
+      },
+      confidenceScore: 0.8,
+      issues: [],
+      agentResults: {
+        extractor: {
+          model: "tabscanner",
+          method: "api_integration",
+          rawResponse: JSON.stringify(data).substring(0, 200),
+        },
+      },
+      processedAt: new Date(),
+    };
+  }
+
+  private async processFormRecognizerPrediction(fields: any): Promise<ExtractionResult> {
+    return {
+      data: {
+        vendor: fields.VendorName?.valueString || '',
+        nif: fields.VendorTaxId?.valueString || '',
+        nifCountry: '',
+        vendorAddress: fields.VendorAddress?.valueString || '',
+        vendorPhone: fields.VendorPhone?.valueString || '',
+        invoiceNumber: fields.InvoiceId?.valueString || '',
+        issueDate: this.parseDate(fields.InvoiceDate?.valueDate),
+        total: this.parseAmount(fields.TotalAmount?.valueNumber),
+        netAmount: this.parseAmount(fields.SubTotal?.valueNumber),
+        vatAmount: this.parseAmount(fields.TaxAmount?.valueNumber),
+        vatRate: this.parseVatRate(fields.TaxRate?.valueNumber),
+        category: this.categorizeExpense(fields),
+        description: fields.Items?.valueArray?.map((item: any) => 
+          item.valueObject.Description?.valueString
+        ).join(', ') || '',
+        lineItems: [],
+      },
+      confidenceScore: 0.85,
+      issues: [],
+      agentResults: {
+        extractor: {
+          model: "form_recognizer",
+          method: "api_integration",
+          rawResponse: JSON.stringify(fields).substring(0, 200),
+        },
+      },
+      processedAt: new Date(),
+    };
   }
 }

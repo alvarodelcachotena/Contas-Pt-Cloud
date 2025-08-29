@@ -350,10 +350,10 @@ export class ProcessorTester {
       
       if (result.geminiResult && result.openaiResult) {
         output += `   📊 Key Fields Comparison:\n`;
-        const fields = ['vendor', 'nif', 'total', 'issueDate'];
+        const fields = ['vendor', 'nif', 'total', 'issueDate'] as const;
         fields.forEach(field => {
-          const geminiVal = result.geminiResult?.data[field]?.toString() || '';
-          const openaiVal = result.openaiResult?.data[field]?.toString() || '';
+          const geminiVal = result.geminiResult?.data[field as keyof typeof result.geminiResult.data]?.toString() || '';
+          const openaiVal = result.openaiResult?.data[field as keyof typeof result.openaiResult.data]?.toString() || '';
           const match = geminiVal === openaiVal ? '✅' : '❌';
           output += `      ${field}: ${match} Gemini:"${geminiVal}" vs OpenAI:"${openaiVal}"\n`;
         });
@@ -373,16 +373,16 @@ export class ProcessorTester {
 }
 
 // CLI execution if run directly
-if (require.main === module) {
-  async function runTest() {
-    try {
-      // This would be called from API route with proper credentials
-      console.log('⚠️  This script should be called via API route with proper Dropbox credentials');
-      console.log('   Use: POST /api/test-processors');
-    } catch (error) {
-      console.error('❌ Test failed:', error);
-    }
+async function runTest() {
+  try {
+    // This would be called from API route with proper Dropbox credentials
+    console.log('⚠️  This script should be called via API route with proper Dropbox credentials');
+    console.log('   Use: POST /api/test-processors');
+  } catch (error) {
+    console.error('❌ Test failed:', error);
   }
-  
+}
+
+if (require.main === module) {
   runTest();
 }

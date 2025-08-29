@@ -1,12 +1,14 @@
 'use client'
 
-import { useState, useRef } from "react"
+import { useState, useRef, useEffect } from "react"
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Bot, Send, FileText, Brain, Zap, Clock, Loader2, Upload, X, Image, File } from "lucide-react"
+import { ProvenanceViewer } from '@/components/ui/provenance-viewer';
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 
 interface ChatMessage {
   id: number
@@ -32,7 +34,14 @@ export default function AIAssistantPage() {
   const [isTyping, setIsTyping] = useState(false)
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isProcessingFile, setIsProcessingFile] = useState(false)
+  const [isMounted, setIsMounted] = useState(false)
   const fileInputRef = useRef<HTMLInputElement>(null)
+  const queryClient = useQueryClient()
+
+  // Evitar hidratación hasta que el componente esté montado
+  useEffect(() => {
+    setIsMounted(true)
+  }, [])
 
   const sendMessage = async () => {
     if (!message.trim() || isTyping) {
@@ -43,7 +52,7 @@ export default function AIAssistantPage() {
       id: Date.now(),
       type: 'user',
       message: message.trim(),
-      timestamp: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+      timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
     }
 
     setChatHistory(prev => [...prev, userMessage])
@@ -70,7 +79,7 @@ export default function AIAssistantPage() {
           id: Date.now() + 1,
           type: 'assistant',
           message: data.response,
-          timestamp: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+          timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
         }
 
         setChatHistory(prev => [...prev, assistantMessage])
@@ -79,9 +88,9 @@ export default function AIAssistantPage() {
       }
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error)
-      
+
       let errorText = 'Desculpe, ocorreu um erro ao processar a sua mensagem. Tente novamente.'
-      
+
       // Tentar obter mais detalhes do erro
       if (error instanceof Error) {
         if (error.message.includes('401')) {
@@ -96,12 +105,12 @@ export default function AIAssistantPage() {
           errorText = '🌐 Erro de conexão. Verifique se o servidor está a executar na porta 5000.'
         }
       }
-      
+
       const errorMessage: ChatMessage = {
         id: Date.now() + 1,
         type: 'assistant',
         message: errorText,
-        timestamp: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+        timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
       }
 
       setChatHistory(prev => [...prev, errorMessage])
@@ -158,7 +167,7 @@ export default function AIAssistantPage() {
       id: Date.now(),
       type: 'user',
       message: `Analisando arquivo: ${selectedFile.name}`,
-      timestamp: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+      timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '',
       hasFile: true,
       fileName: selectedFile.name,
       fileType: selectedFile.type
@@ -184,20 +193,20 @@ export default function AIAssistantPage() {
       if (data.success) {
         // Crear mensaje de respuesta con datos extraídos
         let responseMessage = '📄 **Análise do documento concluída!**\n\n'
-        
+
         if (data.extractedData) {
           const extracted = data.extractedData
           responseMessage += '**Dados extraídos:**\n'
-          
+
           // Verificar se é da nossa empresa
           const isMyCompany = extracted.nif === 'PT517124548' || extracted.nif === '517124548'
-          
+
           if (isMyCompany) {
             responseMessage += '🏢 **EMPRESA PRÓPRIA DETECTADA** (NIF: 517124548)\n\n'
           } else {
             responseMessage += '🏪 **EMPRESA EXTERNA**\n\n'
           }
-          
+
           responseMessage += `• **Fornecedor:** ${extracted.vendor || 'N/A'}\n`
           responseMessage += `• **NIF:** ${extracted.nif || 'N/A'}\n`
           responseMessage += `• **País:** ${extracted.nifCountry || 'N/A'}\n`
@@ -210,7 +219,7 @@ export default function AIAssistantPage() {
           responseMessage += `• **Categoria:** ${extracted.category || 'N/A'}\n`
           responseMessage += `• **Descrição:** ${extracted.description || 'N/A'}\n`
           responseMessage += `• **Confiança:** ${(extracted.confidence * 100).toFixed(1)}%\n`
-          
+
           if (extracted.extractionIssues && extracted.extractionIssues.length > 0) {
             responseMessage += `\n⚠️  **Problemas detectados:**\n${extracted.extractionIssues.map((issue: string) => `• ${issue}`).join('\n')}`
           }
@@ -220,7 +229,7 @@ export default function AIAssistantPage() {
           id: Date.now() + 1,
           type: 'assistant',
           message: responseMessage,
-          timestamp: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }),
+          timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '',
           extractedData: data.extractedData
         }
 
@@ -230,12 +239,12 @@ export default function AIAssistantPage() {
       }
     } catch (error) {
       console.error('Erro ao processar arquivo:', error)
-      
+
       const errorMessage: ChatMessage = {
         id: Date.now() + 1,
         type: 'assistant',
         message: '❌ Erro ao processar o arquivo. Verifique se é um PDF ou imagem válida e tente novamente.',
-        timestamp: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
+        timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
       }
 
       setChatHistory(prev => [...prev, errorMessage])
@@ -317,7 +326,7 @@ export default function AIAssistantPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
@@ -329,7 +338,7 @@ export default function AIAssistantPage() {
                   </div>
                 </div>
               </div>
-              
+
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
@@ -399,25 +408,23 @@ export default function AIAssistantPage() {
                   Faça perguntas sobre contabilidade, IVA, e gestão financeira em português
                 </p>
               </div>
-              
+
               <div className="p-6 h-80 overflow-y-auto space-y-4">
                 {chatHistory.map((chat) => (
                   <div key={chat.id} className={`flex ${chat.type === 'user' ? 'justify-end' : 'justify-start'}`}>
-                    <div className={`max-w-md p-3 rounded-lg ${
-                      chat.type === 'user' 
-                        ? 'bg-blue-600 text-white' 
-                        : 'bg-gray-100 text-gray-900'
-                    }`}>
-                      <div className="text-sm whitespace-pre-wrap">{chat.message}</div>
-                      <div className={`text-xs mt-1 ${
-                        chat.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                    <div className={`max-w-md p-3 rounded-lg ${chat.type === 'user'
+                      ? 'bg-blue-600 text-white'
+                      : 'bg-gray-100 text-gray-900'
                       }`}>
+                      <div className="text-sm whitespace-pre-wrap">{chat.message}</div>
+                      <div className={`text-xs mt-1 ${chat.type === 'user' ? 'text-blue-100' : 'text-gray-500'
+                        }`}>
                         {chat.timestamp}
                       </div>
                     </div>
                   </div>
                 ))}
-                
+
                 {isTyping && (
                   <div className="flex justify-start">
                     <div className="bg-gray-100 text-gray-900 max-w-md p-3 rounded-lg">
@@ -429,7 +436,7 @@ export default function AIAssistantPage() {
                   </div>
                 )}
               </div>
-              
+
               <div className="p-6 border-t">
                 {/* Input file oculto */}
                 <input
@@ -439,7 +446,7 @@ export default function AIAssistantPage() {
                   onChange={handleFileSelect}
                   className="hidden"
                 />
-                
+
                 {/* Mostrar archivo seleccionado */}
                 {selectedFile && (
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -458,7 +465,7 @@ export default function AIAssistantPage() {
                         </span>
                       </div>
                       <div className="flex items-center space-x-2">
-                        <Button 
+                        <Button
                           onClick={sendFileForAnalysis}
                           disabled={isProcessingFile}
                           size="sm"
@@ -473,7 +480,7 @@ export default function AIAssistantPage() {
                             </>
                           )}
                         </Button>
-                        <Button 
+                        <Button
                           onClick={removeSelectedFile}
                           disabled={isProcessingFile}
                           size="sm"
@@ -495,7 +502,7 @@ export default function AIAssistantPage() {
                     className="flex-1"
                     disabled={isTyping}
                   />
-                  <Button 
+                  <Button
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isTyping || selectedFile !== null}
                     className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
@@ -503,7 +510,7 @@ export default function AIAssistantPage() {
                   >
                     <Upload className="w-4 h-4" />
                   </Button>
-                  <Button 
+                  <Button
                     onClick={sendMessage}
                     disabled={!message.trim() || isTyping}
                     className="flex items-center space-x-2"

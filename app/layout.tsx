@@ -18,13 +18,14 @@ export default function RootLayout({
   children: React.ReactNode
 }) {
   return (
-    <html lang="pt" suppressHydrationWarning>
-      <body className={inter.className} suppressHydrationWarning>
+    <html lang="pt" className={inter.className} suppressHydrationWarning>
+      <body suppressHydrationWarning>
         <ThemeProvider
           attribute="class"
           defaultTheme="system"
           enableSystem
           disableTransitionOnChange
+          storageKey="contas-pt-theme"
         >
           <Providers>
             {children}

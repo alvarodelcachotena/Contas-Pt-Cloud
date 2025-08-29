@@ -59,22 +59,22 @@ export class CloudDocumentProcessor {
     filename: string
   ): Promise<ExtractionResult> {
     console.log(`🚀 Cloud AI processing document: ${filename} (${mimeType})`);
-    
+
     try {
       // Use enhanced processing with direct PDF/image processing (no OCR needed)
       if (this.enhancedProcessor) {
         return await this.processWithEnhancedFeatures(fileBuffer, mimeType, filename);
       }
-      
+
       // Fallback: Direct cloud processing for PDFs and images
       if (mimeType === 'application/pdf' || mimeType.startsWith('image/')) {
         return await this.processDirectly(fileBuffer, mimeType, filename);
       }
-      
+
       // For other file types, extract text first
       const ocrText = await this.extractTextFromDocument(fileBuffer, mimeType, filename);
       return await this.processWithCloudModels(ocrText, filename);
-      
+
     } catch (error) {
       console.error(`❌ Cloud processing failed for ${filename}:`, error);
       throw new Error(`Cloud AI processing failed: ${error instanceof Error ? error.message : 'Unknown error'}`);
@@ -89,13 +89,13 @@ export class CloudDocumentProcessor {
     if (mimeType === 'text/plain') {
       return fileBuffer.toString('utf-8');
     }
-    
+
     // For PDFs and images, we should use direct AI processing instead of OCR
     // Return a minimal placeholder to trigger direct AI processing
     if (mimeType === 'application/pdf' || mimeType.startsWith('image/')) {
       return `Document ready for AI processing: ${filename}`;
     }
-    
+
     return fileBuffer.toString('utf-8');
   }
 
@@ -110,7 +110,7 @@ export class CloudDocumentProcessor {
   ): Promise<ExtractionResult> {
     if (this.enhancedProcessor) {
       console.log(`🚀 Using enhanced processor with structured outputs for: ${filename}`);
-      
+
       // Process with enhanced features using simplified strategy
       const result = await this.enhancedProcessor.processDocument(
         fileBuffer,
@@ -119,11 +119,11 @@ export class CloudDocumentProcessor {
         ocrText,
         { useVision: true, useMultiAgent: false, useConsensus: false }
       );
-      
+
       // Apply additional enhancements
       return await this.enhancedProcessor.enhanceExtraction(result);
     }
-    
+
     // Fallback to standard processing
     return this.processWithCloudModels(ocrText || '', filename);
   }
@@ -137,29 +137,29 @@ export class CloudDocumentProcessor {
     filename: string
   ): Promise<ExtractionResult> {
     console.log(`📄 Direct cloud processing for: ${filename} (${mimeType})`);
-    
+
     try {
       // Priority 1: Use Gemini for both PDF and image processing (as requested)
       if (this.geminiExtractor && mimeType === 'application/pdf') {
         console.log(`🔄 Processing PDF with Gemini (priority AI): ${filename}`);
         return await this.geminiExtractor.extractFromPDF(fileBuffer, filename);
       }
-      
+
       if (this.geminiExtractor && mimeType.startsWith('image/')) {
         console.log(`🔄 Processing image with Gemini (priority AI): ${filename}`);
         return await this.geminiExtractor.extractFromImage(fileBuffer, mimeType, filename);
       }
-      
+
       // Priority 2: Use OpenAI as fallback
       if (this.openAIExtractor && mimeType.startsWith('image/')) {
         console.log(`🔄 Processing image with OpenAI (fallback): ${filename}`);
         return await this.openAIExtractor.extractFromImage(fileBuffer, mimeType, filename);
       }
-      
+
       // Fallback for other file types: extract text and process
       const ocrText = await this.extractTextFromDocument(fileBuffer, mimeType, filename);
       return await this.processWithCloudModels(ocrText, filename);
-      
+
     } catch (error) {
       console.error(`❌ Direct processing failed for ${filename}:`, error);
       throw error;
@@ -205,9 +205,9 @@ export class CloudDocumentProcessor {
 
     // Execute extractions in parallel
     const results = await Promise.allSettled(extractionPromises);
-    
+
     const successfulResults = results
-      .filter((result): result is PromiseFulfilledResult<{ result: ExtractionResult; model: string }> => 
+      .filter((result): result is PromiseFulfilledResult<{ result: ExtractionResult; model: string }> =>
         result.status === 'fulfilled'
       )
       .map(result => result.value);
@@ -220,7 +220,7 @@ export class CloudDocumentProcessor {
 
     // Build consensus from successful results
     const consensusResult = this.buildConsensus(successfulResults);
-    
+
     console.log(`🎯 Consensus extraction completed for ${filename}`);
     console.log(`📊 Final result: ${consensusResult.data.vendor} - €${consensusResult.data.total} (confidence: ${consensusResult.confidenceScore})`);
 
@@ -268,7 +268,7 @@ export class CloudDocumentProcessor {
 
     console.log(`✅ ${results.length} successful extractions from cloud models`);
     const consensusResult = this.buildConsensus(results);
-    
+
     console.log(`🎯 Vision consensus extraction completed for ${filename}`);
     console.log(`📊 Final result: ${consensusResult.data.vendor} - €${consensusResult.data.total} (confidence: ${consensusResult.confidenceScore})`);
 
@@ -280,111 +280,96 @@ export class CloudDocumentProcessor {
    */
   private buildConsensus(results: { result: ExtractionResult; model: string }[]): ExtractionResult {
     if (results.length === 1) {
+      // Single model result
       return {
         ...results[0].result,
         agentResults: {
-          ...results[0].result.agentResults,
           extractor: {
             ...results[0].result.agentResults?.extractor,
-            consensusModels: [results[0].model],
-            totalModels: 1
-          }
-        }
+            provenance: {
+              ...results[0].result.agentResults?.extractor.provenance,
+              consensus: {
+                model: "single_model",
+                confidence: results[0].result.confidenceScore,
+                method: "no_consensus",
+                timestamp: new Date(),
+              },
+            },
+          },
+        },
       };
     }
 
-    // Multi-model consensus logic
-    const consensusData = {
-      vendor: '',
-      nif: '',
-      invoiceNumber: '',
-      issueDate: '',
-      total: 0,
-      netAmount: 0,
-      vatAmount: 0,
-      vatRate: 0,
-      category: '',
-      description: ''
+    // Calculate consensus confidence
+    const consensusConfidence = this.calculateConsensusConfidence(results);
+
+    // Merge results
+    const mergedData = {
+      vendor: this.mergeField(results, 'vendor'),
+      nif: this.mergeField(results, 'nif'),
+      nifCountry: this.mergeField(results, 'nifCountry'),
+      vendorAddress: this.mergeField(results, 'vendorAddress'),
+      vendorPhone: this.mergeField(results, 'vendorPhone'),
+      invoiceNumber: this.mergeField(results, 'invoiceNumber'),
+      issueDate: this.mergeField(results, 'issueDate'),
+      total: this.mergeNumericField(results, 'total'),
+      netAmount: this.mergeNumericField(results, 'netAmount'),
+      vatAmount: this.mergeNumericField(results, 'vatAmount'),
+      vatRate: this.mergeNumericField(results, 'vatRate'),
+      category: this.mergeField(results, 'category'),
+      description: this.mergeField(results, 'description'),
+      lineItems: this.mergeLineItems(results),
     };
-    const modelResults = results.map(r => r.result.data);
-    const modelsUsed = results.map(r => r.model);
 
-    // Consensus for vendor
-    const vendors = modelResults.map(data => data.vendor).filter((v): v is string => Boolean(v && v.trim()));
-    if (vendors.length > 0) {
-      const frequency = vendors.reduce((acc, val) => {
-        acc[val] = (acc[val] || 0) + 1;
-        return acc;
-      }, {} as Record<string, number>);
-      consensusData.vendor = Object.keys(frequency).reduce((a, b) => 
-        frequency[a] > frequency[b] ? a : b
-      );
-    }
+    // Merge issues
+    const mergedIssues = this.mergeIssues(results);
 
-    // Consensus for other text fields
-    const nifs = modelResults.map(data => data.nif).filter((v): v is string => Boolean(v && v.trim()));
-    if (nifs.length > 0) consensusData.nif = nifs[0];
+    // Build model contributions map
+    const modelContributions: { [field: string]: string } = {};
+    const fieldNames = Object.keys(mergedData) as Array<keyof typeof mergedData>;
 
-    const invoiceNumbers = modelResults.map(data => data.invoiceNumber).filter((v): v is string => Boolean(v && v.trim()));
-    if (invoiceNumbers.length > 0) consensusData.invoiceNumber = invoiceNumbers[0];
+    fieldNames.forEach(fieldName => {
+      // Find which model contributed the final value for this field
+      const finalValue = mergedData[fieldName];
+      for (const result of results) {
+        if (result.result.data[fieldName] === finalValue) {
+          modelContributions[fieldName] = result.model;
+          break;
+        }
+      }
+    });
 
-    const dates = modelResults.map(data => data.issueDate).filter((v): v is string => Boolean(v && v.trim()));
-    if (dates.length > 0) consensusData.issueDate = dates[0];
+    // Calculate agreement level
+    const agreementLevel = this.calculateAgreement(results.map(r => r.result.data));
 
-    const categories = modelResults.map(data => data.category).filter((v): v is string => Boolean(v && v.trim()));
-    if (categories.length > 0) consensusData.category = categories[0];
-
-    const descriptions = modelResults.map(data => data.description).filter((v): v is string => Boolean(v && v.trim()));
-    if (descriptions.length > 0) consensusData.description = descriptions[0];
-
-    // Consensus for numeric fields
-    const totals = modelResults.map(data => parseFloat(String(data.total))).filter(v => !isNaN(v) && v > 0);
-    if (totals.length > 0) {
-      consensusData.total = totals.reduce((sum, val) => sum + val, 0) / totals.length;
-    }
-
-    const netAmounts = modelResults.map(data => parseFloat(String(data.netAmount))).filter(v => !isNaN(v) && v > 0);
-    if (netAmounts.length > 0) {
-      consensusData.netAmount = netAmounts.reduce((sum, val) => sum + val, 0) / netAmounts.length;
-    }
-
-    const vatAmounts = modelResults.map(data => parseFloat(String(data.vatAmount))).filter(v => !isNaN(v) && v > 0);
-    if (vatAmounts.length > 0) {
-      consensusData.vatAmount = vatAmounts.reduce((sum, val) => sum + val, 0) / vatAmounts.length;
-    }
-
-    const vatRates = modelResults.map(data => parseFloat(String(data.vatRate))).filter(v => !isNaN(v) && v > 0);
-    if (vatRates.length > 0) {
-      // For VAT rate, pick the standard Portuguese rate (6%, 13%, 23%)
-      const standardRates = [0.06, 0.13, 0.23];
-      const closest = vatRates.find(v => standardRates.some(rate => Math.abs(v - rate) < 0.01));
-      consensusData.vatRate = closest || vatRates[0];
-    }
-
-    // Calculate consensus confidence based on agreement
-    const agreement = this.calculateAgreement(modelResults);
-    const baseConfidence = results.reduce((sum, r) => sum + r.result.confidenceScore, 0) / results.length;
-    const consensusConfidence = Math.min(baseConfidence + (agreement * 0.1), 0.95);
-
+    // Create consensus result with detailed metadata
     return {
-      data: consensusData,
+      data: mergedData,
       confidenceScore: consensusConfidence,
-      issues: [],
+      issues: mergedIssues,
       agentResults: {
         extractor: {
-          method: 'cloud_consensus',
-          consensusModels: modelsUsed,
-          totalModels: results.length,
-          agreement: agreement,
-          individualResults: results.map(r => ({
-            model: r.model,
-            confidence: r.result.confidenceScore,
-            vendor: r.result.data.vendor,
-            total: r.result.data.total
-          }))
-        }
+          model: "consensus",
+          method: "multi_model_consensus",
+          rawResponse: "Consensus result from multiple models",
+          provenance: {
+            ...results[0].result.agentResults?.extractor.provenance,
+            consensus: {
+              model: "consensus",
+              confidence: consensusConfidence,
+              method: "multi_model_consensus",
+              timestamp: new Date(),
+            },
+          },
+          consensusMetadata: {
+            totalModels: results.length,
+            agreementLevel: agreementLevel,
+            conflictResolution: "majority_vote",
+            finalConfidence: consensusConfidence
+          }
+        },
       },
-      processedAt: new Date()
+      processedAt: new Date(),
     };
   }
 
@@ -398,14 +383,14 @@ export class CloudDocumentProcessor {
     let comparisons = 0;
 
     const fields = ['vendor', 'total', 'vatRate', 'category'];
-    
+
     for (let i = 0; i < results.length; i++) {
       for (let j = i + 1; j < results.length; j++) {
         fields.forEach(field => {
           comparisons++;
           const val1 = results[i][field];
           const val2 = results[j][field];
-          
+
           if (field === 'total' || field === 'vatRate') {
             // Numeric comparison with tolerance
             const diff = Math.abs(parseFloat(val1) - parseFloat(val2));
@@ -422,6 +407,82 @@ export class CloudDocumentProcessor {
     }
 
     return comparisons > 0 ? agreements / comparisons : 0;
+  }
+
+  /**
+   * Calculate consensus confidence based on agreement
+   */
+  private calculateConsensusConfidence(results: { result: ExtractionResult; model: string }[]): number {
+    const agreement = this.calculateAgreement(results.map(r => r.result.data));
+    const baseConfidence = results.reduce((sum, r) => sum + r.result.confidenceScore, 0) / results.length;
+    const consensusConfidence = Math.min(baseConfidence + (agreement * 0.1), 0.95);
+    return consensusConfidence;
+  }
+
+  /**
+   * Merge a field across multiple model results
+   */
+  private mergeField(results: { result: ExtractionResult; model: string }[], fieldName: keyof ExtractionResult['data']): string {
+    const values = results
+      .map(r => r.result.data[fieldName])
+      .filter((v): v is string => typeof v === 'string' && v.trim() !== '');
+    if (values.length === 0) return '';
+    const frequency = values.reduce((acc, val) => {
+      acc[val] = (acc[val] || 0) + 1;
+      return acc;
+    }, {} as Record<string, number>);
+    return Object.keys(frequency).reduce((a, b) =>
+      frequency[a] > frequency[b] ? a : b
+    );
+  }
+
+  /**
+   * Merge a numeric field across multiple model results
+   */
+  private mergeNumericField(results: { result: ExtractionResult; model: string }[], fieldName: keyof ExtractionResult['data']): number {
+    const values = results.map(r => parseFloat(String(r.result.data[fieldName]))).filter(v => !isNaN(v) && v > 0);
+    if (values.length === 0) return 0;
+    return values.reduce((sum, val) => sum + val, 0) / values.length;
+  }
+
+  /**
+   * Merge line items across multiple model results
+   */
+  private mergeLineItems(results: { result: ExtractionResult; model: string }[]): ExtractionResult['data']['lineItems'] {
+    const mergedItems: ExtractionResult['data']['lineItems'] = [];
+    const itemFields = ['description', 'quantity', 'unitPrice', 'netAmount', 'vatAmount', 'vatRate', 'totalAmount'];
+
+    results.forEach(r => {
+      r.result.data.lineItems?.forEach(item => {
+        const existingItem = mergedItems.find(mi =>
+          mi.description === item.description &&
+          mi.unitPrice === item.unitPrice &&
+          mi.quantity === item.quantity
+        );
+
+        if (existingItem) {
+          existingItem.totalAmount += item.totalAmount;
+        } else {
+          mergedItems.push({
+            ...item,
+            totalAmount: item.totalAmount
+          });
+        }
+      });
+    });
+
+    return mergedItems;
+  }
+
+  /**
+   * Merge issues across multiple model results
+   */
+  private mergeIssues(results: { result: ExtractionResult; model: string }[]): ExtractionResult['issues'] {
+    const mergedIssues: ExtractionResult['issues'] = [];
+    results.forEach(r => {
+      mergedIssues.push(...r.result.issues);
+    });
+    return mergedIssues;
   }
 
   /**

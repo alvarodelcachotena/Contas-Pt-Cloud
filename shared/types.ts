@@ -6,31 +6,80 @@ export interface RawDocumentMeta {
   uploadedAt: Date;
 }
 
+export interface LineItem {
+  description: string;
+  quantity: number;
+  unitPrice: number;
+  netAmount: number;
+  vatRate: number;
+  vatAmount: number;
+  totalAmount: number;
+}
+
+export interface FieldProvenance {
+  model: string;
+  confidence: number;
+  method: string;
+  timestamp: Date;
+  rawValue?: string;
+  processingTime?: number;
+  modelVersion?: string;
+  extractionContext?: {
+    pageNumber?: number;
+    boundingBox?: {
+      x: number;
+      y: number;
+      width: number;
+      height: number;
+    };
+    ocrConfidence?: number;
+  };
+}
+
+export interface LineItemProvenance {
+  rowIndex: number;
+  fieldProvenance: {
+    [field: string]: FieldProvenance;
+  };
+  overallConfidence: number;
+  extractionMethod: string;
+}
+
 export interface ExtractionResult {
   data: {
-    invoiceNumber?: string;
-    vendor?: string;
-    nif?: string; // Full NIF with country prefix (PT123456789, IT12345678901)
-    nifCountry?: string; // Country code (PT, IT, ES, etc.)
-    vendorAddress?: string; // Complete address of issuer
-    vendorPhone?: string; // Phone number of issuer
-    total?: number;
-    netAmount?: number;
-    vatAmount?: number;
-    vatRate?: number;
-    issueDate?: string;
-    dueDate?: string;
-    category?: string;
-    description?: string;
+    vendor: string;
+    nif: string;
+    nifCountry: string;
+    vendorAddress: string;
+    vendorPhone: string;
+    invoiceNumber: string;
+    issueDate: string;
+    total: number;
+    netAmount: number;
+    vatAmount: number;
+    vatRate: number;
+    category: string;
+    description: string;
+    lineItems?: LineItem[]; // Add line items array
   };
   confidenceScore: number;
   issues: string[];
-  agentResults?: {
-    extractor?: any;
-    validator?: any;
-    classifier?: any;
-    recalculator?: any;
-    auditor?: any;
+  agentResults: {
+    extractor: {
+      model: string;
+      method: string;
+      rawResponse: string;
+      provenance?: { // Enhanced field-level provenance tracking
+        [field: string]: FieldProvenance;
+      };
+      lineItemProvenance?: LineItemProvenance[];
+      consensusMetadata?: {
+        totalModels: number;
+        agreementLevel: number;
+        conflictResolution: string;
+        finalConfidence: number;
+      };
+    };
   };
   processedAt: Date;
 }

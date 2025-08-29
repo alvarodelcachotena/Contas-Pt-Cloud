@@ -23,7 +23,7 @@ export interface IStorage {
   getUserById(id: number): Promise<User | undefined>;
   getUserByEmail(email: string): Promise<User | undefined>;
   createUser(user: InsertUser): Promise<User>;
-  getUsers(): Promise<User[]>;
+  getUsers(tenantId: number): Promise<User[]>;
   updateUser(id: number, updates: Partial<InsertUser>): Promise<User>;
   
   // User-Tenant management

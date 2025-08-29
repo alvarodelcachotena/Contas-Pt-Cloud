@@ -8,92 +8,167 @@ loadEnvStrict()
 // Use service role key to bypass RLS and avoid infinite recursion
 const supabase = createClient(
   process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!
+  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
 )
-console.log(`🔧 Using Supabase URL: ${process.env.SUPABASE_URL}`)
-console.log(`🔑 Using Service Role Key: ${process.env.SUPABASE_SERVICE_ROLE_KEY ? 'Set' : 'Missing'}`)
 
 export async function GET(request: NextRequest) {
   try {
     const tenantId = request.headers.get('x-tenant-id') || '1'
     console.log(`📊 Dashboard metrics requested for tenant: ${tenantId}`)
 
-    // Force a fresh connection by creating a new client
-    const freshSupabase = createClient(
-      process.env.SUPABASE_URL!,
-      process.env.SUPABASE_SERVICE_ROLE_KEY!
-    )
-    
-    console.log(`🔄 Created fresh Supabase connection`)
-
     // Get current month metrics for comparison
     const currentMonth = new Date().toISOString().slice(0, 7) // YYYY-MM format
+    const currentYear = new Date().getFullYear()
 
-    // Total invoices (all time)
-    const invoicesQuery = await freshSupabase
+    // 1. Total invoices (all time)
+    const { count: totalInvoices, error: invoicesError } = await supabase
       .from('invoices')
-      .select('id', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
-    console.log(`📈 Invoices query result:`, invoicesQuery)
 
-    // Total expenses (all time)
-    const expensesQuery = await freshSupabase
+    if (invoicesError) {
+      console.error('❌ Error fetching invoices:', invoicesError)
+    }
+
+    // 2. Total expenses (all time)
+    const { count: totalExpenses, error: expensesError } = await supabase
       .from('expenses')
-      .select('id', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
-    console.log(`💰 Expenses query result:`, expensesQuery)
 
-    // Total documents processed
-    const documentsQuery = await freshSupabase
+    if (expensesError) {
+      console.error('❌ Error fetching expenses:', expensesError)
+    }
+
+    // 3. Total documents (all time)
+    const { count: totalDocuments, error: documentsError } = await supabase
       .from('documents')
-      .select('id', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
-    console.log(`📄 Documents query result:`, documentsQuery)
 
-    // Total clients
-    const clientsQuery = await freshSupabase
+    if (documentsError) {
+      console.error('❌ Error fetching documents:', documentsError)
+    }
+
+    // 4. Total raw documents (uploaded but not processed)
+    const { count: totalRawDocuments, error: rawDocsError } = await supabase
+      .from('raw_documents')
+      .select('*', { count: 'exact', head: true })
+      .eq('tenant_id', tenantId)
+
+    if (rawDocsError) {
+      console.error('❌ Error fetching raw documents:', rawDocsError)
+    }
+
+    // 5. Total clients
+    const { count: totalClients, error: clientsError } = await supabase
       .from('clients')
-      .select('id', { count: 'exact' })
+      .select('*', { count: 'exact', head: true })
       .eq('tenant_id', tenantId)
-    console.log(`👥 Clients query result:`, clientsQuery)
 
-    // Revenue calculation (sum of all invoice amounts)
-    const revenueQuery = await freshSupabase
+    if (clientsError) {
+      console.error('❌ Error fetching clients:', clientsError)
+    }
+
+    // 6. Revenue calculation (sum of all invoice amounts)
+    const { data: revenueData, error: revenueError } = await supabase
       .from('invoices')
-      .select('total_amount')
+      .select('total_amount, status')
       .eq('tenant_id', tenantId)
-    console.log(`💵 Revenue data:`, revenueQuery)
+      .eq('status', 'paid') // Only count paid invoices
 
-    const totalRevenue = revenueQuery.data?.reduce((sum, invoice) => 
-      sum + (parseFloat(invoice.total_amount) || 0), 0) || 0
+    if (revenueError) {
+      console.error('❌ Error fetching revenue:', revenueError)
+    }
 
-    // Expenses calculation (all expenses)
-    const expenseQuery = await freshSupabase
+    const totalRevenue = revenueData?.reduce((sum, invoice) =>
+      sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0) || 0
+
+    // 7. Expenses calculation (sum of all expense amounts)
+    const { data: expenseData, error: expenseAmountError } = await supabase
+      .from('expenses')
+      .select('amount, is_deductible')
+      .eq('tenant_id', tenantId)
+
+    if (expenseAmountError) {
+      console.error('❌ Error fetching expense amounts:', expenseAmountError)
+    }
+
+    const totalExpenseAmount = expenseData?.reduce((sum, expense) =>
+      sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0) || 0
+
+    // 8. Current month metrics
+    const { data: currentMonthInvoices, error: monthInvoicesError } = await supabase
+      .from('invoices')
+      .select('total_amount, status')
+      .eq('tenant_id', tenantId)
+      .gte('issue_date', `${currentMonth}-01`)
+      .lte('issue_date', `${currentMonth}-31`)
+
+    if (monthInvoicesError) {
+      console.error('❌ Error fetching current month invoices:', monthInvoicesError)
+    }
+
+    const currentMonthRevenue = currentMonthInvoices?.reduce((sum, invoice) =>
+      sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0) || 0
+
+    const { data: currentMonthExpenses, error: monthExpensesError } = await supabase
       .from('expenses')
       .select('amount')
       .eq('tenant_id', tenantId)
-    console.log(`💸 Expense data:`, expenseQuery)
+      .gte('expense_date', `${currentMonth}-01`)
+      .lte('expense_date', `${currentMonth}-31`)
 
-    const totalExpenses = expenseQuery.data?.reduce((sum, expense) => 
-      sum + (parseFloat(expense.amount) || 0), 0) || 0
+    if (monthExpensesError) {
+      console.error('❌ Error fetching current month expenses:', monthExpensesError)
+    }
+
+    const currentMonthExpenseAmount = currentMonthExpenses?.reduce((sum, expense) =>
+      sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0) || 0
+
+    // 9. Calculate net profit
+    const netProfit = totalRevenue - totalExpenseAmount
+    const currentMonthNetProfit = currentMonthRevenue - currentMonthExpenseAmount
+
+    // 10. Document processing status
+    const totalUploadedDocuments = (totalDocuments || 0) + (totalRawDocuments || 0)
+    const processedDocuments = totalDocuments || 0
+    const pendingDocuments = totalRawDocuments || 0
 
     const metrics = {
-      totalInvoices: invoicesQuery.count || 0,
-      totalExpenses: expensesQuery.count || 0,
-      totalDocuments: documentsQuery.count || 0,
-      totalClients: clientsQuery.count || 0,
+      // Counts
+      totalInvoices: totalInvoices || 0,
+      totalExpenses: totalExpenses || 0,
+      totalDocuments: totalUploadedDocuments, // Total uploaded documents
+      processedDocuments: processedDocuments, // Successfully processed
+      pendingDocuments: pendingDocuments, // Waiting to be processed
+      totalClients: totalClients || 0,
+
+      // Financial totals (all time)
       totalRevenue: totalRevenue,
-      totalExpenseAmount: totalExpenses,
-      netProfit: totalRevenue - totalExpenses
+      totalExpenseAmount: totalExpenseAmount,
+      netProfit: netProfit,
+
+      // Current month metrics
+      currentMonthRevenue: currentMonthRevenue,
+      currentMonthExpenseAmount: currentMonthExpenseAmount,
+      currentMonthNetProfit: currentMonthNetProfit,
+
+      // Processing stats
+      processingSuccessRate: totalUploadedDocuments > 0 ?
+        Math.round((processedDocuments / totalUploadedDocuments) * 100) : 0
     }
-    
+
     console.log(`📊 Final metrics for tenant ${tenantId}:`, metrics)
 
     return NextResponse.json(metrics)
   } catch (error) {
-    console.error('Dashboard metrics error:', error)
+    console.error('❌ Dashboard metrics error:', error)
     return NextResponse.json(
-      { error: 'Failed to fetch metrics' },
+      {
+        error: 'Failed to fetch metrics',
+        details: error instanceof Error ? error.message : 'Unknown error'
+      },
       { status: 500 }
     )
   }

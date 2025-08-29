@@ -1,88 +1,94 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { loadEnvStrict } from '../../../lib/env-loader.js'
+import { loadEnvStrict, getSupabaseUrl, getSupabaseAnonKey } from '../../../lib/env-loader.js'
 
 // Force loading from .env file only
 loadEnvStrict()
 
-// Use service role key to bypass RLS and avoid infinite recursion
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY || process.env.SUPABASE_ANON_KEY!
-)
+const SUPABASE_URL = getSupabaseUrl()
+const SUPABASE_ANON_KEY = getSupabaseAnonKey()
 
-// Portuguese VAT rates
-const PORTUGUESE_VAT_RATES = [
-  { rate: 6, description: 'Taxa Reduzida', category: 'essential_goods' },
-  { rate: 13, description: 'Taxa Intermédia', category: 'restaurant_hotels' },
-  { rate: 23, description: 'Taxa Normal', category: 'general_goods' }
-]
+// Use anon key for API access
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 
 export async function GET(request: NextRequest) {
   try {
-    const { searchParams } = new URL(request.url)
-    const type = searchParams.get('type')
-    
-    if (type === 'rates') {
-      return NextResponse.json(PORTUGUESE_VAT_RATES)
-    }
-    
-    // Get VAT transactions/reports
     const tenantId = request.headers.get('x-tenant-id') || '1'
-    const startDate = searchParams.get('startDate')
-    const endDate = searchParams.get('endDate')
-    
-    let query = supabase
-      .from('expenses')
+    console.log('💰 Fetching VAT records for tenant:', tenantId)
+
+    const { data: vatRecords, error } = await supabase
+      .from('vat_records')
       .select('*')
       .eq('tenant_id', tenantId)
-      .not('vat_amount', 'is', null)
-    
-    if (startDate) {
-      query = query.gte('expense_date', startDate)
-    }
-    
-    if (endDate) {
-      query = query.lte('expense_date', endDate)
-    }
-    
-    const { data: expenses, error } = await query.order('expense_date', { ascending: false })
-    
+      .order('period', { ascending: false })
+
     if (error) {
-      console.error('Error fetching VAT data:', error)
-      return NextResponse.json({ error: 'Failed to fetch VAT data' }, { status: 500 })
+      console.error('❌ Error fetching VAT records:', error)
+      return NextResponse.json({ error: 'Failed to fetch VAT records' }, { status: 500 })
     }
 
-    // Calculate VAT summary
-    const vatSummary = PORTUGUESE_VAT_RATES.map(rate => {
-      const rateExpenses = expenses?.filter(exp => exp.vat_rate === rate.rate) || []
-      const totalAmount = rateExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount || '0'), 0)
-      const totalVAT = rateExpenses.reduce((sum, exp) => sum + parseFloat(exp.vat_amount || '0'), 0)
-      
-      return {
-        rate: rate.rate,
-        description: rate.description,
-        category: rate.category,
-        transactionCount: rateExpenses.length,
-        totalAmount: totalAmount.toFixed(2),
-        totalVAT: totalVAT.toFixed(2)
-      }
-    })
-    
-    return NextResponse.json({
-      summary: vatSummary,
-      transactions: expenses?.map(exp => ({
-        id: exp.id,
-        vendor: exp.vendor,
-        amount: exp.amount,
-        vatAmount: exp.vat_amount,
-        vatRate: exp.vat_rate,
-        expenseDate: exp.expense_date,
-        description: exp.description
-      })) || []
-    })
+    console.log(`✅ Found ${vatRecords?.length || 0} VAT records`)
+
+    const formattedVatRecords = vatRecords?.map(record => ({
+      id: record.id,
+      period: record.period,
+      totalSales: record.total_sales,
+      totalPurchases: record.total_purchases,
+      vatCollected: record.vat_collected,
+      vatPaid: record.vat_paid,
+      vatDue: record.vat_due,
+      status: record.status,
+      dueDate: record.due_date,
+      submittedDate: record.submitted_date,
+      createdAt: record.created_at
+    })) || []
+
+    return NextResponse.json(formattedVatRecords)
   } catch (error) {
-    console.error('VAT API error:', error)
+    console.error('❌ VAT API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}
+
+export async function POST(request: NextRequest) {
+  try {
+    const body = await request.json()
+    console.log('💰 Creating VAT record for tenant: 1', body)
+
+    // Prepare VAT record data
+    const vatData = {
+      tenant_id: 1,
+      period: body.period,
+      total_sales: body.totalSales,
+      total_purchases: body.totalPurchases,
+      vat_collected: body.vatCollected,
+      vat_paid: body.vatPaid,
+      vat_due: body.vatDue,
+      status: body.status || 'pending',
+      due_date: body.dueDate,
+      submitted_date: body.submittedDate
+    }
+
+    console.log('📋 VAT data to insert:', vatData)
+
+    const { data: vatRecord, error } = await supabase
+      .from('vat_records')
+      .insert(vatData)
+      .select()
+      .single()
+
+    if (error) {
+      console.error('❌ Error creating VAT record:', error)
+      return NextResponse.json({
+        error: 'Failed to create VAT record',
+        details: error.message
+      }, { status: 500 })
+    }
+
+    console.log('✅ VAT record created successfully:', vatRecord.id)
+    return NextResponse.json(vatRecord)
+  } catch (error) {
+    console.error('❌ Create VAT record error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }

@@ -56,14 +56,14 @@ export class EnhancedCloudProcessor {
           return await this.geminiExtractor.extractFromPDF(fileBuffer, filename);
         } catch (geminiError) {
           console.log('Gemini PDF processing failed:', geminiError instanceof Error ? geminiError.message : String(geminiError));
-          
+
           // Secondary fallback to OpenAI vision processing for PDFs
           try {
             console.log('Attempting OpenAI vision processing...');
             return await this.openaiExtractor.extractFromImage(fileBuffer, mimeType, filename);
           } catch (openaiError) {
             console.log('OpenAI vision also failed:', openaiError instanceof Error ? openaiError.message : String(openaiError));
-            
+
             // Final fallback with basic data
             return {
               data: {
@@ -220,7 +220,7 @@ export class EnhancedCloudProcessor {
         resolvedFields.push(field);
       } else {
         // Multiple models have this field - check for agreement
-        const uniqueValues = Array.from(new Set(values.map(v => 
+        const uniqueValues = Array.from(new Set(values.map(v =>
           typeof v === 'number' ? Number(v.toFixed(2)) : String(v).trim().toLowerCase()
         )));
 
@@ -263,24 +263,30 @@ export class EnhancedCloudProcessor {
         extractor: {
           model: "multi-model-consensus",
           method: "structured_consensus",
-          modelsUsed: models,
-          agreementRatio,
-          conflictCount: conflicts.length,
-          consensusMetrics: {
-            agreement: agreementRatio,
-            conflicts,
-            resolvedFields
+          rawResponse: `Consensus from ${models.length} models with ${agreementRatio * 100}% agreement. Models: ${models.join(', ')}. Agreement ratio: ${agreementRatio}. Conflicts: ${conflicts.length}. Resolved fields: ${resolvedFields.length}.`,
+          provenance: {
+            consensus: {
+              model: "multi-model-consensus",
+              confidence: Math.min(finalConfidence, 1.0),
+              method: "structured_consensus",
+              timestamp: new Date(),
+            },
+            metrics: {
+              model: "metrics",
+              confidence: agreementRatio,
+              method: "consensus_metrics",
+              timestamp: new Date(),
+            },
           },
-          modelResults
-        }
+        },
       },
-      processedAt: new Date()
+      processedAt: new Date(),
     };
   }
 
   private isImageFile(mimeType: string): boolean {
-    return mimeType.startsWith('image/') && 
-           ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'].includes(mimeType);
+    return mimeType.startsWith('image/') &&
+      ['image/jpeg', 'image/jpg', 'image/png', 'image/webp', 'image/gif'].includes(mimeType);
   }
 
   // Method to get processing recommendations based on document characteristics
@@ -390,7 +396,7 @@ export class EnhancedCloudProcessor {
 
   private suggestCategory(vendor: string, description: string): string {
     const text = `${vendor} ${description}`.toLowerCase();
-    
+
     if (text.includes('restaurante') || text.includes('café') || text.includes('aliment')) {
       return 'alimentacao';
     }

@@ -249,6 +249,57 @@ export const multiAgentResults = pgTable("multi_agent_results", {
   createdAt: timestamp("created_at").defaultNow()
 });
 
+// Field-Level Provenance Metadata
+export const fieldProvenance = pgTable("field_provenance", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull(),
+  documentId: text("document_id").notNull(),
+  fieldName: text("field_name").notNull(),
+  fieldValue: text("field_value"),
+  model: text("model").notNull(),
+  confidence: numeric("confidence", { precision: 5, scale: 2 }).notNull(),
+  method: text("method").notNull(),
+  modelVersion: text("model_version"),
+  processingTime: integer("processing_time_ms"),
+  rawValue: text("raw_value"),
+  extractionContext: jsonb("extraction_context").default("{}"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+// Line Item Provenance Metadata
+export const lineItemProvenance = pgTable("line_item_provenance", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull(),
+  documentId: text("document_id").notNull(),
+  rowIndex: integer("row_index").notNull(),
+  fieldName: text("field_name").notNull(),
+  fieldValue: text("field_value"),
+  model: text("model").notNull(),
+  confidence: numeric("confidence", { precision: 5, scale: 2 }).notNull(),
+  method: text("method").notNull(),
+  modelVersion: text("model_version"),
+  processingTime: integer("processing_time_ms"),
+  rawValue: text("raw_value"),
+  extractionContext: jsonb("extraction_context").default("{}"),
+  timestamp: timestamp("timestamp").defaultNow(),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+// Consensus Metadata
+export const consensusMetadata = pgTable("consensus_metadata", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull(),
+  documentId: text("document_id").notNull().unique(),
+  totalModels: integer("total_models").notNull(),
+  agreementLevel: numeric("agreement_level", { precision: 5, scale: 2 }).notNull(),
+  conflictResolution: text("conflict_resolution").notNull(),
+  finalConfidence: numeric("final_confidence", { precision: 5, scale: 2 }).notNull(),
+  modelContributions: jsonb("model_contributions").notNull(), // Which model contributed each field
+  processingTimeMs: integer("processing_time_ms"),
+  createdAt: timestamp("created_at").defaultNow()
+});
+
 // RAG Document Vectors (for similarity search)
 export const ragVectors = pgTable("rag_vectors", {
   id: serial("id").primaryKey(),
@@ -259,6 +310,57 @@ export const ragVectors = pgTable("rag_vectors", {
   embedding: jsonb("embedding").notNull(), // Vector representation
   similarity: numeric("similarity", { precision: 5, scale: 4 }),
   createdAt: timestamp("created_at").defaultNow()
+});
+
+// Documents Embedding Table with Vector Column
+export const documentsEmbedding = pgTable("documents_embedding", {
+  id: serial("id").primaryKey(),
+  tenantId: integer("tenant_id").notNull(),
+  documentId: integer("document_id").notNull(),
+  filename: text("filename").notNull(),
+  documentType: text("document_type"),
+  ocrText: text("ocr_text"),
+  metadata: jsonb("metadata").default("{}"),
+  embedding: text("embedding"), // Vector column for pgvector
+  createdAt: timestamp("created_at").defaultNow()
+});
+
+// RAG Query Log Table for Audit Logging
+export const ragQueryLog = pgTable("rag_query_log", {
+  id: text("id").primaryKey(), // UUID
+  tenantId: integer("tenant_id").notNull(),
+  userId: integer("user_id"),
+  sessionId: text("session_id"),
+
+  // Query information
+  queryText: text("query_text").notNull(),
+  queryType: text("query_type").default("semantic_search"),
+  queryParameters: jsonb("query_parameters").default("{}"),
+
+  // Results information
+  totalResults: integer("total_results").default(0),
+  vectorHitIds: text("vector_hit_ids").array(), // Array of document IDs
+  similarityScores: numeric("similarity_scores").array(), // Array of similarity scores
+  processingTimeMs: integer("processing_time_ms"),
+
+  // Model and cache information
+  embeddingModel: text("embedding_model"),
+  cacheHit: boolean("cache_hit").default(false),
+  cacheKey: text("cache_key"),
+
+  // Performance metrics
+  responseTimeMs: integer("response_time_ms"),
+  tokensUsed: integer("tokens_used"),
+  costEstimate: numeric("cost_estimate", { precision: 10, scale: 6 }),
+
+  // Metadata
+  userAgent: text("user_agent"),
+  ipAddress: text("ip_address"),
+  requestHeaders: jsonb("request_headers").default("{}"),
+
+  // Timestamps
+  createdAt: timestamp("created_at").defaultNow(),
+  queryTimestamp: timestamp("query_timestamp").defaultNow()
 });
 
 // Manager Approvals
@@ -344,15 +446,20 @@ export const insertRawDocumentSchema = createInsertSchema(rawDocuments).omit({ c
 export const insertAiChatMessageSchema = createInsertSchema(aiChatMessages).omit({ id: true, createdAt: true });
 export const insertWebhookCredentialSchema = createInsertSchema(webhookCredentials).omit({ id: true, createdAt: true, updatedAt: true });
 export const insertMultiAgentResultSchema = createInsertSchema(multiAgentResults).omit({ id: true, createdAt: true });
+export const insertFieldProvenanceSchema = createInsertSchema(fieldProvenance).omit({ id: true, createdAt: true });
+export const insertLineItemProvenanceSchema = createInsertSchema(lineItemProvenance).omit({ id: true, createdAt: true });
+export const insertConsensusMetadataSchema = createInsertSchema(consensusMetadata).omit({ id: true, createdAt: true });
 export const insertRagVectorSchema = createInsertSchema(ragVectors).omit({ id: true, createdAt: true });
+export const insertDocumentsEmbeddingSchema = createInsertSchema(documentsEmbedding).omit({ id: true, createdAt: true });
+export const insertRagQueryLogSchema = createInsertSchema(ragQueryLog).omit({ id: true, createdAt: true, queryTimestamp: true });
 export const insertManagerApprovalSchema = createInsertSchema(managerApprovals).omit({ id: true, createdAt: true, decidedAt: true });
-export const insertExtractedInvoiceDataSchema = createInsertSchema(extractedInvoiceData).omit({ 
-  id: true, 
-  extractedAt: true 
+export const insertExtractedInvoiceDataSchema = createInsertSchema(extractedInvoiceData).omit({
+  id: true,
+  extractedAt: true
 });
-export const insertMonthlyStatementEntrySchema = createInsertSchema(monthlyStatementEntries).omit({ 
-  id: true, 
-  createdAt: true 
+export const insertMonthlyStatementEntrySchema = createInsertSchema(monthlyStatementEntries).omit({
+  id: true,
+  createdAt: true
 });
 
 // Types
@@ -394,3 +501,15 @@ export type ExtractedInvoiceData = typeof extractedInvoiceData.$inferSelect;
 export type InsertExtractedInvoiceData = z.infer<typeof insertExtractedInvoiceDataSchema>;
 export type MonthlyStatementEntry = typeof monthlyStatementEntries.$inferSelect;
 export type InsertMonthlyStatementEntry = z.infer<typeof insertMonthlyStatementEntrySchema>;
+export type MultiAgentResult = typeof multiAgentResults.$inferSelect;
+export type InsertMultiAgentResult = z.infer<typeof insertMultiAgentResultSchema>;
+export type FieldProvenance = typeof fieldProvenance.$inferSelect;
+export type InsertFieldProvenance = z.infer<typeof insertFieldProvenanceSchema>;
+export type LineItemProvenance = typeof lineItemProvenance.$inferSelect;
+export type InsertLineItemProvenance = z.infer<typeof insertLineItemProvenanceSchema>;
+export type ConsensusMetadata = typeof consensusMetadata.$inferSelect;
+export type InsertConsensusMetadata = z.infer<typeof insertConsensusMetadataSchema>;
+export type DocumentsEmbedding = typeof documentsEmbedding.$inferSelect;
+export type InsertDocumentsEmbedding = z.infer<typeof insertDocumentsEmbeddingSchema>;
+export type RagQueryLog = typeof ragQueryLog.$inferSelect;
+export type InsertRagQueryLog = z.infer<typeof insertRagQueryLogSchema>;

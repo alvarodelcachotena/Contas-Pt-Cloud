@@ -3,23 +3,45 @@
 import { useQuery } from '@tanstack/react-query'
 
 interface DashboardMetrics {
+  // Counts
   totalInvoices: number
   totalExpenses: number
   totalDocuments: number
+  processedDocuments: number
+  pendingDocuments: number
   totalClients: number
+
+  // Financial totals (all time)
   totalRevenue: number
   totalExpenseAmount: number
   netProfit: number
+
+  // Current month metrics
+  currentMonthRevenue: number
+  currentMonthExpenseAmount: number
+  currentMonthNetProfit: number
+
+  // Processing stats
+  processingSuccessRate: number
 }
 
 export default function Dashboard() {
-  const { data: metrics, isLoading } = useQuery<DashboardMetrics>({
+  const { data: metrics, isLoading, error } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
     queryFn: async () => {
-      const response = await fetch('/api/dashboard/metrics')
-      if (!response.ok) throw new Error('Failed to fetch metrics')
+      const response = await fetch('/api/dashboard/metrics', {
+        headers: {
+          'x-tenant-id': '1' // Hardcoded for now, should come from user context
+        }
+      })
+      if (!response.ok) {
+        const errorData = await response.json()
+        console.error('❌ Dashboard API error:', errorData)
+        throw new Error(`Failed to fetch metrics: ${errorData.error || response.statusText}`)
+      }
       return response.json()
-    }
+    },
+    refetchInterval: 30000, // Refresh every 30 seconds
   })
 
   if (isLoading) {
@@ -37,6 +59,23 @@ export default function Dashboard() {
     )
   }
 
+  if (error) {
+    return (
+      <div className="p-6">
+        <div className="bg-red-50 border border-red-200 rounded-lg p-4">
+          <h3 className="text-lg font-semibold text-red-800 mb-2">Erro ao carregar dashboard</h3>
+          <p className="text-red-600">{error.message}</p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
+          >
+            Tentar novamente
+          </button>
+        </div>
+      </div>
+    )
+  }
+
   return (
     <div className="p-8 bg-background min-h-full">
       <div className="max-w-7xl mx-auto space-y-8">
@@ -49,7 +88,8 @@ export default function Dashboard() {
             Última atualização: {new Date().toLocaleDateString('pt-PT')}
           </div>
         </div>
-        
+
+        {/* Main Metrics Cards */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
           <div className="metric-card">
             <div className="flex items-center justify-between">
@@ -57,6 +97,9 @@ export default function Dashboard() {
                 <h3 className="text-sm font-medium text-muted-foreground">Faturas</h3>
                 <p className="text-3xl font-bold text-foreground mt-2">
                   {metrics?.totalInvoices || 0}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total de faturas
                 </p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -66,13 +109,16 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="metric-card">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Despesas</h3>
                 <p className="text-3xl font-bold text-foreground mt-2">
                   {metrics?.totalExpenses || 0}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total de despesas
                 </p>
               </div>
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -82,7 +128,7 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="metric-card">
             <div className="flex items-center justify-between">
               <div>
@@ -90,6 +136,16 @@ export default function Dashboard() {
                 <p className="text-3xl font-bold text-foreground mt-2">
                   {metrics?.totalDocuments || 0}
                 </p>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-xs text-green-600">
+                    ✓ {metrics?.processedDocuments || 0} processados
+                  </span>
+                  {metrics?.pendingDocuments && metrics.pendingDocuments > 0 && (
+                    <span className="text-xs text-orange-600">
+                      ⏳ {metrics.pendingDocuments} pendentes
+                    </span>
+                  )}
+                </div>
               </div>
               <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
                 <svg className="w-6 h-6 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -98,13 +154,16 @@ export default function Dashboard() {
               </div>
             </div>
           </div>
-          
+
           <div className="metric-card">
             <div className="flex items-center justify-between">
               <div>
                 <h3 className="text-sm font-medium text-muted-foreground">Clientes</h3>
                 <p className="text-3xl font-bold text-foreground mt-2">
                   {metrics?.totalClients || 0}
+                </p>
+                <p className="text-xs text-muted-foreground mt-1">
+                  Total de clientes
                 </p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -116,6 +175,7 @@ export default function Dashboard() {
           </div>
         </div>
 
+        {/* Financial Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
@@ -129,9 +189,12 @@ export default function Dashboard() {
             <p className="text-3xl font-bold text-green-600">
               €{metrics?.totalRevenue?.toFixed(2) || '0.00'}
             </p>
-            <p className="text-sm text-muted-foreground mt-2">Este mês</p>
+            <div className="mt-2 space-y-1">
+              <p className="text-sm text-muted-foreground">Este mês: €{metrics?.currentMonthRevenue?.toFixed(2) || '0.00'}</p>
+              <p className="text-xs text-muted-foreground">Todas as faturas pagas</p>
+            </div>
           </div>
-          
+
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Despesas Total</h3>
@@ -144,30 +207,89 @@ export default function Dashboard() {
             <p className="text-3xl font-bold text-red-600">
               €{metrics?.totalExpenseAmount?.toFixed(2) || '0.00'}
             </p>
-            <p className="text-sm text-muted-foreground mt-2">Este mês</p>
+            <div className="mt-2 space-y-1">
+              <p className="text-sm text-muted-foreground">Este mês: €{metrics?.currentMonthExpenseAmount?.toFixed(2) || '0.00'}</p>
+              <p className="text-xs text-muted-foreground">Todas as despesas</p>
+            </div>
           </div>
-          
+
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">Lucro Líquido</h3>
-              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${
-                (metrics?.netProfit || 0) >= 0 ? 'bg-green-100' : 'bg-red-100'
-              }`}>
-                <svg className={`w-4 h-4 ${
-                  (metrics?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-                }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <div className={`w-8 h-8 rounded-full flex items-center justify-center ${(metrics?.netProfit || 0) >= 0 ? 'bg-green-100' : 'bg-red-100'
+                }`}>
+                <svg className={`w-4 h-4 ${(metrics?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                  }`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1" />
                 </svg>
               </div>
             </div>
-            <p className={`text-3xl font-bold ${
-              (metrics?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'
-            }`}>
+            <p className={`text-3xl font-bold ${(metrics?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+              }`}>
               €{metrics?.netProfit?.toFixed(2) || '0.00'}
             </p>
-            <p className="text-sm text-muted-foreground mt-2">Este mês</p>
+            <div className="mt-2 space-y-1">
+              <p className="text-sm text-muted-foreground">
+                Este mês: €{metrics?.currentMonthNetProfit?.toFixed(2) || '0.00'}
+              </p>
+              <p className="text-xs text-muted-foreground">
+                Receita - Despesas
+              </p>
+            </div>
           </div>
         </div>
+
+        {/* Document Processing Status */}
+        {metrics?.totalDocuments && metrics.totalDocuments > 0 && (
+          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+            <div className="metric-card">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Status de Processamento</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Taxa de Sucesso</span>
+                  <span className="text-lg font-semibold text-green-600">
+                    {metrics.processingSuccessRate}%
+                  </span>
+                </div>
+                <div className="w-full bg-gray-200 rounded-full h-2">
+                  <div
+                    className="bg-green-600 h-2 rounded-full transition-all duration-300"
+                    style={{ width: `${metrics.processingSuccessRate}%` }}
+                  ></div>
+                </div>
+                <div className="flex justify-between text-xs text-muted-foreground">
+                  <span>{metrics?.processedDocuments || 0} processados</span>
+                  <span>{metrics?.pendingDocuments || 0} pendentes</span>
+                </div>
+              </div>
+            </div>
+
+            <div className="metric-card">
+              <h3 className="text-lg font-semibold text-foreground mb-4">Resumo Mensal</h3>
+              <div className="space-y-3">
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Receita do Mês</span>
+                  <span className="text-lg font-semibold text-green-600">
+                    €{metrics?.currentMonthRevenue?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Despesas do Mês</span>
+                  <span className="text-lg font-semibold text-red-600">
+                    €{metrics?.currentMonthExpenseAmount?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between">
+                  <span className="text-sm text-muted-foreground">Lucro do Mês</span>
+                  <span className={`text-lg font-semibold ${(metrics?.currentMonthNetProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'
+                    }`}>
+                    €{metrics?.currentMonthNetProfit?.toFixed(2) || '0.00'}
+                  </span>
+                </div>
+              </div>
+            </div>
+          </div>
+        )}
       </div>
     </div>
   )

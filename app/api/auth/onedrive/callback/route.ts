@@ -1,5 +1,9 @@
 import { NextRequest, NextResponse } from 'next/server'
 
+// Force dynamic rendering to avoid prerendering issues
+export const dynamic = 'force-dynamic'
+export const revalidate = 0
+
 const ONEDRIVE_CLIENT_ID = process.env.ONEDRIVE_CLIENT_ID
 const ONEDRIVE_CLIENT_SECRET = process.env.ONEDRIVE_CLIENT_SECRET
 const REDIRECT_URI = `http://localhost:5000/api/auth/onedrive/callback`

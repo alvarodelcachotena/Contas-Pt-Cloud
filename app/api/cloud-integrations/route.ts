@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { loadEnvStrict } from '../../../lib/env-loader.js'
+import { loadEnvStrict, getSupabaseUrl, getSupabaseAnonKey } from '../../../lib/env-loader.js'
 import { getTenantId, getTenantInfo } from '../../../lib/tenant-utils'
 
 // Load environment variables strictly from .env file
@@ -10,14 +10,14 @@ loadEnvStrict()
 function createSupabaseClient() {
   // Force reload environment variables
   loadEnvStrict()
-  
-  const url = process.env.SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
-  
+
+  const url = getSupabaseUrl()
+  const key = getSupabaseAnonKey()
+
   console.log('🔍 Creating Supabase client with:')
   console.log('- URL ends with:', url?.slice(-10) || 'MISSING')
-  console.log('- Service key ends with:', key?.slice(-10) || 'MISSING')
-  
+  console.log('- Anon key ends with:', key?.slice(-10) || 'MISSING')
+
   return createClient(url, key, {
     auth: {
       autoRefreshToken: false,
@@ -38,7 +38,7 @@ export async function GET(request: NextRequest) {
   try {
     // Create fresh Supabase client
     const supabase = createSupabaseClient()
-    
+
     // Get tenant ID dynamically (multi-tenant support)
     const tenantId = await getTenantId(request)
 
@@ -87,15 +87,15 @@ export async function POST(request: NextRequest) {
     console.log(`✅ Nova integração ${provider} recebida para ${user_email}`)
     console.log('Access token length:', access_token?.length || 0)
     console.log('Refresh token length:', refresh_token?.length || 0)
-    
+
     // Create fresh Supabase client for this request
     const supabase = createSupabaseClient()
-    
+
     // Get tenant ID dynamically using utility function
     const tenantId = await getTenantId(request, user_email)
     const tenantInfo = await getTenantInfo(tenantId)
     const tenantName = tenantInfo?.name || "Unknown Tenant"
-    
+
     console.log(`✅ Using tenant: ${tenantName} (ID: ${tenantId})`)
 
     // Actually save to database using service role key with better error handling
@@ -108,10 +108,10 @@ export async function POST(request: NextRequest) {
       is_active: true
     }
 
-    console.log('💾 Attempting to save config data:', { 
-      tenant_id: configData.tenant_id, 
+    console.log('💾 Attempting to save config data:', {
+      tenant_id: configData.tenant_id,
       provider: configData.provider,
-      folder_path: configData.folder_path 
+      folder_path: configData.folder_path
     })
 
     // Use webhook save endpoint to maintain consistency with webhook system
@@ -131,7 +131,7 @@ export async function POST(request: NextRequest) {
       })
 
       const saveResult = await saveResponse.json()
-      
+
       if (!saveResult.success) {
         console.error('❌ Failed to save via webhook:', saveResult.error)
         return NextResponse.json({ error: saveResult.error }, { status: 500 })
@@ -145,7 +145,7 @@ export async function POST(request: NextRequest) {
     }
 
     console.log(`✅ Configuração ${provider} guardada com ID: ${config.id}`)
-    
+
     // Return success with actual database data
     const newIntegration = {
       id: config.id.toString(),

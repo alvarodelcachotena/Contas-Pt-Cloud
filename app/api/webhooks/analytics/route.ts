@@ -1,14 +1,14 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { loadEnvStrict } from '@/lib/env-loader.js'
+import { loadEnvStrict, getSupabaseUrl, getSupabaseAnonKey } from '@/lib/env-loader.js'
 import { getTenantId } from '@/lib/tenant-utils'
 
 loadEnvStrict()
 
 function createSupabaseClient() {
-  const url = process.env.SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
-  
+  const url = getSupabaseUrl()
+  const key = getSupabaseAnonKey()
+
   return createClient(url, key, {
     auth: { autoRefreshToken: false, persistSession: false }
   })
@@ -43,7 +43,7 @@ async function generateWebhookAnalytics(tenantId: number, period: string, servic
   // Calculate date range
   const endDate = new Date()
   const startDate = new Date()
-  
+
   switch (period) {
     case '1d':
       startDate.setDate(startDate.getDate() - 1)
@@ -93,9 +93,9 @@ async function generateWebhookAnalytics(tenantId: number, period: string, servic
     activityBreakdown: {} as Record<string, number>,
     errorAnalysis: {} as Record<string, number>,
     performanceMetrics: {
-              peakHours: [] as Array<{ hour: number; events: number }>,
-        slowestOperations: [] as Array<{ operation: string; avgTime: number }>,
-        mostActiveServices: [] as Array<{ service: string; events: number }>
+      peakHours: [] as Array<{ hour: number; events: number }>,
+      slowestOperations: [] as Array<{ operation: string; avgTime: number }>,
+      mostActiveServices: [] as Array<{ service: string; events: number }>
     },
     trends: {
       dailyGrowth: 0,
@@ -155,7 +155,7 @@ async function generateWebhookAnalytics(tenantId: number, period: string, servic
     }
   })
 
-  analytics.timeSeriesData = Object.values(dailyData).sort((a: any, b: any) => 
+  analytics.timeSeriesData = Object.values(dailyData).sort((a: any, b: any) =>
     new Date(a.date).getTime() - new Date(b.date).getTime()
   )
 
@@ -167,13 +167,13 @@ async function generateWebhookAnalytics(tenantId: number, period: string, servic
   })
 
   analytics.performanceMetrics.peakHours = Object.entries(hourlyData)
-    .sort(([,a]: any, [,b]: any) => b - a)
+    .sort(([, a]: any, [, b]: any) => b - a)
     .slice(0, 3)
     .map(([hour, count]) => ({ hour: parseInt(hour), events: count }))
 
   // Most active services
   analytics.performanceMetrics.mostActiveServices = Object.entries(analytics.serviceBreakdown)
-    .sort(([,a]: any, [,b]: any) => b - a)
+    .sort(([, a]: any, [, b]: any) => b - a)
     .slice(0, 3)
     .map(([service, count]) => ({ service, events: count }))
 
@@ -212,10 +212,10 @@ export async function POST(request: NextRequest) {
     switch (action) {
       case 'export':
         const analytics = await generateWebhookAnalytics(tenantId, period)
-        
+
         // Generate CSV export
         const csvData = generateCSVExport(analytics)
-        
+
         return NextResponse.json({
           success: true,
           exportData: csvData,

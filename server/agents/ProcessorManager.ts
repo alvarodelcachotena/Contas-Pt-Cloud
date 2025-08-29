@@ -1,7 +1,11 @@
 import { ExtractionResult } from '../../shared/types';
-import { CloudDocumentProcessor } from './CloudDocumentProcessor';
-import { ExternalDocumentProcessors, ProcessingOptions } from './ExternalDocumentProcessors';
+import { AgentExtractorOpenAI } from './AgentExtractorOpenAI';
+import { AgentExtractorGemini } from './AgentExtractorGemini';
+import { ExternalDocumentProcessors } from './ExternalDocumentProcessors';
 import { TableParser } from './TableParser';
+import { DocumentClassifier } from './DocumentClassifier';
+import { ConfidenceCalibrator } from './ConfidenceCalibrator';
+import { ManualCorrectionCollector } from './ManualCorrectionCollector';
 
 export interface ProcessorCapabilities {
   name: string;
@@ -25,382 +29,71 @@ export interface ProcessingStrategy {
 }
 
 export class ProcessorManager {
-  private cloudProcessor: CloudDocumentProcessor;
+  private openaiExtractor: AgentExtractorOpenAI;
+  private geminiExtractor: AgentExtractorGemini;
   private externalProcessors: ExternalDocumentProcessors;
   private tableParser: TableParser;
-  private processorCapabilities: Map<string, ProcessorCapabilities> = new Map();
+  private documentClassifier: DocumentClassifier;
+  private confidenceCalibrator: ConfidenceCalibrator;
+  private correctionCollector: ManualCorrectionCollector;
 
   constructor() {
-    this.cloudProcessor = new CloudDocumentProcessor();
-    this.externalProcessors = new ExternalDocumentProcessors();
-    this.tableParser = new TableParser(
-      process.env.OPENAI_API_KEY, 
-      process.env.GOOGLE_AI_API_KEY
-    );
-    
-    this.initializeCapabilities();
-  }
-
-  private initializeCapabilities() {
-    // Internal processors
-    this.processorCapabilities.set('gemini-openai', {
-      name: 'Gemini + OpenAI',
-      type: 'internal',
-      supportedFormats: ['application/pdf', 'image/jpeg', 'image/png', 'image/webp'],
-      specialties: ['invoices', 'receipts', 'portuguese_documents'],
-      avgProcessingTime: 5000,
-      costPerDocument: 0.02,
-      accuracy: 0.92,
-      isAvailable: !!(process.env.GOOGLE_AI_API_KEY || process.env.OPENAI_API_KEY),
-      description: 'Internal AI processing with Gemini and OpenAI models'
-    });
-
-
-
-    // External processors
-    const externalProcessorConfigs = [
-      {
-        key: 'visionparser',
-        name: 'VisionParser.com',
-        specialties: ['receipts', 'invoices', 'financial_documents'],
-        accuracy: 0.96,
-        costPerDocument: 0.01,
-        avgProcessingTime: 3000,
-        description: 'High-accuracy receipt and invoice processing'
-      },
-      {
-        key: 'mindee',
-        name: 'Mindee Invoice OCR',
-        specialties: ['invoices', 'multi_page', 'structured_data'],
-        accuracy: 0.94,
-        costPerDocument: 0.08,
-        avgProcessingTime: 2000,
-        description: 'Specialized invoice processing with 50+ language support'
-      },
-      {
-        key: 'klippa',
-        name: 'Klippa OCR',
-        specialties: ['financial_documents', 'complex_tables', 'multi_language'],
-        accuracy: 0.93,
-        costPerDocument: 0.05,
-        avgProcessingTime: 4000,
-        description: 'Financial document specialist with table recognition'
-      },
-      {
-        key: 'azure',
-        name: 'Azure Form Recognizer',
-        specialties: ['forms', 'invoices', 'enterprise_scale'],
-        accuracy: 0.91,
-        costPerDocument: 0.04,
-        avgProcessingTime: 6000,
-        description: 'Enterprise-grade form and invoice processing'
-      },
-      {
-        key: 'google',
-        name: 'Google Document AI',
-        specialties: ['various_documents', 'custom_models', 'scalability'],
-        accuracy: 0.90,
-        costPerDocument: 0.03,
-        avgProcessingTime: 5000,
-        description: 'Scalable document processing with custom models'
-      },
-      {
-        key: 'veryfi',
-        name: 'Veryfi API',
-        specialties: ['real_time', 'mobile_receipts', 'compliance'],
-        accuracy: 0.92,
-        costPerDocument: 0.07,
-        avgProcessingTime: 2500,
-        description: 'Real-time processing with compliance features'
-      }
-    ];
-
-    for (const config of externalProcessorConfigs) {
-      const envKey = `${config.key.toUpperCase()}_API_KEY`;
-      const isAvailable = !!process.env[envKey] || 
-                         (config.key === 'azure' && process.env.AZURE_FORM_RECOGNIZER_KEY) ||
-                         (config.key === 'google' && process.env.GOOGLE_DOCUMENT_AI_KEY) ||
-                         (config.key === 'veryfi' && process.env.VERYFI_CLIENT_ID);
-
-      this.processorCapabilities.set(config.key, {
-        name: config.name,
-        type: 'external',
-        supportedFormats: ['application/pdf', 'image/jpeg', 'image/png'],
-        specialties: config.specialties,
-        avgProcessingTime: config.avgProcessingTime,
-        costPerDocument: config.costPerDocument,
-        accuracy: config.accuracy,
-        isAvailable,
-        description: config.description
-      });
+    if (!process.env.OPENAI_API_KEY) {
+      throw new Error('OPENAI_API_KEY is required');
+    }
+    if (!process.env.GOOGLE_AI_API_KEY) {
+      throw new Error('GOOGLE_AI_API_KEY is required');
     }
 
-    console.log(`🔧 Initialized ${this.processorCapabilities.size} document processors`);
-    const available = Array.from(this.processorCapabilities.values()).filter(p => p.isAvailable);
-    console.log(`✅ Available processors: ${available.map(p => p.name).join(', ')}`);
+    const openaiKey = process.env.OPENAI_API_KEY;
+    const googleKey = process.env.GOOGLE_AI_API_KEY;
+
+    this.openaiExtractor = new AgentExtractorOpenAI(openaiKey);
+    this.geminiExtractor = new AgentExtractorGemini(googleKey);
+    this.externalProcessors = new ExternalDocumentProcessors();
+    this.tableParser = new TableParser(openaiKey);
+    this.documentClassifier = new DocumentClassifier(googleKey);
+    this.correctionCollector = new ManualCorrectionCollector();
+    this.confidenceCalibrator = new ConfidenceCalibrator(googleKey, true, this.correctionCollector);
   }
 
   async processDocument(
-    tenantId: number,
     fileBuffer: Buffer,
     mimeType: string,
     filename: string,
-    strategy?: Partial<ProcessingStrategy>
+    ocrText?: string,
   ): Promise<ExtractionResult> {
-    const processingStrategy = this.buildProcessingStrategy(mimeType, filename, strategy);
-    
-    console.log(`📄 Processing ${filename} with strategy:`, {
-      primary: processingStrategy.primary,
-      fallbacks: processingStrategy.fallbacks,
-      features: {
-        tables: processingStrategy.enableTableExtraction,
-        vision: processingStrategy.enableVisionParsing
-      }
-    });
-
-    let lastError: Error | null = null;
-    const attempts = [processingStrategy.primary, ...processingStrategy.fallbacks];
-
-    // Try each processor in order
-    for (const processorName of attempts) {
-      if (!this.isProcessorAvailable(processorName)) {
-        console.log(`⏭️ Skipping unavailable processor: ${processorName}`);
-        continue;
-      }
-
-      try {
-        const result = await this.processWithProcessor(
-          processorName,
-          tenantId,
-          fileBuffer,
-          mimeType,
-          filename,
-          processingStrategy
-        );
-
-        if (this.isValidResult(result, processingStrategy.confidenceThreshold)) {
-          // Enhance result with additional features if enabled
-          return await this.enhanceResult(result, fileBuffer, mimeType, filename, processingStrategy);
-        } else {
-          console.log(`⚠️ ${processorName} result below confidence threshold: ${result.confidenceScore} (required: ${processingStrategy.confidenceThreshold})`);
-          // Accept the result anyway if we got some data
-          if (result.data && (result.data.vendor || result.data.total || result.data.description)) {
-            console.log(`✅ Accepting result with some extracted data despite low confidence`);
-            return await this.enhanceResult(result, fileBuffer, mimeType, filename, processingStrategy);
-          }
-          continue;
-        }
-      } catch (error) {
-        lastError = error instanceof Error ? error : new Error(String(error));
-        console.warn(`❌ Processor ${processorName} failed:`, lastError.message);
-        
-        // Skip external processors if API keys are missing
-        if (lastError.message.includes('configuration not found') || lastError.message.includes('missing API keys')) {
-          console.log(`⏭️ Skipping ${processorName} due to missing configuration`);
-          continue;
-        }
-      }
-    }
-
-    // If all processors failed, try to return a minimal result instead of throwing error
-    console.log('🔄 All processors failed, returning minimal result to prevent errors');
-    return {
-      confidence: 0.1,
-      data: {
-        vendor: '',
-        total: 0,
-        issueDate: new Date().toISOString().split('T')[0],
-        description: `Document processed: ${filename}`,
-        category: 'outras_despesas'
-      },
-      modelUsed: 'fallback',
-      processingTime: 0
-    };
-  }
-
-  private async processWithProcessor(
-    processorName: string,
-    tenantId: number,
-    fileBuffer: Buffer,
-    mimeType: string,
-    filename: string,
-    strategy: ProcessingStrategy
-  ): Promise<ExtractionResult> {
-    const capability = this.processorCapabilities.get(processorName);
-    
-    if (capability?.type === 'external') {
-      // Use external API processor
-      return await this.externalProcessors.processDocument(fileBuffer, mimeType, filename, {
-        processor: processorName as any,
-        confidence_threshold: strategy.confidenceThreshold
-      });
-    } else {
-      // Use internal processor
-      switch (processorName) {
-        case 'gemini-openai':
-        default:
-          return await this.cloudProcessor.processDocument(tenantId, fileBuffer, mimeType, filename);
-      }
-    }
-  }
-
-  private async enhanceResult(
-    result: ExtractionResult,
-    fileBuffer: Buffer,
-    mimeType: string,
-    filename: string,
-    strategy: ProcessingStrategy
-  ): Promise<ExtractionResult> {
-    let enhancedResult = { ...result };
-
-    // Add table extraction if enabled and not already present
-    if (strategy.enableTableExtraction && !result.agentResults?.tableParser) {
-      try {
-        const tableResult = await this.tableParser.parseTablesFromDocument(
-          fileBuffer, mimeType, filename, {
-            detectHeaders: true,
-            extractNumericData: true,
-            handleComplexLayouts: true
-          }
-        );
-
-        if (tableResult.tables.length > 0) {
-          enhancedResult.agentResults = {
-            ...enhancedResult.agentResults,
-            tableParser: {
-              model: 'table-parser',
-              method: 'structured-extraction',
-              rawResponse: tableResult
-            }
-          };
-
-          // Extract line items if available
-          const lineItems = await this.tableParser.extractInvoiceLineItems(fileBuffer, mimeType, filename);
-          if (lineItems.length > 0) {
-            enhancedResult.data.lineItems = lineItems;
-          }
-        }
-      } catch (error) {
-        console.warn('Table extraction enhancement failed:', error instanceof Error ? error.message : String(error));
-      }
-    }
-
-    // Vision parsing removed - using only cloud processors and external APIs
-
-    return enhancedResult;
-  }
-
-  private buildProcessingStrategy(
-    mimeType: string,
-    filename: string,
-    userStrategy?: Partial<ProcessingStrategy>
-  ): ProcessingStrategy {
-    const defaults: ProcessingStrategy = {
-      primary: 'gemini-openai', // Always start with Gemini first
-      fallbacks: [], // Remove fallbacks to avoid external API issues
-      enableTableExtraction: true,
-      enableVisionParsing: mimeType.startsWith('image/'),
-      confidenceThreshold: 0.1, // Very low threshold to accept more results
-      maxRetries: 3
-    };
-
-    const strategy = { ...defaults, ...userStrategy };
-    
-    // Filter fallbacks to only include available processors
-    strategy.fallbacks = strategy.fallbacks.filter(processor => this.isProcessorAvailable(processor));
-    
-    console.log(`📋 Processing strategy for ${filename}: primary=${strategy.primary}, fallbacks=[${strategy.fallbacks.join(', ')}]`);
-    
-    return strategy;
-  }
-
-  private selectBestProcessor(mimeType: string, filename: string): string {
-    const available = Array.from(this.processorCapabilities.entries())
-      .filter(([_, cap]) => cap.isAvailable && cap.supportedFormats.includes(mimeType))
-      .sort((a, b) => b[1].accuracy - a[1].accuracy);
-
-    if (available.length === 0) {
-      return 'gemini-openai'; // Fallback
-    }
-
-    // Prefer external processors for specific document types
-    if (filename.toLowerCase().includes('invoice') || filename.toLowerCase().includes('fatura')) {
-      const invoiceSpecialist = available.find(([_, cap]) => 
-        cap.specialties.includes('invoices') && cap.type === 'external'
-      );
-      if (invoiceSpecialist) return invoiceSpecialist[0];
-    }
-
-    if (filename.toLowerCase().includes('receipt') || filename.toLowerCase().includes('recibo')) {
-      const receiptSpecialist = available.find(([_, cap]) => 
-        cap.specialties.includes('receipts') && cap.type === 'external'
-      );
-      if (receiptSpecialist) return receiptSpecialist[0];
-    }
-
-    // Default to highest accuracy
-    return available[0][0];
-  }
-
-  private getGeminiFirstFallbacks(mimeType: string, filename: string): string[] {
-    // Fixed order: Gemini → OpenAI → External processors
-    const fallbackOrder = [
-      'visionparser',     // External VisionParser.com
-      'mindee',          // External Mindee
-      'klippa',          // External Klippa
-      'google',          // External Google Document AI
-      'azure',           // External Azure Form Recognizer
-      'veryfi'           // External Veryfi
-    ];
-    
-    // Filter to only available processors that support the file type
-    return fallbackOrder.filter(processor => 
-      this.isProcessorAvailable(processor) && 
-      this.processorCapabilities.get(processor)?.supportedFormats.includes(mimeType)
-    ).slice(0, 4); // Max 4 fallbacks
-  }
-
-  private getDefaultFallbacks(mimeType: string, filename: string): string[] {
-    // Kept for compatibility - now calls Gemini-first version
-    return this.getGeminiFirstFallbacks(mimeType, filename);
-  }
-
-  private isProcessorAvailable(processorName: string): boolean {
-    const capability = this.processorCapabilities.get(processorName);
-    return capability?.isAvailable || false;
-  }
-
-  private isValidResult(result: ExtractionResult, threshold: number): boolean {
-    return result.confidenceScore >= threshold && 
-           (!!result.data.vendor || !!result.data.total || !!result.data.invoiceNumber);
-  }
-
-  // Public API methods
-  getAvailableProcessors(): ProcessorCapabilities[] {
-    return Array.from(this.processorCapabilities.values()).filter(p => p.isAvailable);
-  }
-
-  getProcessorCapabilities(): Map<string, ProcessorCapabilities> {
-    return new Map(this.processorCapabilities);
-  }
-
-  getRecommendedProcessor(mimeType: string, filename: string): string {
-    return this.selectBestProcessor(mimeType, filename);
-  }
-
-  getProcessingCost(processorName: string): number {
-    return this.processorCapabilities.get(processorName)?.costPerDocument || 0;
-  }
-
-  async testProcessor(processorName: string): Promise<boolean> {
     try {
-      const capability = this.processorCapabilities.get(processorName);
-      if (!capability?.isAvailable) return false;
+      // Get document classification
+      const classification = await this.documentClassifier.classifyDocument(
+        fileBuffer,
+        mimeType,
+        ocrText || ''
+      );
+      console.log('📋 Document Classification:', classification);
 
-      // Could add actual health check here
-      return true;
-    } catch {
-      return false;
+      // Process with appropriate model based on classification
+      let result: ExtractionResult;
+      if (classification.useVision) {
+        if (mimeType === 'application/pdf') {
+          result = await this.geminiExtractor.extractFromPDF(fileBuffer, filename);
+        } else {
+          result = await this.geminiExtractor.extractFromImage(fileBuffer, mimeType, filename);
+        }
+      } else if (ocrText) {
+        result = await this.geminiExtractor.extract(ocrText, filename);
+      } else {
+        result = await this.openaiExtractor.extractFromText(fileBuffer.toString(), filename);
+      }
+
+      // Calibrate confidence score
+      const calibratedConfidence = await this.confidenceCalibrator.calibrateConfidence(result);
+      result.confidenceScore = calibratedConfidence;
+
+      return result;
+    } catch (error) {
+      console.error('❌ Error in ProcessorManager:', error);
+      throw error;
     }
   }
 }

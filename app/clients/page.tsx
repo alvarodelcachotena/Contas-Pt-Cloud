@@ -1,6 +1,6 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
@@ -9,7 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FormModal } from '@/components/ui/modal'
-import { Search, Plus, Users, Mail, Phone, MapPin } from 'lucide-react'
+import { Search, Plus, Users, Mail, Phone, MapPin, AlertCircle } from 'lucide-react'
 
 interface Client {
   id: number
@@ -27,6 +27,7 @@ export default function ClientsPage() {
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     name: '',
     email: '',
@@ -36,6 +37,8 @@ export default function ClientsPage() {
     postalCode: '',
     city: ''
   })
+
+  const queryClient = useQueryClient()
 
   const { data: clients, isLoading } = useQuery<Client[]>({
     queryKey: ['/api/clients'],
@@ -62,6 +65,7 @@ export default function ClientsPage() {
       postalCode: '',
       city: ''
     })
+    setError(null) // Limpiar errores anteriores
     setIsModalOpen(true)
   }
 
@@ -76,6 +80,7 @@ export default function ClientsPage() {
       postalCode: '',
       city: ''
     })
+    setError(null) // Limpiar errores al cerrar
   }
 
   const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -84,18 +89,21 @@ export default function ClientsPage() {
       ...prev,
       [name]: value
     }))
+    // Limpiar error cuando el usuario empiece a escribir
+    if (error) setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
+
     if (!formData.name.trim()) {
-      alert('Nome é obrigatório')
+      setError('Nome é obrigatório')
       return
     }
 
     setIsSubmitting(true)
-    
+    setError(null)
+
     try {
       const response = await fetch('/api/clients', {
         method: 'POST',
@@ -104,15 +112,19 @@ export default function ClientsPage() {
       })
 
       if (!response.ok) {
-        throw new Error('Erro ao criar cliente')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao criar cliente')
       }
 
-      alert('Cliente criado com sucesso!')
+      // Cliente creado con éxito
       handleCloseModal()
-      window.location.reload()
+
+      // Invalidar y recargar los datos automáticamente
+      await queryClient.invalidateQueries({ queryKey: ['/api/clients'] })
+
     } catch (error) {
       console.error('Erro:', error)
-      alert('Erro ao criar cliente')
+      setError(error instanceof Error ? error.message : 'Erro ao criar cliente')
     } finally {
       setIsSubmitting(false)
     }
@@ -262,6 +274,18 @@ export default function ClientsPage() {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
+          {/* Mensaje de error general */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+                <p className="text-sm text-red-800 font-medium">
+                  {error}
+                </p>
+              </div>
+            </div>
+          )}
+
           <div>
             <Label htmlFor="name">Nome *</Label>
             <Input
@@ -273,7 +297,7 @@ export default function ClientsPage() {
               required
             />
           </div>
-          
+
           <div>
             <Label htmlFor="email">Email</Label>
             <Input
@@ -285,7 +309,7 @@ export default function ClientsPage() {
               placeholder="cliente@exemplo.com"
             />
           </div>
-          
+
           <div>
             <Label htmlFor="phone">Telefone</Label>
             <Input
@@ -296,7 +320,7 @@ export default function ClientsPage() {
               placeholder="+351 xxx xxx xxx"
             />
           </div>
-          
+
           <div>
             <Label htmlFor="taxId">NIF</Label>
             <Input
@@ -307,7 +331,7 @@ export default function ClientsPage() {
               placeholder="123456789"
             />
           </div>
-          
+
           <div>
             <Label htmlFor="address">Morada</Label>
             <Input
@@ -318,7 +342,7 @@ export default function ClientsPage() {
               placeholder="Rua, número, andar"
             />
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <Label htmlFor="postalCode">Código Postal</Label>
@@ -330,7 +354,7 @@ export default function ClientsPage() {
                 placeholder="1000-000"
               />
             </div>
-            
+
             <div>
               <Label htmlFor="city">Cidade</Label>
               <Input

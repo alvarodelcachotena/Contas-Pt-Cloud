@@ -536,16 +536,15 @@ ${ocrText.substring(0, 6000)}`,
 
       return {
         data: cleanData,
-        confidenceScore: extracted.confidence,
-        issues: extracted.extractionIssues,
+        confidenceScore: extracted.confidence || 0.5,
+        issues: extracted.extractionIssues || [],
         agentResults: {
           extractor: {
-            model: "gpt-4.1-mini-2025-04-14",
+            model: imageUrl ? "gpt-4-vision-preview" : "gpt-4-turbo-preview",
             method: imageUrl
               ? "openai_vision_structured"
               : "openai_text_structured",
             rawResponse: message.content.substring(0, 200),
-            processingType: imageUrl ? "image_analysis" : "text_extraction",
           },
         },
         processedAt: new Date(),

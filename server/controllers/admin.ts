@@ -5,12 +5,15 @@
 import { Request, Response } from 'express';
 import { storage } from '../storage.js';
 import bcrypt from 'bcrypt';
+import { createClient } from '@supabase/supabase-js';
 
 // Get all users (admin only)
 export async function getUsers(req: Request, res: Response) {
   try {
     console.log('🔍 Fetching all users...');
-    const users = await storage.getUsers();
+    // For admin purposes, get users from tenant 1 (default)
+    const tenantId = parseInt(req.query.tenantId as string) || 1;
+    const users = await storage.getUsers(tenantId);
     console.log(`✅ Found ${users.length} user(s)`);
     res.json(users);
   } catch (error) {
@@ -57,52 +60,171 @@ export async function getUserTenants(req: Request, res: Response) {
   }
 }
 
-// Create new user (admin only)
-export async function createUser(req: Request, res: Response) {
+export async function createUser(
+  supabase: ReturnType<typeof createClient>,
+  name: string,
+  email: string,
+  password: string,
+  role?: string
+) {
   try {
-    const sessionData = req.session as any;
-    
-    if (!sessionData?.userId || sessionData?.userRole !== 'admin') {
-      return res.status(403).json({ 
-        success: false, 
-        message: 'Access denied. Admin privileges required.' 
-      });
+    // Check if user already exists
+    const { data: existingUser } = await supabase
+      .from('users')
+      .select('id')
+      .eq('email', email)
+      .single();
+
+    if (existingUser) {
+      throw new Error('User already exists');
     }
 
-    const { name, email, password } = req.body;
-
-    if (!name || !email || !password) {
-      return res.status(400).json({
-        success: false,
-        message: 'Name, email, and password are required'
-      });
-    }
-
-    // Hash the password
+    // Hash password
     const hashedPassword = await bcrypt.hash(password, 10);
 
-    const user = await storage.createUser({
-      name,
-      email,
-      password: hashedPassword,
-      isActive: true
-    });
+    // Create user
+    const { data: user, error } = await supabase
+      .from('users')
+      .insert({
+        name,
+        email,
+        passwordHash: hashedPassword,
+        isActive: true,
+        role: role || 'user'
+      })
+      .select()
+      .single();
 
-    // Remove password from response
-    const { password: _, ...userResponse } = user;
+    if (error) {
+      throw error;
+    }
 
-    res.json({
-      success: true,
-      user: userResponse,
-      message: 'User created successfully'
-    });
+    return user;
   } catch (error) {
-    console.error('❌ Error creating user:', error);
-    res.status(500).json({ 
-      success: false, 
-      message: 'Failed to create user',
-      error: error instanceof Error ? error.message : 'Unknown error'
-    });
+    console.error('Error creating user:', error);
+    throw error;
+  }
+}
+
+export async function updateUser(
+  supabase: ReturnType<typeof createClient>,
+  userId: number,
+  data: {
+    name?: string;
+    email?: string;
+    password?: string;
+    role?: string;
+    isActive?: boolean;
+  }
+) {
+  try {
+    const updates: any = { ...data };
+
+    // If password is being updated, hash it
+    if (data.password) {
+      updates.passwordHash = await bcrypt.hash(data.password, 10);
+      delete updates.password;
+    }
+
+    const { data: user, error } = await supabase
+      .from('users')
+      .update(updates)
+      .eq('id', userId)
+      .select()
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return user;
+  } catch (error) {
+    console.error('Error updating user:', error);
+    throw error;
+  }
+}
+
+export async function deleteUser(
+  supabase: ReturnType<typeof createClient>,
+  userId: number
+) {
+  try {
+    const { error } = await supabase
+      .from('users')
+      .delete()
+      .eq('id', userId);
+
+    if (error) {
+      throw error;
+    }
+
+    return true;
+  } catch (error) {
+    console.error('Error deleting user:', error);
+    throw error;
+  }
+}
+
+export async function getUser(
+  supabase: ReturnType<typeof createClient>,
+  userId: number
+) {
+  try {
+    const { data: user, error } = await supabase
+      .from('users')
+      .select('*')
+      .eq('id', userId)
+      .single();
+
+    if (error) {
+      throw error;
+    }
+
+    return user;
+  } catch (error) {
+    console.error('Error getting user:', error);
+    throw error;
+  }
+}
+
+export async function listUsers(
+  supabase: ReturnType<typeof createClient>,
+  options?: {
+    role?: string;
+    isActive?: boolean;
+    limit?: number;
+    offset?: number;
+  }
+) {
+  try {
+    let query = supabase.from('users').select('*');
+
+    if (options?.role) {
+      query = query.eq('role', options.role);
+    }
+
+    if (typeof options?.isActive === 'boolean') {
+      query = query.eq('isActive', options.isActive);
+    }
+
+    if (options?.limit) {
+      query = query.limit(options.limit);
+    }
+
+    if (options?.offset) {
+      query = query.range(options.offset, options.offset + (options.limit || 10) - 1);
+    }
+
+    const { data: users, error } = await query;
+
+    if (error) {
+      throw error;
+    }
+
+    return users;
+  } catch (error) {
+    console.error('Error listing users:', error);
+    throw error;
   }
 }
 

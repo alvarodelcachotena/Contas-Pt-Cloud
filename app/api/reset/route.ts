@@ -1,76 +1,71 @@
-import { NextRequest, NextResponse } from 'next/server'
+import { NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
-import { loadEnvStrict } from '../../../lib/env-loader.js'
+import { loadEnvStrict } from '@/lib/env-loader'
 
 loadEnvStrict()
 
-function createSupabaseClient() {
-  const url = process.env.SUPABASE_URL!
-  const key = process.env.SUPABASE_SERVICE_ROLE_KEY!
-  
-  return createClient(url, key, {
-    auth: { autoRefreshToken: false, persistSession: false }
-  })
-}
-
-export async function POST(request: NextRequest) {
+export async function POST(request: Request) {
   try {
-    const body = await request.json()
-    const { action, tenantId } = body
-    
-    if (action !== 'reset_documents_and_expenses') {
-      return NextResponse.json({ error: 'Invalid action' }, { status: 400 })
+    const { tenant } = await request.json()
+
+    if (!tenant) {
+      return NextResponse.json(
+        { error: 'Tenant ID is required' },
+        { status: 400 }
+      )
     }
-    
-    const supabase = createSupabaseClient()
-    const tenant = tenantId || 1
-    
-    console.log(`🗑️ RESETTING all documents and expenses for tenant ${tenant}`)
-    
-    // Delete expenses first (due to foreign key constraints)
+
+    const supabase = createClient(
+      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_SERVICE_KEY!,
+      {
+        auth: {
+          autoRefreshToken: false,
+          persistSession: false,
+        },
+      }
+    )
+
+    // Delete all expenses for tenant
     const { error: expenseError, count: expenseCount } = await supabase
       .from('expenses')
       .delete()
       .eq('tenant_id', tenant)
-      .select('*', { count: 'exact' })
-    
+      .select('count')
+
     if (expenseError) {
       console.error('❌ Error deleting expenses:', expenseError)
-      return NextResponse.json({ error: 'Failed to delete expenses' }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Failed to delete expenses' },
+        { status: 500 }
+      )
     }
-    
-    // Delete documents
+
+    // Delete all documents for tenant
     const { error: docError, count: docCount } = await supabase
       .from('documents')
       .delete()
       .eq('tenant_id', tenant)
-      .select('*', { count: 'exact' })
-    
+      .select('count')
+
     if (docError) {
       console.error('❌ Error deleting documents:', docError)
-      return NextResponse.json({ error: 'Failed to delete documents' }, { status: 500 })
+      return NextResponse.json(
+        { error: 'Failed to delete documents' },
+        { status: 500 }
+      )
     }
-    
-    // Delete extracted invoice data
-    const { error: extractedError } = await supabase
-      .from('extracted_invoice_data')
-      .delete()
-      .eq('tenant_id', tenant)
-    
-    console.log(`✅ RESET COMPLETED:`)
-    console.log(`   - Deleted ${expenseCount || 0} expenses`)
-    console.log(`   - Deleted ${docCount || 0} documents`)
-    console.log(`   - Cleared extracted invoice data`)
-    
-    return NextResponse.json({ 
-      success: true,
-      deletedExpenses: expenseCount || 0,
-      deletedDocuments: docCount || 0,
-      message: 'Database reset completed successfully'
+
+    return NextResponse.json({
+      message: 'Reset successful',
+      expensesDeleted: expenseCount,
+      documentsDeleted: docCount,
     })
-    
   } catch (error) {
-    console.error('❌ Reset error:', error)
-    return NextResponse.json({ error: 'Reset failed' }, { status: 500 })
+    console.error('❌ Error in reset endpoint:', error)
+    return NextResponse.json(
+      { error: 'Internal server error' },
+      { status: 500 }
+    )
   }
 }

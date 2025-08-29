@@ -21,6 +21,8 @@ import type {
   MonthlyStatementEntry, InsertMonthlyStatementEntry
 } from '../shared/schema';
 
+
+
 export class SupabaseStorage implements IStorage {
   private supabase;
 
@@ -164,37 +166,34 @@ export class SupabaseStorage implements IStorage {
     }
   }
 
-  async getUsers(): Promise<User[]> {
+  async getUsers(tenantId: number): Promise<User[]> {
     try {
-      console.log('🔍 Fetching users via admin service...');
-      
-      const { data: adminData, error } = await this.supabase.rpc('get_admin_data');
+      console.log(`🔍 Getting users for tenant ${tenantId}...`);
+
+      const { data: users, error } = await this.supabase
+        .from('users')
+        .select('*')
+        .eq('tenant_id', tenantId);
 
       if (error) {
-        console.error('Admin data service failed:', error);
-        
-        // Fallback to direct table query
-        console.log('🔄 Falling back to direct users table query...');
-        const { data: directData, error: directError } = await this.supabase
-          .from('users')
-          .select('*')
-          .eq('is_active', true);
-        
-        if (directError) {
-          console.error('Direct users query also failed:', directError);
-          return [];
-        }
-        
-        console.log(`📊 Found ${directData?.length || 0} user(s) via direct query`);
-        return directData || [];
+        throw error;
       }
 
-      const users = adminData?.users_data || [];
-      console.log(`📊 Found ${users.length} user(s) via service`);
-      return users;
+      const mappedUsers: User[] = users.map(user => ({
+        id: user.id,
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role,
+        createdAt: user.created_at ? new Date(user.created_at) : null,
+        passwordHash: user.password_hash || '',
+        isActive: user.is_active
+      }));
+
+      console.log(`📊 Found ${mappedUsers.length} user(s) for tenant ${tenantId}`);
+      return mappedUsers;
     } catch (error) {
-      console.error('Error in getUsers:', error);
-      return [];
+      console.error(`Error getting users for tenant ${tenantId}:`, error);
+      throw error;
     }
   }
 
@@ -223,7 +222,7 @@ export class SupabaseStorage implements IStorage {
       const userIds = userTenants.map(ut => ut.user_id);
       const { data: users, error: usersError } = await this.supabase
         .from('users')
-        .select('id, email, name, is_active, created_at, last_login_at')
+        .select('id, email, name, role, is_active, created_at, password_hash')
         .in('id', userIds)
         .eq('is_active', true);
       
@@ -232,8 +231,19 @@ export class SupabaseStorage implements IStorage {
         throw usersError;
       }
       
-      console.log(`📊 Found ${users?.length || 0} user(s) for tenant ${tenantId}`);
-      return users || [];
+      // Map the data to match User type
+      const mappedUsers: User[] = (users || []).map(user => ({
+        id: user.id,
+        name: user.name || '',
+        email: user.email || '',
+        role: user.role,
+        createdAt: user.created_at ? new Date(user.created_at) : null,
+        passwordHash: user.password_hash || '',
+        isActive: user.is_active
+      }));
+      
+      console.log(`📊 Found ${mappedUsers.length} user(s) for tenant ${tenantId}`);
+      return mappedUsers;
     } catch (error) {
       console.error(`Error getting users for tenant ${tenantId}:`, error);
       throw error;
@@ -486,7 +496,8 @@ export class SupabaseStorage implements IStorage {
       expenseDate: expense.expense_date,
       isDeductible: expense.is_deductible,
       sourceDocumentId: expense.source_document_id,
-      createdAt: expense.created_at
+      createdAt: expense.created_at,
+      processingMethod: expense.processing_method || null
     })) || [];
     
     console.log('📋 Returning converted expenses data:', convertedData.length, 'items');
@@ -554,7 +565,8 @@ export class SupabaseStorage implements IStorage {
         expenseDate: data.expense_date,
         isDeductible: data.is_deductible,
         sourceDocumentId: data.source_document_id,
-        createdAt: data.created_at
+        createdAt: data.created_at,
+        processingMethod: data.processing_method || null
       };
       
       return convertedExpense;
@@ -787,7 +799,8 @@ export class SupabaseStorage implements IStorage {
       refreshToken: config.refresh_token,
       isActive: config.is_active,
       lastSyncAt: config.last_sync_at,
-      createdAt: config.created_at
+      createdAt: config.created_at,
+      syncCursor: config.sync_cursor || null
     }));
   }
 
@@ -810,7 +823,8 @@ export class SupabaseStorage implements IStorage {
       refreshToken: data.refresh_token,
       isActive: data.is_active,
       lastSyncAt: data.last_sync_at,
-      createdAt: data.created_at
+      createdAt: data.created_at,
+      syncCursor: data.sync_cursor || null
     };
   }
 
@@ -831,7 +845,8 @@ export class SupabaseStorage implements IStorage {
       refreshToken: config.refresh_token,
       isActive: config.is_active,
       lastSyncAt: config.last_sync_at,
-      createdAt: config.created_at
+      createdAt: config.created_at,
+      syncCursor: config.sync_cursor || null
     }));
   }
 
@@ -881,7 +896,8 @@ export class SupabaseStorage implements IStorage {
       refreshToken: data.refresh_token,
       isActive: data.is_active,
       lastSyncAt: data.last_sync_at,
-      createdAt: data.created_at
+      createdAt: data.created_at,
+      syncCursor: data.sync_cursor || null
     };
   }
 
@@ -913,7 +929,8 @@ export class SupabaseStorage implements IStorage {
       refreshToken: data.refresh_token,
       isActive: data.is_active,
       lastSyncAt: data.last_sync_at,
-      createdAt: data.created_at
+      createdAt: data.created_at,
+      syncCursor: data.sync_cursor || null
     };
   }
 

@@ -1,9 +1,7 @@
 'use client'
 
-import { useQuery } from '@tanstack/react-query'
+import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
-import { apiRequest } from '@/lib/queryClient'
-import { useAuth } from '@/hooks/useAuth'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -17,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { FormModal } from '@/components/ui/modal'
-import { Search, Plus, FileText } from 'lucide-react'
+import { Search, Plus, FileText, AlertCircle, Download, Eye } from 'lucide-react'
 
 interface Expense {
   id: number
@@ -34,27 +32,40 @@ interface Expense {
 }
 
 export default function ExpensesTable() {
-  const { tenant } = useAuth()
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [error, setError] = useState<string | null>(null)
   const [formData, setFormData] = useState({
     vendor: '',
     amount: '',
+    vatRate: '23',
     category: '',
-    description: ''
+    description: '',
+    receiptNumber: ''
   })
 
-  const { data: expenses, isLoading, error } = useQuery<Expense[]>({
+  const queryClient = useQueryClient()
+
+  const { data: expenses, isLoading, error: queryError } = useQuery<Expense[]>({
     queryKey: ['/api/expenses'],
     queryFn: async () => {
-      console.log('Fetching expenses...')
-      const response = await fetch('/api/expenses')
+      console.log('🔍 Fetching expenses from API...')
+      const response = await fetch('/api/expenses', {
+        headers: {
+          'x-tenant-id': '1'
+        }
+      })
+      console.log('📡 API Response status:', response.status)
+
       if (!response.ok) {
-        throw new Error('Failed to fetch expenses')
+        const errorText = await response.text()
+        console.error('❌ API Error:', response.status, errorText)
+        throw new Error(`Failed to fetch expenses: ${response.status}`)
       }
+
       const data = await response.json()
-      console.log('Expenses data received:', data)
+      console.log('✅ Expenses data received:', data)
       return data
     }
   })
@@ -65,19 +76,20 @@ export default function ExpensesTable() {
     expense.description?.toLowerCase().includes(searchTerm.toLowerCase())
   ) || []
 
-  console.log('Expenses:', expenses)
-  console.log('Filtered expenses:', filteredExpenses)
-  console.log('Is loading:', isLoading)
-  console.log('Error:', error)
-  console.log('Tenant:', tenant)
+  // Debug logging (moved after filteredExpenses is defined)
+  console.log('🔍 Expenses state:', { expenses, isLoading, queryError })
+  console.log('🔍 Filtered expenses:', filteredExpenses)
 
   const handleOpenModal = () => {
     setFormData({
       vendor: '',
       amount: '',
+      vatRate: '23',
       category: '',
-      description: ''
+      description: '',
+      receiptNumber: ''
     })
+    setError(null) // Limpiar errores anteriores
     setIsModalOpen(true)
   }
 
@@ -86,44 +98,62 @@ export default function ExpensesTable() {
     setFormData({
       vendor: '',
       amount: '',
+      vatRate: '23',
       category: '',
-      description: ''
+      description: '',
+      receiptNumber: ''
     })
+    setError(null) // Limpiar errores al cerrar
   }
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleInputChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target
     setFormData(prev => ({
       ...prev,
       [name]: value
     }))
+
+    // Limpiar error cuando el usuario empiece a escribir
+    if (error) setError(null)
   }
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
-    
-    // Validation
+
+    // Validation without alerts
     if (!formData.vendor.trim()) {
-      alert('Nome do fornecedor é obrigatório')
+      setError('Nome do fornecedor é obrigatório')
       return
     }
     if (!formData.amount.trim() || isNaN(Number(formData.amount))) {
-      alert('Valor deve ser um número válido')
+      setError('Valor deve ser um número válido')
       return
     }
     if (!formData.category.trim()) {
-      alert('Categoria é obrigatória')
+      setError('Categoria é obrigatória')
+      return
+    }
+    if (!['6', '13', '23', '0'].includes(formData.vatRate)) {
+      setError('Taxa de IVA inválida. Use 0, 6, 13 ou 23')
       return
     }
 
     setIsSubmitting(true)
-    
+    setError(null)
+
     try {
+      // Calculate VAT amount
+      const baseAmount = Number(formData.amount)
+      const vatAmount = baseAmount * (Number(formData.vatRate) / 100)
+
       const newExpense = {
         vendor: formData.vendor,
-        amount: Number(formData.amount),
+        amount: baseAmount,
+        vatAmount: Number(formData.vatRate) > 0 ? vatAmount : 0,
+        vatRate: Number(formData.vatRate),
         category: formData.category,
         description: formData.description || null,
+        receiptNumber: formData.receiptNumber || null,
         expenseDate: new Date().toISOString().split('T')[0],
         isDeductible: true
       }
@@ -135,17 +165,59 @@ export default function ExpensesTable() {
       })
 
       if (!response.ok) {
-        throw new Error('Erro ao criar despesa')
+        const errorData = await response.json()
+        throw new Error(errorData.error || 'Erro ao criar despesa')
       }
 
-      alert('Despesa criada com sucesso!')
+      // Despesa criada com sucesso
       handleCloseModal()
-      window.location.reload()
+
+      // Invalidar e recarregar os dados automaticamente
+      await queryClient.invalidateQueries({ queryKey: ['/api/expenses'] })
+
     } catch (error) {
       console.error('Erro:', error)
-      alert('Erro ao criar despesa')
+      setError(error instanceof Error ? error.message : 'Erro ao criar despesa')
     } finally {
       setIsSubmitting(false)
+    }
+  }
+
+  const handleExport = async () => {
+    try {
+      if (!expenses || expenses.length === 0) {
+        setError('Não há despesas para exportar')
+        return
+      }
+
+      // Generate CSV content
+      const csvContent = [
+        ['Fornecedor', 'Valor', 'IVA', 'Taxa IVA', 'Categoria', 'Data', 'Dedutível', 'Descrição', 'Nº Recibo'].join(','),
+        ...expenses.map((expense) => [
+          `"${expense.vendor}"`,
+          expense.amount,
+          expense.vatAmount || 0,
+          expense.vatRate || 0,
+          `"${expense.category}"`,
+          expense.expenseDate,
+          expense.isDeductible ? 'Sim' : 'Não',
+          `"${expense.description || ''}"`,
+          `"${expense.receiptNumber || ''}"`
+        ].join(','))
+      ].join('\n')
+
+      // Create and download CSV file
+      const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
+      const link = document.createElement('a')
+      link.href = URL.createObjectURL(blob)
+      link.download = `despesas_${new Date().toISOString().split('T')[0]}.csv`
+      link.click()
+      URL.revokeObjectURL(link.href)
+
+      console.log('✅ Despesas exportadas com sucesso')
+    } catch (error) {
+      console.error('❌ Erro ao exportar:', error)
+      setError('Erro ao exportar despesas')
     }
   }
 
@@ -166,12 +238,38 @@ export default function ExpensesTable() {
 
   return (
     <div className="p-6 space-y-6">
+      {/* Error display for export errors */}
+      {error && (
+        <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Erro!</strong>
+          <span className="block sm:inline"> {error}</span>
+          <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
+            <button onClick={() => setError(null)} className="text-red-700">
+              <svg className="fill-current h-6 w-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.15 2.759 3.152z" /></svg>
+            </button>
+          </span>
+        </div>
+      )}
+
+      {/* Error display for query errors */}
+      {queryError && (
+        <div className="bg-orange-100 border border-orange-400 text-orange-700 px-4 py-3 rounded relative mb-4" role="alert">
+          <strong className="font-bold">Erro na API:</strong>
+          <span className="block sm:inline"> {queryError.message}</span>
+          <span className="absolute top-0 bottom-0 right-0 px-4 py-3">
+            <button onClick={() => window.location.reload()} className="text-orange-700">
+              <svg className="fill-current h-6 w-6" viewBox="0 0 20 20" xmlns="http://www.w3.org/2000/svg"><path d="M14.348 14.849a1.2 1.2 0 0 1-1.697 0L10 11.819l-2.651 3.029a1.2 1.2 0 1 1-1.697-1.697l2.758-3.15-2.759-3.152a1.2 1.2 0 1 1 1.697-1.697L10 8.183l2.651-3.031a1.2 1.2 0 1 1 1.697 1.697l-2.758 3.15 2.759 3.152z" /></svg>
+            </button>
+          </span>
+        </div>
+      )}
+
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-3xl font-bold text-foreground">Despesas</h1>
           <p className="text-muted-foreground mt-1">Gestão e controlo de despesas</p>
         </div>
-        <Button 
+        <Button
           onClick={handleOpenModal}
           className="flex items-center space-x-2"
         >
@@ -190,41 +288,12 @@ export default function ExpensesTable() {
             className="pl-10"
           />
         </div>
-        <Button 
+        <Button
           variant="outline"
           className="flex items-center space-x-2"
-          onClick={() => {
-            // Fetch expenses and export as CSV
-            fetch('/api/expenses')
-              .then(response => response.json())
-              .then(data => {
-                const csvContent = [
-                  ['Fornecedor', 'Valor', 'IVA', 'Categoria', 'Data', 'Dedutível', 'Descrição'].join(','),
-                  ...data.map((expense: any) => [
-                    `"${expense.vendor}"`,
-                    expense.amount,
-                    expense.vatAmount || 0,
-                    `"${expense.category}"`,
-                    expense.expenseDate,
-                    expense.isDeductible ? 'Sim' : 'Não',
-                    `"${expense.description || ''}"`
-                  ].join(','))
-                ].join('\n')
-                
-                const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' })
-                const link = document.createElement('a')
-                link.href = URL.createObjectURL(blob)
-                link.download = `despesas_${new Date().toISOString().split('T')[0]}.csv`
-                link.click()
-                URL.revokeObjectURL(link.href)
-              })
-              .catch(error => {
-                console.error('Erro ao exportar:', error)
-                alert('Erro ao exportar despesas')
-              })
-          }}
+          onClick={handleExport}
         >
-          <FileText className="w-4 h-4" />
+          <Download className="w-4 h-4" />
           <span>Exportar</span>
         </Button>
       </div>
@@ -273,13 +342,15 @@ export default function ExpensesTable() {
                     </Badge>
                   </TableCell>
                   <TableCell>
-                    <Button 
-                      variant="ghost" 
-                      size="sm"
-                      onClick={() => alert(`Ver detalhes da despesa: ${expense.vendor}`)}
-                    >
-                      Ver
-                    </Button>
+                    <div className="flex items-center space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => console.log(`Ver detalhes da despesa: ${expense.vendor}`)}
+                      >
+                        <Eye className="w-4 h-4" />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
@@ -289,7 +360,7 @@ export default function ExpensesTable() {
       </div>
 
       <div className="text-sm text-gray-500">
-        Total: {filteredExpenses.length} despesa(s) • 
+        Total: {filteredExpenses.length} despesa(s) •
         Valor Total: €{filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()), 0).toFixed(2)}
       </div>
 
@@ -304,65 +375,116 @@ export default function ExpensesTable() {
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
-          <div>
-            <Label htmlFor="vendor" className="block mb-1">
-              Nome do Fornecedor *
-            </Label>
-            <Input
-              id="vendor"
-              name="vendor"
-              type="text"
-              value={formData.vendor}
-              onChange={handleInputChange}
-              placeholder="Nome do fornecedor"
-              required
-            />
+          {/* Error display in modal */}
+          {error && (
+            <div className="bg-red-50 border border-red-200 rounded-md p-3">
+              <div className="flex items-center">
+                <AlertCircle className="w-5 h-5 text-red-400 mr-2" />
+                <p className="text-sm text-red-800 font-medium">
+                  {error}
+                </p>
+              </div>
+            </div>
+          )}
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="vendor" className="block mb-1">
+                Nome do Fornecedor *
+              </Label>
+              <Input
+                id="vendor"
+                name="vendor"
+                type="text"
+                value={formData.vendor}
+                onChange={handleInputChange}
+                placeholder="Nome do fornecedor"
+                required
+              />
+            </div>
+
+            <div>
+              <Label htmlFor="amount" className="block mb-1">
+                Valor (€) *
+              </Label>
+              <Input
+                id="amount"
+                name="amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={formData.amount}
+                onChange={handleInputChange}
+                placeholder="0.00"
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <Label htmlFor="amount" className="block mb-1">
-              Valor (€) *
-            </Label>
-            <Input
-              id="amount"
-              name="amount"
-              type="number"
-              step="0.01"
-              min="0"
-              value={formData.amount}
-              onChange={handleInputChange}
-              placeholder="0.00"
-              required
-            />
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="vatRate" className="block text-sm font-medium text-gray-700 mb-1">
+                Taxa de IVA *
+              </label>
+              <select
+                id="vatRate"
+                name="vatRate"
+                value={formData.vatRate}
+                onChange={handleInputChange}
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                required
+              >
+                <option value="0">0% (Isento)</option>
+                <option value="6">6% (Reduzida)</option>
+                <option value="13">13% (Intermédia)</option>
+                <option value="23">23% (Normal)</option>
+              </select>
+            </div>
+
+            <div>
+              <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
+                Categoria *
+              </label>
+              <Input
+                id="category"
+                name="category"
+                type="text"
+                value={formData.category}
+                onChange={handleInputChange}
+                placeholder="Ex: Alimentação, Transporte, Material"
+                required
+              />
+            </div>
           </div>
 
-          <div>
-            <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-              Categoria *
-            </label>
-            <Input
-              id="category"
-              name="category"
-              type="text"
-              value={formData.category}
-              onChange={handleInputChange}
-              placeholder="Ex: Alimentação, Transporte, Material"
-              required
-            />
-          </div>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <label htmlFor="receiptNumber" className="block text-sm font-medium text-gray-700 mb-1">
+                Número do Recibo
+              </label>
+              <Input
+                id="receiptNumber"
+                name="receiptNumber"
+                type="text"
+                value={formData.receiptNumber}
+                onChange={handleInputChange}
+                placeholder="Número do recibo (opcional)"
+              />
+            </div>
 
-          <div>
-            <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Descrição
-            </label>
-            <Input
-              id="description"
-              name="description"
-              type="text"
-              value={formData.description}
-              onChange={handleInputChange}
-              placeholder="Descrição da despesa (opcional)"
-            />
+            <div>
+              <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
+                Descrição
+              </label>
+              <Input
+                id="description"
+                name="description"
+                type="text"
+                value={formData.description}
+                onChange={handleInputChange}
+                placeholder="Descrição da despesa (opcional)"
+              />
+            </div>
           </div>
         </div>
       </FormModal>
