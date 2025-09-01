@@ -24,16 +24,14 @@ import { Search, Plus, Download, FileText, AlertCircle, Eye, Trash2, Upload, Che
 interface Document {
     id: number
     filename: string
-    filePath: string
-    fileType: string
-    fileSize: number
-    status: 'pending' | 'processing' | 'completed' | 'failed'
-    uploadedAt: string
-    processedAt: string | null
-    documentType: string
-    extractedData: any
-    confidence: number
-    createdAt: string
+    file_path?: string
+    file_size?: number
+    mime_type?: string
+    processing_status: 'pending' | 'processing' | 'completed' | 'failed'
+    source?: string
+    extracted_data?: any
+    confidence_score?: number
+    created_at: string
 }
 
 export default function DocumentsPage() {
@@ -69,15 +67,15 @@ export default function DocumentsPage() {
     // Filter documents based on search term
     const filteredDocuments = documents?.filter(document =>
         document.filename.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        document.documentType.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        document.status.toLowerCase().includes(searchTerm.toLowerCase())
+        document.source?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        document.processing_status.toLowerCase().includes(searchTerm.toLowerCase())
     ) || []
 
     // Calculate metrics
     const totalDocuments = documents?.length || 0
-    const pendingDocuments = documents?.filter(d => d.status === 'pending').length || 0
-    const completedDocuments = documents?.filter(d => d.status === 'completed').length || 0
-    const failedDocuments = documents?.filter(d => d.status === 'failed').length || 0
+    const pendingDocuments = documents?.filter(d => d.processing_status === 'pending').length || 0
+    const completedDocuments = documents?.filter(d => d.processing_status === 'completed').length || 0
+    const failedDocuments = documents?.filter(d => d.processing_status === 'failed').length || 0
 
     useEffect(() => {
         if (!isLoading && !isAuthenticated) {
@@ -280,12 +278,12 @@ export default function DocumentsPage() {
                 ...documents.map((document) => [
                     document.id,
                     `"${document.filename}"`,
-                    document.fileType,
-                    formatFileSize(document.fileSize),
-                    document.status,
-                    `"${document.documentType}"`,
-                    new Date(document.uploadedAt).toLocaleDateString('pt-PT'),
-                    document.confidence
+                    document.mime_type || 'N/A',
+                    document.file_size ? formatFileSize(document.file_size) : 'N/A',
+                    document.processing_status,
+                    `"${document.source || 'N/A'}"`,
+                    new Date(document.created_at).toLocaleDateString('pt-PT'),
+                    document.confidence_score ? (document.confidence_score * 100).toFixed(1) : '0'
                 ].join(','))
             ].join('\n')
 
@@ -459,23 +457,23 @@ export default function DocumentsPage() {
                                                 <TableRow key={document.id}>
                                                     <TableCell>
                                                         <div className="flex items-center space-x-2">
-                                                            {getStatusIcon(document.status)}
-                                                            <Badge variant={document.status === 'completed' ? 'default' : 'secondary'}>
-                                                                {getStatusLabel(document.status)}
+                                                            {getStatusIcon(document.processing_status)}
+                                                            <Badge variant={document.processing_status === 'completed' ? 'default' : 'secondary'}>
+                                                                {getStatusLabel(document.processing_status)}
                                                             </Badge>
                                                         </div>
                                                     </TableCell>
                                                     <TableCell className="font-medium">{document.filename}</TableCell>
                                                     <TableCell>
-                                                        <Badge variant="outline">{document.fileType}</Badge>
+                                                        <Badge variant="outline">{document.mime_type || 'N/A'}</Badge>
                                                     </TableCell>
-                                                    <TableCell>{formatFileSize(document.fileSize)}</TableCell>
-                                                    <TableCell>{document.documentType}</TableCell>
+                                                    <TableCell>{document.file_size ? formatFileSize(document.file_size) : 'N/A'}</TableCell>
+                                                    <TableCell>{document.source || 'N/A'}</TableCell>
                                                     <TableCell>
-                                                        {new Date(document.uploadedAt).toLocaleDateString('pt-PT')}
+                                                        {new Date(document.created_at).toLocaleDateString('pt-PT')}
                                                     </TableCell>
                                                     <TableCell>
-                                                        {document.confidence > 0 ? `${document.confidence}%` : '-'}
+                                                        {document.confidence_score ? `${(document.confidence_score * 100).toFixed(1)}%` : '-'}
                                                     </TableCell>
                                                     <TableCell>
                                                         <div className="flex space-x-2">

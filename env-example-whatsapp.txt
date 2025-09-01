@@ -1,0 +1,66 @@
+# WhatsApp Business API Configuration
+# Obtén estas credenciales desde: https://developers.facebook.com/apps/
+
+# 1. WhatsApp Access Token (Token de acceso permanente)
+# Ve a: Tu App > WhatsApp > Getting Started > Access Token
+WHATSAPP_ACCESS_TOKEN=EAABwzLixnjYBO...
+
+# 2. Phone Number ID (ID del número de teléfono)
+# Ve a: Tu App > WhatsApp > Getting Started > Phone Number ID
+WHATSAPP_PHONE_NUMBER_ID=123456789012345
+
+# 3. Business Account ID (ID de la cuenta de negocio)
+# Ve a: Tu App > WhatsApp > Getting Started > Business Account ID
+WHATSAPP_BUSINESS_ACCOUNT_ID=123456789012345
+
+# 4. App ID (ID de la aplicación)
+# Ve a: Tu App > Settings > Basic > App ID
+WHATSAPP_APP_ID=123456789012345
+
+# 5. App Secret (Secreto de la aplicación)
+# Ve a: Tu App > Settings > Basic > App Secret
+WHATSAPP_APP_SECRET=abcdef123456789...
+
+# 6. Verify Token (Token de verificación - puedes inventar uno)
+# Este es un token que inventas para verificar el webhook
+WHATSAPP_VERIFY_TOKEN=mi_token_secreto_123
+
+# 7. Webhook URL (URL del webhook)
+# Esta es la URL donde WhatsApp enviará los mensajes
+# Debe ser: https://tu-dominio.com/api/webhooks/whatsapp
+WHATSAPP_WEBHOOK_URL=https://tu-dominio.com/api/webhooks/whatsapp
+
+# ========================================
+# PASOS PARA CONFIGURAR WHATSAPP BUSINESS API:
+# ========================================
+
+# 1. Crear una aplicación en Facebook Developers:
+#    - Ve a: https://developers.facebook.com/
+#    - Crea una nueva aplicación
+#    - Selecciona "Business" como tipo
+
+# 2. Agregar WhatsApp a tu aplicación:
+#    - Ve a: Tu App > Add Product
+#    - Busca "WhatsApp" y agrégalo
+
+# 3. Configurar WhatsApp:
+#    - Ve a: WhatsApp > Getting Started
+#    - Sigue los pasos para configurar tu número de teléfono
+
+# 4. Configurar el webhook:
+#    - Ve a: WhatsApp > Configuration
+#    - Agrega tu URL del webhook: https://tu-dominio.com/api/webhooks/whatsapp
+#    - Agrega el Verify Token que inventaste
+#    - Selecciona los campos: messages, message_deliveries, message_reads
+
+# 5. Obtener las credenciales:
+#    - Access Token: WhatsApp > Getting Started > Access Token
+#    - Phone Number ID: WhatsApp > Getting Started > Phone Number ID
+#    - Business Account ID: WhatsApp > Getting Started > Business Account ID
+#    - App ID: Settings > Basic > App ID
+#    - App Secret: Settings > Basic > App Secret
+
+# 6. Probar el webhook:
+#    - Envía un mensaje con imagen a tu número de WhatsApp
+#    - Verifica los logs en tu aplicación
+#    - La imagen debería aparecer en la vista de documentos
