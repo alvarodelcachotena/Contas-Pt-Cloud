@@ -7,7 +7,7 @@
     "dev": "cross-env NODE_ENV=development tsx server/index.ts",
     "next:dev": "next dev -p 5000",
     "build": "next build",
-    "build:netlify": "cross-env NODE_ENV=production NETLIFY=true copy .env.build .env && copy next.config.netlify.js next.config.js && next build --no-lint --experimental-build-mode=compile && del .env && copy next.config.js next.config.netlify.js",
+    "build:netlify": "next build --no-lint --experimental-build-mode=compile",
     "start": "cross-env NODE_ENV=production node dist/index.js",
     "check": "tsc",
     "lint": "next lint",

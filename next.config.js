@@ -27,8 +27,6 @@ const nextConfig = {
   },
   // Configuración para evitar problemas de build
   trailingSlash: false,
-  // Disable static generation for API routes
-  generateStaticParams: false,
 }
 
 export default nextConfig
