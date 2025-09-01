@@ -20,6 +20,8 @@ const nextConfig = {
   images: {
     unoptimized: true,
   },
+  // Configuración específica para Netlify
+  output: 'standalone',
 }
 
 export default nextConfig

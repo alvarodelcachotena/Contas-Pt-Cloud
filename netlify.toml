@@ -6,6 +6,7 @@
   NODE_VERSION = "18"
   NPM_VERSION = "9"
   NODE_ENV = "production"
+  NETLIFY = "true"
 
 [[plugins]]
   package = "@netlify/plugin-nextjs"
