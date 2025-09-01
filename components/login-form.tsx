@@ -96,6 +96,15 @@ export default function LoginForm() {
                 )}
               </Button>
             </form>
+
+            <div className="mt-6 text-center">
+              <p className="text-sm text-muted-foreground">
+                ¿No tienes una cuenta?{' '}
+                <a href="/register" className="text-primary hover:underline font-medium">
+                  Regístrate aquí
+                </a>
+              </p>
+            </div>
           </CardContent>
           
           <div className="text-center text-xs text-muted-foreground p-6 pt-0 border-t border-border">
