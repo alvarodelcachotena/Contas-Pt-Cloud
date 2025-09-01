@@ -11,6 +11,38 @@ import {
 } from '../../../../lib/whatsapp-config'
 import { GeminiAIService } from '../../../../lib/gemini-ai-service'
 
+// Function to send WhatsApp message response
+async function sendWhatsAppMessage(phoneNumber: string, message: string) {
+  try {
+    const credentials = getWhatsAppCredentials()
+
+    const response = await fetch(`${WHATSAPP_API_BASE}/${credentials.phoneNumberId}/messages`, {
+      method: 'POST',
+      headers: {
+        'Authorization': `Bearer ${credentials.accessToken}`,
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({
+        messaging_product: 'whatsapp',
+        to: phoneNumber,
+        type: 'text',
+        text: { body: message }
+      })
+    })
+
+    if (response.ok) {
+      console.log(`✅ WhatsApp message sent successfully to ${phoneNumber}`)
+      return true
+    } else {
+      console.error(`❌ Failed to send WhatsApp message to ${phoneNumber}`)
+      return false
+    }
+  } catch (error) {
+    console.error('❌ Error sending WhatsApp message:', error)
+    return false
+  }
+}
+
 loadEnvStrict()
 
 function createSupabaseClient() {
@@ -147,9 +179,13 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             processing_status: 'pending',
             source: 'whatsapp_webhook',
             extracted_data: {
+              whatsapp_message: {
+                from: message.from,
+                timestamp: message.timestamp,
+                type: message.type
+              },
               whatsapp_message_id: message.id,
               sender_phone: message.from,
-              timestamp: message.timestamp,
               media_type: message.type
             },
             confidence_score: 0
@@ -164,6 +200,10 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
         if (document) {
           console.log(`✅ Created document record: ${document.id}`)
+
+          // Send initial confirmation message
+          const initialMessage = `📥 Imagen recibida y procesando...\n\n📄 Archivo: ${mediaData.filename}\n📏 Tamaño: ${(mediaData.size / 1024).toFixed(1)} KB\n🤖 Analizando con IA...\n\nTe avisaré cuando esté listo.`
+          await sendWhatsAppMessage(message.from, initialMessage)
 
           // Store the media file in Supabase Storage
           const fileName = `whatsapp/${document.id}/${mediaData.filename}`
@@ -232,6 +272,10 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             console.log(`✅ Document processing completed with AI: ${document.id}`)
 
+            // Send success message to WhatsApp
+            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${analysisResult.document_type}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos\n\nEl documento aparecerá en tu aplicación.`
+            await sendWhatsAppMessage(message.from, successMessage)
+
           } catch (aiError) {
             console.error('❌ Error en procesamiento AI:', aiError)
 
@@ -246,6 +290,10 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
                 }
               })
               .eq('id', document.id)
+
+            // Send error message to WhatsApp
+            const errorMessage = `❌ Error al procesar el documento\n\n🔍 Error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}\n\nEl documento se guardó pero no se pudo analizar. Revisa los logs para más detalles.`
+            await sendWhatsAppMessage(message.from, errorMessage)
           }
         }
       }
