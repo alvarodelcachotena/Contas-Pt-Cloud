@@ -1,4 +1,3 @@
-// Configuración específica para Netlify
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
@@ -16,37 +15,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Configuración específica para Netlify
-  experimental: {
-    // Removed appDir as it's now stable in Next.js 13+
-  },
-  // Configuración para evitar problemas de build
+  // Configuración para Netlify
   trailingSlash: false,
-  // Deshabilitar optimización de imágenes
   images: {
     unoptimized: true,
-  },
-  // Configuración para evitar problemas de generación estática
-  generateStaticParams: false,
-  // Deshabilitar generación estática de páginas de error
-  skipTrailingSlashRedirect: true,
-  // Configuración para Netlify
-  async headers() {
-    return [
-      {
-        source: '/(.*)',
-        headers: [
-          {
-            key: 'X-Frame-Options',
-            value: 'DENY',
-          },
-          {
-            key: 'X-Content-Type-Options',
-            value: 'nosniff',
-          },
-        ],
-      },
-    ]
   },
 }
 
