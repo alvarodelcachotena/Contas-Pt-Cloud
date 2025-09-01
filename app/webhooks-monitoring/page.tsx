@@ -127,7 +127,8 @@ export default function WebhooksMonitoringPage() {
     return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
   }
 
-  const getDocumentTypeIcon = (mimeType: string) => {
+  const getDocumentTypeIcon = (mimeType?: string) => {
+    if (!mimeType) return <FileText className="w-4 h-4" />
     if (mimeType.startsWith('image/')) return <Image className="w-4 h-4" />
     if (mimeType.includes('pdf')) return <FileText className="w-4 h-4" />
     return <FileText className="w-4 h-4" />

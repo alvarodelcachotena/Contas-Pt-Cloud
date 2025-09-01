@@ -49,9 +49,9 @@ export class GeminiAIService {
     private model: any
 
     constructor() {
-        const apiKey = process.env.GEMINI_API_KEY
+        const apiKey = process.env.GEMINI_AI_API_KEY
         if (!apiKey) {
-            throw new Error('GEMINI_API_KEY no está configurada')
+            throw new Error('GEMINI_AI_API_KEY no está configurada')
         }
 
         this.genAI = new GoogleGenerativeAI(apiKey)
