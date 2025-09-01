@@ -6,7 +6,7 @@ import { loadEnvStrict, getSupabaseUrl, getSupabaseServiceRoleKey } from '../../
 // Force loading from .env file only
 loadEnvStrict()
 
-// Get environment variables using strict loader - using service role key for authentication
+// Get environment variables using strict loader - using service role key for full permissions
 const SUPABASE_URL = getSupabaseUrl()
 const SUPABASE_SERVICE_ROLE_KEY = getSupabaseServiceRoleKey()
 
@@ -15,10 +15,10 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY)
 export async function POST(request: NextRequest) {
   try {
     console.log('🚀 Iniciando proceso de registro...')
-    
+
     const body = await request.json()
     console.log('📝 Datos recibidos:', { ...body, password: '[HIDDEN]' })
-    
+
     const { email, password, name, companyName, nif } = body
 
     // Validar campos requeridos
@@ -92,9 +92,8 @@ export async function POST(request: NextRequest) {
       email: email.toLowerCase().trim(),
       name: name.trim(),
       password_hash: passwordHash,
-      role: 'user',
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      role: 'user'
+      // No especificar created_at para usar el valor por defecto de la base de datos
     }
     console.log('📝 Datos del usuario a insertar:', { ...userData, password_hash: '[HIDDEN]' })
 
@@ -121,10 +120,9 @@ export async function POST(request: NextRequest) {
       console.log('🏢 Creando tenant para la empresa...')
       const tenantData = {
         name: companyName.trim(),
-        tax_id: nif.trim(),
-        address: '',
-        created_at: new Date().toISOString(),
-        updated_at: new Date().toISOString()
+        nif: nif.trim(),
+        address: ''
+        // No especificar created_at para usar el valor por defecto de la base de datos
       }
       console.log('📝 Datos del tenant:', tenantData)
 
@@ -152,9 +150,8 @@ export async function POST(request: NextRequest) {
       user_id: newUser.id,
       tenant_id: tenantId,
       role: 'admin',
-      is_active: true,
-      created_at: new Date().toISOString(),
-      updated_at: new Date().toISOString()
+      is_active: true
+      // No especificar created_at para usar el valor por defecto de la base de datos
     }
     console.log('📝 Datos de asignación:', userTenantData)
 
@@ -190,7 +187,7 @@ export async function POST(request: NextRequest) {
   } catch (error) {
     console.error('💥 Registration error:', error)
     console.error('💥 Error stack:', error instanceof Error ? error.stack : 'No stack available')
-    
+
     // Determinar el tipo de error para dar una respuesta más específica
     let errorMessage = 'Error interno del servidor'
     let statusCode = 500
@@ -206,7 +203,7 @@ export async function POST(request: NextRequest) {
     }
 
     return NextResponse.json(
-      { 
+      {
         error: errorMessage,
         details: process.env.NODE_ENV === 'development' ? error.message : undefined
       },
