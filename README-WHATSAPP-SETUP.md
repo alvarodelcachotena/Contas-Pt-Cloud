@@ -12,6 +12,10 @@ Este sistema permite recibir imágenes y documentos de WhatsApp y procesarlos au
 ✅ **Integración con documentos** - Aparecen en la vista de documentos
 ✅ **Procesamiento automático** - Estado de procesamiento
 ✅ **Logs detallados** - Seguimiento completo de operaciones
+✅ **Análisis con Gemini AI** - Identificación automática de facturas y gastos
+✅ **Creación automática de registros** - Facturas y gastos se crean automáticamente
+✅ **Categorización inteligente** - Clasificación automática por tipo de gasto
+✅ **Panel de monitoreo** - Vista en tiempo real del procesamiento
 
 ## 📱 **Tipos de Media Soportados**
 
@@ -69,13 +73,13 @@ Agrega estas variables a tu archivo `.env`:
 
 ```env
 # WhatsApp Configuration
-WHATSAPP_ACCESS_TOKEN=EAABwzLixnjYBO...
-WHATSAPP_PHONE_NUMBER_ID=123456789012345
-WHATSAPP_BUSINESS_ACCOUNT_ID=123456789012345
-WHATSAPP_APP_ID=123456789012345
-WHATSAPP_APP_SECRET=abcdef123456789...
-WHATSAPP_VERIFY_TOKEN=mi_token_secreto_123
-WHATSAPP_WEBHOOK_URL=https://tu-dominio.com/api/webhooks/whatsapp
+WHATSAPP_ACCESS_TOKEN=EAAULDiaialMBPWcSZCjgZAvZAEqEx0UeCRUhCjju8wxtbSw7JuMoZCjLoKwNpzB7R8oPI30YEP7WbJa3PrDZCFtYecRvsf9rPWOKhOxmJMoSDe69cAlVdf14oeZB2bgfuUxMiOMIVymiHjjZAskNUsqY3JMDEY4RHe71zl2H2ZAGWRZBQTUNeijngr83duTqzUs4WDFfdpt0ZBbZCPZBzj1iEQVTZBa6aTifSZCIGA2F6oQMxKOJuRnOMZD
+WHATSAPP_PHONE_NUMBER_ID=664728370058197
+WHATSAPP_BUSINESS_ACCOUNT_ID=4105106849812542
+WHATSAPP_APP_ID=1419530289179219
+WHATSAPP_APP_SECRET=1c7eba0ef1c438301a9b0f369d6e1708
+WHATSAPP_VERIFY_TOKEN=1c7eba0ef1c438301a9b0f369d6e1708
+WHATSAPP_WEBHOOK_URL=https://contas-pt.netlify.app/api/webhooks/whatsapp
 ```
 
 ### **Paso 6: Configurar Webhook**
@@ -88,7 +92,16 @@ WHATSAPP_WEBHOOK_URL=https://tu-dominio.com/api/webhooks/whatsapp
    - ✅ `message_deliveries`
    - ✅ `message_reads`
 
-### **Paso 7: Configurar Supabase Storage**
+### **Paso 7: Configurar Gemini AI**
+
+1. Ve a [Google AI Studio](https://makersuite.google.com/app/apikey)
+2. Crea una nueva API key
+3. Agrega la variable de entorno:
+   ```env
+   GEMINI_API_KEY=tu_api_key_aqui
+   ```
+
+### **Paso 8: Configurar Supabase Storage**
 
 1. Ve a tu proyecto de Supabase
 2. Ve a **Storage > Buckets**
@@ -131,6 +144,27 @@ FOR SELECT USING (auth.role() = 'authenticated');
    - `processing_status` = 'completed'
 
 ### **Prueba 3: Verificar en la Vista de Documentos**
+
+1. Ve a tu aplicación web
+2. Navega a **Documents**
+3. Deberías ver el documento de WhatsApp
+4. Con el estado "Completed"
+
+### **Prueba 4: Verificar Procesamiento con IA**
+
+1. Ve a **Webhooks Monitoring**
+2. Verifica que el documento aparezca en la lista
+3. Haz clic en el botón de ojo para ver detalles
+4. Deberías ver:
+   - Análisis de IA con tipo de documento
+   - Datos extraídos (NIF, montos, fechas, etc.)
+   - Referencia a factura o gasto creado
+
+### **Prueba 5: Verificar en Facturas/Gastos**
+
+1. Ve a **Invoices** - Debería aparecer la factura procesada
+2. Ve a **Expenses** - Debería aparecer el gasto procesado
+3. Los datos deberían estar completos y correctos
 
 1. Ve a tu aplicación web
 2. Navega a **Documents**

@@ -9,6 +9,7 @@ import {
   getFileExtension,
   WHATSAPP_API_BASE
 } from '../../../../lib/whatsapp-config'
+import { GeminiAIService } from '../../../../lib/gemini-ai-service'
 
 loadEnvStrict()
 
@@ -177,18 +178,55 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
           console.log(`✅ Media uploaded successfully: ${fileName}`)
 
-          // Here you would trigger your AI processing pipeline
-          // For now, we'll just mark it as completed
-          setTimeout(async () => {
+          // Process with Gemini AI
+          try {
+            console.log(`🤖 Procesando con Gemini AI...`)
+            const geminiService = new GeminiAIService()
+            const analysisResult = await geminiService.analyzeDocument(
+              Buffer.from(mediaData.buffer),
+              mediaData.filename
+            )
+
+            console.log(`📊 Resultado del análisis:`, analysisResult)
+
+            // Update document with AI analysis results
             await supabase
               .from('documents')
               .update({
                 processing_status: 'completed',
-                confidence_score: 0.8
+                confidence_score: analysisResult.confidence,
+                extracted_data: {
+                  ...document.extracted_data,
+                  ai_analysis: analysisResult,
+                  processed_at: new Date().toISOString()
+                }
               })
               .eq('id', document.id)
-            console.log(`✅ Document processing completed: ${document.id}`)
-          }, 2000)
+
+            // Process based on document type
+            if (analysisResult.document_type === 'invoice') {
+              await processInvoice(analysisResult.extracted_data, document.id, supabase, tenantId)
+            } else if (analysisResult.document_type === 'expense') {
+              await processExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
+            }
+
+            console.log(`✅ Document processing completed with AI: ${document.id}`)
+
+          } catch (aiError) {
+            console.error('❌ Error en procesamiento AI:', aiError)
+
+            // Update document status to failed
+            await supabase
+              .from('documents')
+              .update({
+                processing_status: 'failed',
+                extracted_data: {
+                  ...document.extracted_data,
+                  ai_error: aiError instanceof Error ? aiError.message : 'Unknown AI error'
+                }
+              })
+              .eq('id', document.id)
+          }
         }
       }
     } else if (message.type === 'text') {
@@ -249,5 +287,136 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string) {
   } catch (error) {
     console.error('Error downloading WhatsApp media:', error)
     return null
+  }
+}
+
+// Process invoice data and create invoice record
+async function processInvoice(invoiceData: any, documentId: number, supabase: any, tenantId: number) {
+  try {
+    console.log(`📄 Procesando factura: ${invoiceData.invoice_number}`)
+
+    // Create or find client
+    let clientId = null
+    if (invoiceData.vendor_nif) {
+      const { data: existingClient } = await supabase
+        .from('clients')
+        .select('id')
+        .eq('tenant_id', tenantId)
+        .eq('nif', invoiceData.vendor_nif)
+        .single()
+
+      if (existingClient) {
+        clientId = existingClient.id
+        console.log(`👤 Cliente existente encontrado: ${clientId}`)
+      } else {
+        // Create new client
+        const { data: newClient } = await supabase
+          .from('clients')
+          .insert({
+            tenant_id: tenantId,
+            name: invoiceData.vendor_name,
+            nif: invoiceData.vendor_nif,
+            address: invoiceData.vendor_address
+          })
+          .select()
+          .single()
+
+        if (newClient) {
+          clientId = newClient.id
+          console.log(`✅ Nuevo cliente creado: ${clientId}`)
+        }
+      }
+    }
+
+    // Create invoice record
+    const { data: invoice, error: invoiceError } = await supabase
+      .from('invoices')
+      .insert({
+        tenant_id: tenantId,
+        client_id: clientId,
+        number: invoiceData.invoice_number,
+        client_name: invoiceData.vendor_name,
+        client_email: null,
+        client_tax_id: invoiceData.vendor_nif,
+        issue_date: invoiceData.invoice_date,
+        due_date: invoiceData.due_date,
+        amount: invoiceData.subtotal,
+        vat_amount: invoiceData.vat_amount,
+        vat_rate: invoiceData.vat_rate,
+        total_amount: invoiceData.total_amount,
+        status: 'pending',
+        description: invoiceData.description,
+        payment_terms: null
+      })
+      .select()
+      .single()
+
+    if (invoiceError) {
+      throw new Error(`Error creating invoice: ${invoiceError.message}`)
+    }
+
+    console.log(`✅ Factura creada: ${invoice.id}`)
+
+    // Update document with invoice reference
+    await supabase
+      .from('documents')
+      .update({
+        extracted_data: {
+          invoice_id: invoice.id,
+          processing_notes: ['Factura procesada y creada exitosamente']
+        }
+      })
+      .eq('id', documentId)
+
+  } catch (error) {
+    console.error('❌ Error processing invoice:', error)
+    throw error
+  }
+}
+
+// Process expense data and create expense record
+async function processExpense(expenseData: any, documentId: number, supabase: any, tenantId: number) {
+  try {
+    console.log(`💰 Procesando gasto: ${expenseData.description}`)
+
+    // Create expense record
+    const { data: expense, error: expenseError } = await supabase
+      .from('expenses')
+      .insert({
+        tenant_id: tenantId,
+        vendor: expenseData.vendor,
+        amount: expenseData.amount,
+        vat_amount: expenseData.vat_amount,
+        vat_rate: expenseData.vat_rate,
+        category: expenseData.category,
+        description: expenseData.description,
+        receipt_number: expenseData.receipt_number,
+        expense_date: expenseData.expense_date,
+        is_deductible: expenseData.is_deductible,
+        processing_method: 'whatsapp_ai'
+      })
+      .select()
+      .single()
+
+    if (expenseError) {
+      throw new Error(`Error creating expense: ${expenseError.message}`)
+    }
+
+    console.log(`✅ Gasto creado: ${expense.id}`)
+
+    // Update document with expense reference
+    await supabase
+      .from('documents')
+      .update({
+        extracted_data: {
+          expense_id: expense.id,
+          processing_notes: ['Gasto procesado y creado exitosamente']
+        }
+      })
+      .eq('id', documentId)
+
+  } catch (error) {
+    console.error('❌ Error processing expense:', error)
+    throw error
   }
 }

@@ -30,6 +30,10 @@ WHATSAPP_VERIFY_TOKEN=mi_token_secreto_123
 # Debe ser: https://tu-dominio.com/api/webhooks/whatsapp
 WHATSAPP_WEBHOOK_URL=https://tu-dominio.com/api/webhooks/whatsapp
 
+# Gemini AI Configuration
+# Obtén tu API key desde: https://makersuite.google.com/app/apikey
+GEMINI_API_KEY=tu_api_key_de_gemini_aqui
+
 # ========================================
 # PASOS PARA CONFIGURAR WHATSAPP BUSINESS API:
 # ========================================

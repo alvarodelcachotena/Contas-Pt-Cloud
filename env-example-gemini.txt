@@ -1,0 +1,112 @@
+# Gemini AI Configuration
+# Obtén tu API key desde: https://makersuite.google.com/app/apikey
+
+# 1. Ve a Google AI Studio
+# 2. Inicia sesión con tu cuenta de Google
+# 3. Haz clic en "Get API key"
+# 4. Copia la API key generada
+
+GEMINI_API_KEY=AIzaSyC...
+
+# ========================================
+# PASOS PARA CONFIGURAR GEMINI AI:
+# ========================================
+
+# 1. Crear cuenta en Google AI Studio:
+#    - Ve a: https://makersuite.google.com/app/apikey
+#    - Inicia sesión con tu cuenta de Google
+#    - Acepta los términos de servicio
+
+# 2. Generar API Key:
+#    - Haz clic en "Get API key"
+#    - Selecciona "Create API key in new project" o proyecto existente
+#    - Copia la API key generada
+
+# 3. Configurar en tu aplicación:
+#    - Agrega la variable GEMINI_API_KEY a tu archivo .env
+#    - Reinicia tu aplicación
+
+# 4. Verificar funcionamiento:
+#    - Envía una imagen de factura por WhatsApp
+#    - Verifica los logs de la aplicación
+#    - Deberías ver "🤖 Procesando con Gemini AI..."
+
+# ========================================
+# FUNCIONALIDADES DE GEMINI AI:
+# ========================================
+
+# ✅ Análisis automático de facturas
+# ✅ Extracción de datos (NIF, montos, fechas)
+# ✅ Identificación de tipo de documento
+# ✅ Categorización automática de gastos
+# ✅ Creación automática de registros en BD
+# ✅ Procesamiento en tiempo real
+
+# ========================================
+# TIPOS DE DOCUMENTOS SOPORTADOS:
+# ========================================
+
+# 📄 Facturas comerciales
+# 🧾 Recibos de gastos
+# 🏪 Comprobantes de compra
+# 🚗 Facturas de gasolina
+# 🍽️ Facturas de restaurantes
+# 🏢 Facturas de servicios
+
+# ========================================
+# DATOS EXTRAÍDOS:
+# ========================================
+
+# Para Facturas:
+# - Nombre del vendedor
+# - NIF del vendedor
+# - Número de factura
+# - Fecha de emisión
+# - Subtotal, IVA, Total
+# - Descripción de productos
+
+# Para Gastos:
+# - Nombre del establecimiento
+# - NIF del establecimiento
+# - Monto total
+# - Porcentaje de IVA
+# - Categoría automática
+# - Fecha del gasto
+
+# ========================================
+# TROUBLESHOOTING:
+# ========================================
+
+# Error: "GEMINI_API_KEY no está configurada"
+# - Verifica que la variable esté en tu archivo .env
+# - Reinicia tu aplicación
+
+# Error: "API key inválida"
+# - Verifica que la API key sea correcta
+# - Asegúrate de que no tenga espacios extra
+
+# Error: "Cuota excedida"
+# - Verifica tu límite de uso en Google AI Studio
+# - Considera actualizar tu plan
+
+# ========================================
+# LÍMITES Y COSTOS:
+# ========================================
+
+# - Gratis: 15 requests por minuto
+# - Modelo: gemini-pro-vision
+# - Tamaño máximo de imagen: 20MB
+# - Formatos soportados: JPEG, PNG, GIF, WebP
+
+# ========================================
+# PRIVACIDAD Y SEGURIDAD:
+# ========================================
+
+# - Las imágenes se envían a Google para análisis
+# - No se almacenan permanentemente en Google
+# - Los datos extraídos se guardan en tu BD local
+# - Cumple con GDPR y regulaciones de privacidad
+
+---
+
+**¡Con Gemini AI, tu sistema de WhatsApp será completamente inteligente! 🚀🤖**
