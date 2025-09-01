@@ -24,6 +24,19 @@ function createSupabaseClient() {
 
 // Get WhatsApp credentials from environment variables
 function getWhatsAppCredentials() {
+  // Debug: Log all environment variables
+  console.log('🔍 Environment variables:')
+  console.log('  - WHATSAPP_ACCESS_TOKEN:', process.env.WHATSAPP_ACCESS_TOKEN ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_PHONE_NUMBER_ID:', process.env.WHATSAPP_PHONE_NUMBER_ID ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_BUSINESS_ACCOUNT_ID:', process.env.WHATSAPP_BUSINESS_ACCOUNT_ID ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_APP_ID:', process.env.WHATSAPP_APP_ID ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_APP_SECRET:', process.env.WHATSAPP_APP_SECRET ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_VERIFY_TOKEN:', process.env.WHATSAPP_VERIFY_TOKEN ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_WEBHOOK_URL:', process.env.WHATSAPP_WEBHOOK_URL ? '✅ Set' : '❌ Not set')
+
+  // Debug: Show actual verify token value
+  console.log('  - Verify Token value:', process.env.WHATSAPP_VERIFY_TOKEN)
+
   return {
     accessToken: process.env.WHATSAPP_ACCESS_TOKEN!,
     phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
@@ -44,6 +57,13 @@ export async function GET(request: NextRequest) {
 
   const credentials = getWhatsAppCredentials()
   const expectedToken = credentials.verifyToken
+
+  // Debug: Log the tokens to see what's happening
+  console.log('🔍 Debug webhook verification:')
+  console.log('  - Mode:', mode)
+  console.log('  - Received token:', token)
+  console.log('  - Expected token:', expectedToken)
+  console.log('  - Tokens match:', mode === 'subscribe' && token === expectedToken)
 
   if (mode === 'subscribe' && token === expectedToken) {
     console.log('✅ WhatsApp webhook verified successfully')
