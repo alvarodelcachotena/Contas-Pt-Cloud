@@ -59,7 +59,7 @@ export class DocumentAIService {
             console.log('Longitud de API key:', apiKey.length)
             console.log('API key comienza con:', apiKey.substring(0, 15))
             console.log('API key termina con:', apiKey.substring(apiKey.length - 4))
-            
+
             // Verificar si es la API key incorrecta
             if (apiKey.endsWith('9OcA')) {
                 console.error('❌ Se detectó una API key antigua/incorrecta')

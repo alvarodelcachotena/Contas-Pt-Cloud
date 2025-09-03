@@ -520,15 +520,15 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
 }
 
 function verifyApiKey() {
-    const apiKey = process.env.OPENAI_API_KEY
-    if (!apiKey) {
-        throw new Error('OPENAI_API_KEY no está configurada')
-    }
-    if (apiKey.endsWith('9OcA')) {
-        throw new Error('Se detectó una API key antigua/incorrecta')
-    }
-    if (!apiKey.startsWith('sk-svcacct-')) {
-        throw new Error('Formato de API key incorrecto')
-    }
-    return true
+  const apiKey = process.env.OPENAI_API_KEY
+  if (!apiKey) {
+    throw new Error('OPENAI_API_KEY no está configurada')
+  }
+  if (apiKey.endsWith('9OcA')) {
+    throw new Error('Se detectó una API key antigua/incorrecta')
+  }
+  if (!apiKey.startsWith('sk-svcacct-')) {
+    throw new Error('Formato de API key incorrecto')
+  }
+  return true
 }
