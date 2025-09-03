@@ -51,7 +51,7 @@ export class DocumentAIService {
 
     constructor() {
         const apiKey = process.env.OPENAI_API_KEY
-        
+
         // Debug: Mostrar información sobre la API key
         console.log('🔍 Verificando API key...')
         console.log('API key está definida:', !!apiKey)
@@ -59,11 +59,11 @@ export class DocumentAIService {
             console.log('Longitud de API key:', apiKey.length)
             console.log('Primeros 10 caracteres:', apiKey.substring(0, 10))
             console.log('Últimos 10 caracteres:', apiKey.substring(apiKey.length - 10))
-            
+
             // Verificar si hay caracteres no válidos
             const hasInvalidChars = /[\s\n\r]/.test(apiKey)
             console.log('Tiene caracteres no válidos:', hasInvalidChars)
-            
+
             // Mostrar la API key completa en desarrollo (comentar en producción)
             console.log('API key completa:', apiKey)
         }
