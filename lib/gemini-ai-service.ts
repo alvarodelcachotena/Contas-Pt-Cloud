@@ -56,7 +56,10 @@ export class DocumentAIService {
         }
 
         this.openai = new OpenAI({
-            apiKey: apiKey
+            apiKey: apiKey,
+            // Configuración adicional para mejorar la estabilidad
+            maxRetries: 3,
+            timeout: 120000 // 2 minutos para procesar imágenes grandes
         })
     }
 
@@ -67,7 +70,71 @@ export class DocumentAIService {
             // Convertir buffer a base64
             const base64Image = imageBuffer.toString('base64')
 
-            const prompt = `
+            console.log('🤖 Enviando imagen a OpenAI para análisis...')
+
+            const response = await this.openai.chat.completions.create({
+                model: "gpt-4-vision-preview",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { 
+                                type: "text", 
+                                text: this.getPrompt() 
+                            },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: `data:${this.getMimeType(filename)};base64,${base64Image}`
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens: 4096,
+                temperature: 0.2 // Reducimos la temperatura para respuestas más precisas
+            })
+
+            console.log(`📋 Respuesta completa de OpenAI:`, response.choices[0].message.content)
+
+            // Extraer JSON de la respuesta
+            const text = response.choices[0].message.content || ''
+            const jsonMatch = text.match(/\{[\s\S]*\}/)
+            if (!jsonMatch) {
+                throw new Error('No se pudo extraer JSON de la respuesta de OpenAI')
+            }
+
+            let analysisResult: DocumentAnalysisResult
+            try {
+                analysisResult = JSON.parse(jsonMatch[0])
+                console.log('✅ Datos extraídos:', JSON.stringify(analysisResult, null, 2))
+            } catch (error) {
+                console.error('❌ Error al parsear JSON:', error)
+                throw new Error('El formato de respuesta de OpenAI no es válido')
+            }
+
+            // Validar y limpiar los datos
+            this.validateAndCleanData(analysisResult)
+
+            return analysisResult
+
+        } catch (error) {
+            console.error('❌ Error detallado en análisis de OpenAI:', error)
+            if (error instanceof Error) {
+                console.error('Stack trace:', error.stack)
+                console.error('Error message:', error.message)
+                // Verificar si es un error de API
+                if ('status' in error) {
+                    console.error('Status:', (error as any).status)
+                    console.error('Response:', (error as any).response)
+                }
+            }
+            throw error
+        }
+    }
+
+    private getPrompt(): string {
+        return `
             Analiza detalladamente esta imagen de un documento comercial (factura o recibo) y extrae TODOS los datos que encuentres.
 
             INSTRUCCIONES ESPECÍFICAS:
@@ -107,55 +174,6 @@ export class DocumentAIService {
             }
 
             RECUERDA: Extrae TODOS los números y texto que veas en la imagen. NO OMITAS INFORMACIÓN.`
-
-            console.log('🤖 Enviando imagen a OpenAI para análisis...')
-
-            const response = await this.openai.chat.completions.create({
-                model: "gpt-4-vision-preview",
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: prompt },
-                            {
-                                type: "image_url",
-                                image_url: {
-                                    url: `data:${this.getMimeType(filename)};base64,${base64Image}`
-                                }
-                            }
-                        ]
-                    }
-                ],
-                max_tokens: 4096
-            })
-
-            console.log(`📋 Respuesta completa de OpenAI:`, response.choices[0].message.content)
-
-            // Extraer JSON de la respuesta
-            const text = response.choices[0].message.content || ''
-            const jsonMatch = text.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) {
-                throw new Error('No se pudo extraer JSON de la respuesta de OpenAI')
-            }
-
-            let analysisResult: DocumentAnalysisResult
-            try {
-                analysisResult = JSON.parse(jsonMatch[0])
-                console.log('✅ Datos extraídos:', JSON.stringify(analysisResult, null, 2))
-            } catch (error) {
-                console.error('❌ Error al parsear JSON:', error)
-                throw new Error('El formato de respuesta de OpenAI no es válido')
-            }
-
-            // Validar y limpiar los datos
-            this.validateAndCleanData(analysisResult)
-
-            return analysisResult
-
-        } catch (error) {
-            console.error('❌ Error en análisis de OpenAI:', error)
-            throw error
-        }
     }
 
     private getMimeType(filename: string): string {
