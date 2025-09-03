@@ -111,26 +111,50 @@ export async function GET(request: NextRequest) {
 
 // Handle WhatsApp webhook messages
 export async function POST(request: NextRequest) {
+  console.log('🚀 === WHATSAPP WEBHOOK POST RECIBIDO ===');
+  console.log('📅 Timestamp:', new Date().toISOString());
+  console.log('🌐 User Agent:', request.headers.get('user-agent'));
+  console.log('🔑 Content-Type:', request.headers.get('content-type'));
+
   try {
     const body: WhatsAppWebhookPayload = await request.json()
-    console.log('📥 WhatsApp webhook received:', JSON.stringify(body, null, 2))
+    console.log('📥 WhatsApp webhook payload:', JSON.stringify(body, null, 2))
 
     // Process webhook data
     if (body.entry && body.entry[0]?.changes) {
+      console.log(`📋 Procesando ${body.entry[0].changes.length} cambios`);
+
       for (const change of body.entry[0].changes) {
+        console.log(`🔄 Procesando cambio:`, change.field);
+
         if (change.value?.messages) {
+          console.log(`📱 Procesando ${change.value.messages.length} mensajes`);
+
           for (const message of change.value.messages) {
+            console.log(`💬 Procesando mensaje ID: ${message.id}, Tipo: ${message.type}`);
             await processWhatsAppMessage(message, change.value.metadata?.phone_number_id)
           }
+        } else {
+          console.log('⚠️ No hay mensajes en este cambio');
         }
       }
+    } else {
+      console.log('⚠️ Estructura del webhook no válida o sin cambios');
     }
 
-    return NextResponse.json({ success: true })
+    console.log('✅ Webhook procesado exitosamente');
+    return NextResponse.json({ success: true, timestamp: new Date().toISOString() })
 
   } catch (error) {
-    console.error('Error processing WhatsApp webhook:', error)
-    return NextResponse.json({ error: 'Webhook processing failed' }, { status: 500 })
+    console.error('❌ Error procesando webhook de WhatsApp:', error)
+    if (error instanceof Error) {
+      console.error('📋 Stack trace:', error.stack)
+    }
+    return NextResponse.json({
+      error: 'Webhook processing failed',
+      message: error instanceof Error ? error.message : 'Unknown error',
+      timestamp: new Date().toISOString()
+    }, { status: 500 })
   }
 }
 
@@ -177,14 +201,13 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             file_size: mediaData.size,
             mime_type: mediaData.mime_type,
             processing_status: 'pending',
-            source: 'whatsapp_webhook',
+            processing_method: 'whatsapp_webhook',
             extracted_data: {
               whatsapp_message: {
                 from: message.from,
                 timestamp: message.timestamp,
                 type: message.type
               },
-              whatsapp_message_id: message.id,
               sender_phone: message.from,
               media_type: message.type
             },
@@ -296,6 +319,11 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             await sendWhatsAppMessage(message.from, errorMessage)
           }
         }
+      } else {
+        console.error('❌ Failed to download media from WhatsApp')
+        // Send error message to user
+        const errorMessage = `❌ Error al descargar la imagen\n\n🔍 No se pudo descargar la imagen de WhatsApp. Inténtalo de nuevo.`
+        await sendWhatsAppMessage(message.from, errorMessage)
       }
     } else if (message.type === 'text') {
       console.log(`💬 Text message received: ${message.text?.body}`)
