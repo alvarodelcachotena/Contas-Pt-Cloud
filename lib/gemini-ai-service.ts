@@ -56,9 +56,7 @@ export class DocumentAIService {
         }
 
         this.openai = new OpenAI({
-            apiKey: apiKey,
-            maxRetries: 3,
-            timeout: 120000
+            apiKey: apiKey
         })
     }
 
@@ -76,29 +74,7 @@ export class DocumentAIService {
             const base64Image = imageBuffer.toString('base64')
             console.log('📋 Longitud de base64:', base64Image.length)
 
-            console.log('🤖 Configurando llamada a OpenAI...')
-
-            // Test simple de la API antes de procesar la imagen
-            try {
-                console.log('🔄 Realizando test de conexión...')
-                const testResponse = await this.openai.chat.completions.create({
-                    model: "gpt-4",
-                    messages: [{ role: "user", content: "Test connection" }],
-                    max_tokens: 5
-                })
-                console.log('✅ Test de conexión exitoso:', testResponse)
-            } catch (testError: any) {
-                console.error('❌ Error detallado en test de conexión:', {
-                    error: testError,
-                    message: testError.message,
-                    response: testError.response?.data,
-                    status: testError.status
-                })
-                throw testError
-            }
-
-            // Si el test pasa, proceder con el análisis de la imagen
-            console.log('🚀 Enviando imagen a OpenAI para análisis...')
+            console.log('🤖 Enviando imagen a OpenAI para análisis...')
 
             const response = await this.openai.chat.completions.create({
                 model: "gpt-4-vision-preview",
@@ -116,8 +92,7 @@ export class DocumentAIService {
                         ]
                     }
                 ],
-                max_tokens: 4096,
-                temperature: 0.2
+                max_tokens: 4096
             })
 
             console.log(`📋 Respuesta completa de OpenAI:`, response.choices[0].message.content)
