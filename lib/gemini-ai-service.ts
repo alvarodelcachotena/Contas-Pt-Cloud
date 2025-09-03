@@ -87,11 +87,17 @@ export class DocumentAIService {
                 })
                 console.log('✅ Conexión verificada')
             } catch (testError) {
-                console.error('❌ Error en test de conexión:', testError)
-                throw new Error(`Error de conexión: ${testError.message}`)
+                if (testError instanceof Error) {
+                    console.error('❌ Error en test de conexión:', testError)
+                    throw new Error(`Error de conexión: ${testError.message}`)
+                } else {
+                    console.error('❌ Error en test de conexión:', testError)
+                    throw new Error('Error de conexión desconocido')
+                }
             }
 
             // Continuar con el procesamiento de la imagen
+            const base64Image = imageBuffer.toString('base64')
             console.log('📊 Tamaño de la imagen en base64:', base64Image.length)
 
             console.log('🤖 Enviando imagen a OpenAI para análisis...')
@@ -106,13 +112,12 @@ export class DocumentAIService {
                             {
                                 type: "image_url",
                                 image_url: {
-                                    url: `data:${this.getMimeType(filename)};base64,${base64Image}`
+                                    url: `data:${this.getMimeType(filename)};base64,${imageBuffer.toString('base64')}`
                                 }
                             }
                         ]
                     }
                 ],
-                max_tokens: 4096
             })
 
             console.log(`📋 Respuesta completa de OpenAI:`, response.choices[0].message.content)
