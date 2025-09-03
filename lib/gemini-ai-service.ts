@@ -55,7 +55,7 @@ export class GeminiAIService {
         }
 
         this.genAI = new GoogleGenerativeAI(apiKey)
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-pro-vision' })
+        this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
     }
 
     async analyzeDocument(imageBuffer: Buffer, filename: string): Promise<DocumentAnalysisResult> {
@@ -174,19 +174,22 @@ export class GeminiAIService {
             const invoiceData = result.extracted_data as InvoiceData
 
             // Limpiar NIF (solo números)
-            if (invoiceData.vendor_nif) {
+            if (invoiceData.vendor_nif && typeof invoiceData.vendor_nif === 'string') {
                 invoiceData.vendor_nif = invoiceData.vendor_nif.replace(/\D/g, '')
             }
 
             // Asegurar que los montos sean números
             if (typeof invoiceData.subtotal === 'string') {
-                invoiceData.subtotal = parseFloat(invoiceData.subtotal.replace(/[^\d.,]/g, '').replace(',', '.'))
+                const subtotalStr = invoiceData.subtotal as string
+                invoiceData.subtotal = parseFloat(subtotalStr.replace(/[^\d.,]/g, '').replace(',', '.'))
             }
             if (typeof invoiceData.vat_amount === 'string') {
-                invoiceData.vat_amount = parseFloat(invoiceData.vat_amount.replace(/[^\d.,]/g, '').replace(',', '.'))
+                const vatAmountStr = invoiceData.vat_amount as string
+                invoiceData.vat_amount = parseFloat(vatAmountStr.replace(/[^\d.,]/g, '').replace(',', '.'))
             }
             if (typeof invoiceData.total_amount === 'string') {
-                invoiceData.total_amount = parseFloat(invoiceData.total_amount.replace(/[^\d.,]/g, '').replace(',', '.'))
+                const totalAmountStr = invoiceData.total_amount as string
+                invoiceData.total_amount = parseFloat(totalAmountStr.replace(/[^\d.,]/g, '').replace(',', '.'))
             }
 
             // Validar fechas
@@ -199,16 +202,18 @@ export class GeminiAIService {
             const expenseData = result.extracted_data as ExpenseData
 
             // Limpiar NIF
-            if (expenseData.vendor_nif) {
+            if (expenseData.vendor_nif && typeof expenseData.vendor_nif === 'string') {
                 expenseData.vendor_nif = expenseData.vendor_nif.replace(/\D/g, '')
             }
 
             // Asegurar que los montos sean números
             if (typeof expenseData.amount === 'string') {
-                expenseData.amount = parseFloat(expenseData.amount.replace(/[^\d.,]/g, '').replace(',', '.'))
+                const amountStr = expenseData.amount as string
+                expenseData.amount = parseFloat(amountStr.replace(/[^\d.,]/g, '').replace(',', '.'))
             }
             if (typeof expenseData.vat_amount === 'string') {
-                expenseData.vat_amount = parseFloat(expenseData.vat_amount.replace(/[^\d.,]/g, '').replace(',', '.'))
+                const vatAmountStr = expenseData.vat_amount as string
+                expenseData.vat_amount = parseFloat(vatAmountStr.replace(/[^\d.,]/g, '').replace(',', '.'))
             }
 
             // Validar fecha
