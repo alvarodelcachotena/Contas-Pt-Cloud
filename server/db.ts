@@ -1,5 +1,4 @@
 import { createClient } from '@supabase/supabase-js';
-import { Database } from '../types/supabase';
 
 if (!process.env.SUPABASE_URL) {
     throw new Error('SUPABASE_URL no está configurada');
@@ -10,7 +9,7 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
 }
 
 // Crear cliente de Supabase
-export const supabase = createClient<Database>(
+export const supabase = createClient(
     process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     {
@@ -20,6 +19,9 @@ export const supabase = createClient<Database>(
         }
     }
 );
+
+// Exportar db para compatibilidad con código existente
+export const db = supabase;
 
 // Función para testar la conexión
 export async function testConnection() {
