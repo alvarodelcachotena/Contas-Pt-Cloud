@@ -173,52 +173,125 @@ export class GeminiAIService {
         if (result.document_type === 'invoice') {
             const invoiceData = result.extracted_data as InvoiceData
 
+            // Asegurar que los campos obligatorios existan
+            if (!invoiceData.invoice_number) {
+                // Generar un número de factura temporal si no existe
+                const timestamp = new Date().getTime()
+                invoiceData.invoice_number = `AUTO-${timestamp}`
+                result.processing_notes.push('Se generó un número de factura automático')
+            }
+
+            if (!invoiceData.vendor_name) {
+                invoiceData.vendor_name = 'Proveedor Desconocido'
+                result.processing_notes.push('Nombre del proveedor no detectado')
+            }
+
             // Limpiar NIF (solo números)
             if (invoiceData.vendor_nif && typeof invoiceData.vendor_nif === 'string') {
                 invoiceData.vendor_nif = invoiceData.vendor_nif.replace(/\D/g, '')
+            } else {
+                invoiceData.vendor_nif = '000000000'
+                result.processing_notes.push('NIF no detectado, se usó valor por defecto')
             }
 
-            // Asegurar que los montos sean números
+            // Asegurar que los montos sean números válidos
             if (typeof invoiceData.subtotal === 'string') {
                 const subtotalStr = invoiceData.subtotal as string
-                invoiceData.subtotal = parseFloat(subtotalStr.replace(/[^\d.,]/g, '').replace(',', '.'))
-            }
-            if (typeof invoiceData.vat_amount === 'string') {
-                const vatAmountStr = invoiceData.vat_amount as string
-                invoiceData.vat_amount = parseFloat(vatAmountStr.replace(/[^\d.,]/g, '').replace(',', '.'))
-            }
-            if (typeof invoiceData.total_amount === 'string') {
-                const totalAmountStr = invoiceData.total_amount as string
-                invoiceData.total_amount = parseFloat(totalAmountStr.replace(/[^\d.,]/g, '').replace(',', '.'))
+                invoiceData.subtotal = parseFloat(subtotalStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+            } else if (typeof invoiceData.subtotal !== 'number') {
+                invoiceData.subtotal = 0
+                result.processing_notes.push('Subtotal no detectado, se estableció en 0')
             }
 
-            // Validar fechas
-            if (invoiceData.invoice_date && !this.isValidDate(invoiceData.invoice_date)) {
+            if (typeof invoiceData.vat_amount === 'string') {
+                const vatAmountStr = invoiceData.vat_amount as string
+                invoiceData.vat_amount = parseFloat(vatAmountStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+            } else if (typeof invoiceData.vat_amount !== 'number') {
+                invoiceData.vat_amount = 0
+                result.processing_notes.push('IVA no detectado, se estableció en 0')
+            }
+
+            if (typeof invoiceData.total_amount === 'string') {
+                const totalAmountStr = invoiceData.total_amount as string
+                invoiceData.total_amount = parseFloat(totalAmountStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+            } else if (typeof invoiceData.total_amount !== 'number') {
+                // Si no hay total, intentar calcularlo del subtotal + IVA
+                invoiceData.total_amount = (invoiceData.subtotal || 0) + (invoiceData.vat_amount || 0)
+                result.processing_notes.push('Total calculado automáticamente')
+            }
+
+            // Validar y asignar fechas
+            if (!invoiceData.invoice_date || !this.isValidDate(invoiceData.invoice_date)) {
                 invoiceData.invoice_date = new Date().toISOString().split('T')[0]
+                result.processing_notes.push('Fecha de factura no detectada, se usó la fecha actual')
+            }
+
+            // Asegurar que existe una descripción
+            if (!invoiceData.description) {
+                invoiceData.description = 'Factura procesada automáticamente'
+                result.processing_notes.push('Descripción no detectada')
+            }
+
+            // Asegurar que existe una categoría
+            if (!invoiceData.category) {
+                invoiceData.category = 'otros'
+                result.processing_notes.push('Categoría no detectada')
             }
         }
 
         if (result.document_type === 'expense') {
             const expenseData = result.extracted_data as ExpenseData
 
+            // Asegurar que existe un proveedor
+            if (!expenseData.vendor) {
+                expenseData.vendor = 'Proveedor Desconocido'
+                result.processing_notes.push('Proveedor no detectado')
+            }
+
             // Limpiar NIF
             if (expenseData.vendor_nif && typeof expenseData.vendor_nif === 'string') {
                 expenseData.vendor_nif = expenseData.vendor_nif.replace(/\D/g, '')
             }
 
-            // Asegurar que los montos sean números
+            // Asegurar que los montos sean números válidos
             if (typeof expenseData.amount === 'string') {
                 const amountStr = expenseData.amount as string
-                expenseData.amount = parseFloat(amountStr.replace(/[^\d.,]/g, '').replace(',', '.'))
-            }
-            if (typeof expenseData.vat_amount === 'string') {
-                const vatAmountStr = expenseData.vat_amount as string
-                expenseData.vat_amount = parseFloat(vatAmountStr.replace(/[^\d.,]/g, '').replace(',', '.'))
+                expenseData.amount = parseFloat(amountStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+            } else if (typeof expenseData.amount !== 'number') {
+                expenseData.amount = 0
+                result.processing_notes.push('Monto no detectado, se estableció en 0')
             }
 
-            // Validar fecha
-            if (expenseData.expense_date && !this.isValidDate(expenseData.expense_date)) {
+            if (typeof expenseData.vat_amount === 'string') {
+                const vatAmountStr = expenseData.vat_amount as string
+                expenseData.vat_amount = parseFloat(vatAmountStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0
+            } else if (typeof expenseData.vat_amount !== 'number') {
+                expenseData.vat_amount = 0
+                result.processing_notes.push('IVA no detectado, se estableció en 0')
+            }
+
+            // Validar y asignar fecha
+            if (!expenseData.expense_date || !this.isValidDate(expenseData.expense_date)) {
                 expenseData.expense_date = new Date().toISOString().split('T')[0]
+                result.processing_notes.push('Fecha no detectada, se usó la fecha actual')
+            }
+
+            // Asegurar que existe una descripción
+            if (!expenseData.description) {
+                expenseData.description = 'Gasto procesado automáticamente'
+                result.processing_notes.push('Descripción no detectada')
+            }
+
+            // Asegurar que existe una categoría
+            if (!expenseData.category) {
+                expenseData.category = 'otros'
+                result.processing_notes.push('Categoría no detectada')
+            }
+
+            // Establecer is_deductible por defecto
+            if (typeof expenseData.is_deductible !== 'boolean') {
+                expenseData.is_deductible = true
+                result.processing_notes.push('Deducibilidad no especificada, se asumió deducible')
             }
         }
     }
