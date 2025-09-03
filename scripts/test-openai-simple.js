@@ -5,7 +5,7 @@ async function testOpenAI() {
         console.log('🔍 Iniciando prueba de OpenAI...');
 
         const openai = new OpenAI({
-            apiKey: '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',
+            // apiKey: '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',
             baseURL: 'https://api.openai.com/v1'
         });
 
