@@ -1,7 +1,6 @@
 /** @type {import('next').NextConfig} */
 const nextConfig = {
   reactStrictMode: true,
-  serverExternalPackages: ['@supabase/supabase-js'],
   env: {
     SUPABASE_URL: process.env.SUPABASE_URL || 'https://dummy.supabase.co',
     SUPABASE_ANON_KEY: process.env.SUPABASE_ANON_KEY || 'dummy_anon_key_for_build',
@@ -15,21 +14,10 @@ const nextConfig = {
   eslint: {
     ignoreDuringBuilds: true,
   },
-  // Configuración para Netlify
-  trailingSlash: false,
   images: {
     unoptimized: true,
   },
-  // Configuración específica para Netlify
   output: 'standalone',
-  experimental: {
-    serverActions: true,
-  },
-  // Añadir esta configuración para Edge Runtime
-  experimental: {
-    runtime: 'edge',
-    serverComponents: true,
-  }
 }
 
 export default nextConfig

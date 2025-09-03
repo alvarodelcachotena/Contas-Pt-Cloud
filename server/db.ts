@@ -1,18 +1,22 @@
 import { createClient } from '@supabase/supabase-js';
-import { SUPABASE_URL } from './config';
-import * as schema from '../shared/schema';
+import { Database } from '../types/supabase';
+
+if (!process.env.SUPABASE_URL) {
+    throw new Error('SUPABASE_URL no está configurada');
+}
 
 if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY no está configurada');
 }
 
 // Crear cliente de Supabase
-export const supabase = createClient(
-    SUPABASE_URL!,
+export const supabase = createClient<Database>(
+    process.env.SUPABASE_URL,
     process.env.SUPABASE_SERVICE_ROLE_KEY,
     {
         auth: {
-            persistSession: false
+            persistSession: false,
+            autoRefreshToken: false,
         }
     }
 );
@@ -20,9 +24,13 @@ export const supabase = createClient(
 // Función para testar la conexión
 export async function testConnection() {
     try {
-        const { data, error } = await supabase.from('tenants').select('count').single();
+        const { data, error } = await supabase
+            .from('tenants')
+            .select('count')
+            .single();
+            
         if (error) throw error;
-        console.log('✅ Conexión con base de datos establecida con suceso');
+        console.log('✅ Conexión con base de datos establecida con éxito');
         return true;
     } catch (error) {
         console.error('❌ Error en la conexión con base de datos:', error);
@@ -32,8 +40,7 @@ export async function testConnection() {
 
 // No necesitamos closeConnection con Supabase
 export async function closeConnection() {
-    // No es necesario con Supabase
-    return;
+    return Promise.resolve();
 }
 
 // Verificar conexión en la inicialización
