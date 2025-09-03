@@ -30,7 +30,7 @@ export async function testConnection() {
             .from('tenants')
             .select('count')
             .single();
-            
+
         if (error) throw error;
         console.log('✅ Conexión con base de datos establecida con éxito');
         return true;
