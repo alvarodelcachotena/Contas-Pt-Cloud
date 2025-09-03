@@ -98,8 +98,41 @@ export class DocumentAIService {
             throw error
         }
     }
-    processResponse(response: OpenAI.Chat.Completions.ChatCompletion & { _request_id?: string | null }): DocumentAnalysisResult | PromiseLike<DocumentAnalysisResult> {
-        throw new Error('Method not implemented.')
+    processResponse(response: OpenAI.Chat.Completions.ChatCompletion): DocumentAnalysisResult {
+        try {
+            console.log('🔄 Procesando respuesta de OpenAI:', response.choices[0]?.message?.content)
+
+            // Extraer el texto de la respuesta
+            const text = response.choices[0]?.message?.content
+            if (!text) {
+                throw new Error('Respuesta vacía de OpenAI')
+            }
+
+            // Intentar extraer JSON de la respuesta
+            const jsonMatch = text.match(/\{[\s\S]*\}/)
+            if (!jsonMatch) {
+                throw new Error('No se pudo extraer JSON de la respuesta')
+            }
+
+            // Parsear el JSON
+            const analysisResult: DocumentAnalysisResult = JSON.parse(jsonMatch[0])
+
+            // Validar el resultado
+            if (!analysisResult.document_type || !analysisResult.confidence) {
+                throw new Error('Respuesta incompleta de OpenAI')
+            }
+
+            console.log('✅ Respuesta procesada exitosamente:', {
+                type: analysisResult.document_type,
+                confidence: analysisResult.confidence
+            })
+
+            return analysisResult
+
+        } catch (error) {
+            console.error('❌ Error procesando respuesta:', error)
+            throw new Error(`Error procesando respuesta de OpenAI: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+        }
     }
 
     private getPrompt(): string {
