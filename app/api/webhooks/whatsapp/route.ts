@@ -9,7 +9,7 @@ import {
   getFileExtension,
   WHATSAPP_API_BASE
 } from '../../../../lib/whatsapp-config'
-import { GeminiAIService } from '../../../../lib/gemini-ai-service'
+import { DocumentAIService } from '../../../../lib/gemini-ai-service'
 
 // Function to send WhatsApp message response
 async function sendWhatsAppMessage(phoneNumber: string, message: string) {
@@ -264,8 +264,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
           // Process with Gemini AI
           try {
             console.log(`🤖 Procesando con Gemini AI...`)
-            const geminiService = new GeminiAIService()
-            const analysisResult = await geminiService.analyzeDocument(
+            const aiService = new DocumentAIService()
+            const analysisResult = await aiService.analyzeDocument(
               Buffer.from(mediaData.buffer),
               mediaData.filename
             )
