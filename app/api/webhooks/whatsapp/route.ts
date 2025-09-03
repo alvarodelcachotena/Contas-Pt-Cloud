@@ -117,6 +117,8 @@ export async function POST(request: NextRequest) {
   console.log('🔑 Content-Type:', request.headers.get('content-type'));
 
   try {
+    // Verificar API key al inicio
+    verifyApiKey()
     const body: WhatsAppWebhookPayload = await request.json()
     console.log('📥 WhatsApp webhook payload:', JSON.stringify(body, null, 2))
 
@@ -515,4 +517,18 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     console.error('❌ Error processing expense:', error)
     throw error
   }
+}
+
+function verifyApiKey() {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+        throw new Error('OPENAI_API_KEY no está configurada')
+    }
+    if (apiKey.endsWith('9OcA')) {
+        throw new Error('Se detectó una API key antigua/incorrecta')
+    }
+    if (!apiKey.startsWith('sk-svcacct-')) {
+        throw new Error('Formato de API key incorrecto')
+    }
+    return true
 }

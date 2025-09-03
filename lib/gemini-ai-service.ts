@@ -57,27 +57,42 @@ export class DocumentAIService {
         console.log('API key definida:', !!apiKey)
         if (apiKey) {
             console.log('Longitud de API key:', apiKey.length)
-            console.log('Primeros 12 caracteres:', apiKey.substring(0, 12))
-            console.log('Últimos 4 caracteres:', apiKey.substring(apiKey.length - 4))
+            console.log('API key comienza con:', apiKey.substring(0, 15))
+            console.log('API key termina con:', apiKey.substring(apiKey.length - 4))
+            
+            // Verificar si es la API key incorrecta
+            if (apiKey.endsWith('9OcA')) {
+                console.error('❌ Se detectó una API key antigua/incorrecta')
+                throw new Error('API key incorrecta detectada')
+            }
+
+            // Verificar si es la API key correcta
+            if (!apiKey.startsWith('sk-svcacct-')) {
+                console.error('❌ La API key no tiene el formato correcto')
+                throw new Error('Formato de API key incorrecto')
+            }
         }
 
         if (!apiKey) {
             throw new Error('OPENAI_API_KEY no está configurada')
         }
 
-        // Limpiar la API key por si acaso
-        const cleanApiKey = apiKey.trim()
-
         this.openai = new OpenAI({
-            apiKey: cleanApiKey
+            apiKey: apiKey.trim()
         })
     }
 
     async analyzeDocument(imageBuffer: Buffer, filename: string): Promise<DocumentAnalysisResult> {
         try {
+            // Verificar la API key antes de procesar
+            const currentKey = process.env.OPENAI_API_KEY
+            if (currentKey?.endsWith('9OcA')) {
+                throw new Error('Se detectó una API key antigua/incorrecta durante el procesamiento')
+            }
+
             console.log(`🔍 Analizando documento: ${filename}`)
 
-            // Test de conexión antes de procesar la imagen
+            // Test de conexión
             try {
                 console.log('🔄 Verificando conexión con OpenAI...')
                 const testResponse = await this.openai.chat.completions.create({
@@ -87,13 +102,13 @@ export class DocumentAIService {
                 })
                 console.log('✅ Conexión verificada')
             } catch (testError) {
-                if (testError instanceof Error) {
-                    console.error('❌ Error en test de conexión:', testError)
-                    throw new Error(`Error de conexión: ${testError.message}`)
-                } else {
-                    console.error('❌ Error en test de conexión:', testError)
-                    throw new Error('Error de conexión desconocido')
-                }
+                console.error('❌ Error detallado en test de conexión:', {
+                    error: testError,
+                    message: testError instanceof Error ? testError.message : 'Error desconocido',
+                    apiKeyLength: process.env.OPENAI_API_KEY?.length,
+                    apiKeyStart: process.env.OPENAI_API_KEY?.substring(0, 15)
+                })
+                throw testError
             }
 
             // Continuar con el procesamiento de la imagen
