@@ -55,22 +55,49 @@ export class DocumentAIService {
             throw new Error('OPENAI_API_KEY no está configurada')
         }
 
+        // Debug: Mostrar longitud y primeros/últimos caracteres de la API key
+        console.log('🔑 API Key length:', apiKey.length)
+        console.log('🔑 API Key starts with:', apiKey.substring(0, 10))
+        console.log('🔑 API Key ends with:', apiKey.substring(apiKey.length - 10))
+
         this.openai = new OpenAI({
             apiKey: apiKey,
-            // Configuración adicional para mejorar la estabilidad
             maxRetries: 3,
-            timeout: 120000 // 2 minutos para procesar imágenes grandes
+            timeout: 120000
         })
     }
 
     async analyzeDocument(imageBuffer: Buffer, filename: string): Promise<DocumentAnalysisResult> {
         try {
             console.log(`🔍 Analizando documento: ${filename}`)
+            console.log('📊 Tamaño del buffer:', imageBuffer.length)
+
+            // Verificar que el buffer no esté vacío
+            if (!imageBuffer || imageBuffer.length === 0) {
+                throw new Error('Buffer de imagen vacío')
+            }
 
             // Convertir buffer a base64
             const base64Image = imageBuffer.toString('base64')
+            console.log('📋 Longitud de base64:', base64Image.length)
 
-            console.log('🤖 Enviando imagen a OpenAI para análisis...')
+            console.log('🤖 Configurando llamada a OpenAI...')
+            
+            // Intentar una llamada simple primero para verificar la API key
+            try {
+                const testResponse = await this.openai.chat.completions.create({
+                    model: "gpt-4",
+                    messages: [{ role: "user", content: "Test connection" }],
+                    max_tokens: 5
+                })
+                console.log('✅ Test de conexión exitoso')
+            } catch (testError) {
+                console.error('❌ Error en test de conexión:', testError)
+                throw new Error(`Error de autenticación: ${testError.message}`)
+            }
+
+            // Si el test pasa, proceder con el análisis de la imagen
+            console.log('🚀 Enviando imagen a OpenAI para análisis...')
 
             const response = await this.openai.chat.completions.create({
                 model: "gpt-4-vision-preview",
@@ -78,10 +105,7 @@ export class DocumentAIService {
                     {
                         role: "user",
                         content: [
-                            { 
-                                type: "text", 
-                                text: this.getPrompt() 
-                            },
+                            { type: "text", text: this.getPrompt() },
                             {
                                 type: "image_url",
                                 image_url: {
@@ -92,7 +116,7 @@ export class DocumentAIService {
                     }
                 ],
                 max_tokens: 4096,
-                temperature: 0.2 // Reducimos la temperatura para respuestas más precisas
+                temperature: 0.2
             })
 
             console.log(`📋 Respuesta completa de OpenAI:`, response.choices[0].message.content)
@@ -119,15 +143,11 @@ export class DocumentAIService {
             return analysisResult
 
         } catch (error) {
-            console.error('❌ Error detallado en análisis de OpenAI:', error)
-            if (error instanceof Error) {
-                console.error('Stack trace:', error.stack)
-                console.error('Error message:', error.message)
-                // Verificar si es un error de API
-                if ('status' in error) {
-                    console.error('Status:', (error as any).status)
-                    console.error('Response:', (error as any).response)
-                }
+            console.error('❌ Error completo:', error)
+            console.error('❌ Error message:', error.message)
+            console.error('❌ Error stack:', error.stack)
+            if (error.response) {
+                console.error('❌ Error response:', error.response.data)
             }
             throw error
         }
