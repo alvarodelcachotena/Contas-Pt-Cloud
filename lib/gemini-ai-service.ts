@@ -50,72 +50,20 @@ export class DocumentAIService {
     private openai: OpenAI
 
     constructor() {
+        // Solo usar la variable de entorno directamente
         const apiKey = process.env.OPENAI_API_KEY
-
-        // Debug logging
-        console.log('🔍 Verificando API key...')
-        console.log('API key definida:', !!apiKey)
-        if (apiKey) {
-            console.log('Longitud de API key:', apiKey.length)
-            console.log('API key comienza con:', apiKey.substring(0, 15))
-            console.log('API key termina con:', apiKey.substring(apiKey.length - 4))
-
-            // Verificar si es la API key incorrecta
-            if (apiKey.endsWith('9OcA')) {
-                console.error('❌ Se detectó una API key antigua/incorrecta')
-                throw new Error('API key incorrecta detectada')
-            }
-
-            // Verificar si es la API key correcta
-            if (!apiKey.startsWith('sk-svcacct-')) {
-                console.error('❌ La API key no tiene el formato correcto')
-                throw new Error('Formato de API key incorrecto')
-            }
-        }
-
         if (!apiKey) {
             throw new Error('OPENAI_API_KEY no está configurada')
         }
 
-        this.openai = new OpenAI({
-            apiKey: apiKey.trim()
-        })
+        this.openai = new OpenAI({ apiKey })
     }
 
     async analyzeDocument(imageBuffer: Buffer, filename: string): Promise<DocumentAnalysisResult> {
         try {
-            // Verificar la API key antes de procesar
-            const currentKey = process.env.OPENAI_API_KEY
-            if (currentKey?.endsWith('9OcA')) {
-                throw new Error('Se detectó una API key antigua/incorrecta durante el procesamiento')
-            }
-
             console.log(`🔍 Analizando documento: ${filename}`)
 
-            // Test de conexión
-            try {
-                console.log('🔄 Verificando conexión con OpenAI...')
-                const testResponse = await this.openai.chat.completions.create({
-                    model: "gpt-4",
-                    messages: [{ role: "user", content: "Test connection" }],
-                    max_tokens: 5
-                })
-                console.log('✅ Conexión verificada')
-            } catch (testError) {
-                console.error('❌ Error detallado en test de conexión:', {
-                    error: testError,
-                    message: testError instanceof Error ? testError.message : 'Error desconocido',
-                    apiKeyLength: process.env.OPENAI_API_KEY?.length,
-                    apiKeyStart: process.env.OPENAI_API_KEY?.substring(0, 15)
-                })
-                throw testError
-            }
-
-            // Continuar con el procesamiento de la imagen
             const base64Image = imageBuffer.toString('base64')
-            console.log('📊 Tamaño de la imagen en base64:', base64Image.length)
-
-            console.log('🤖 Enviando imagen a OpenAI para análisis...')
 
             const response = await this.openai.chat.completions.create({
                 model: "gpt-4-vision-preview",
@@ -127,12 +75,13 @@ export class DocumentAIService {
                             {
                                 type: "image_url",
                                 image_url: {
-                                    url: `data:${this.getMimeType(filename)};base64,${imageBuffer.toString('base64')}`
+                                    url: `data:${this.getMimeType(filename)};base64,${base64Image}`
                                 }
                             }
                         ]
                     }
                 ],
+                max_tokens: 4096
             })
 
             console.log(`📋 Respuesta completa de OpenAI:`, response.choices[0].message.content)
