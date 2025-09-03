@@ -1,6 +1,10 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { provenanceManager } from '@/lib/provenance-manager';
 
+// Marcar la ruta como dinámica
+export const dynamic = 'force-dynamic';
+export const runtime = 'edge'; // Opcional: usar edge runtime para mejor rendimiento
+
 /**
  * GET /api/provenance/statistics
  * Retrieve provenance statistics for a tenant
