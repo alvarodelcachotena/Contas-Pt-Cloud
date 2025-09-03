@@ -51,30 +51,12 @@ export class DocumentAIService {
 
     constructor() {
         const apiKey = process.env.OPENAI_API_KEY
-
-        // Debug: Mostrar información sobre la API key
-        console.log('🔍 Verificando API key...')
-        console.log('API key está definida:', !!apiKey)
-        if (apiKey) {
-            console.log('Longitud de API key:', apiKey.length)
-            console.log('Primeros 10 caracteres:', apiKey.substring(0, 10))
-            console.log('Últimos 10 caracteres:', apiKey.substring(apiKey.length - 10))
-
-            // Verificar si hay caracteres no válidos
-            const hasInvalidChars = /[\s\n\r]/.test(apiKey)
-            console.log('Tiene caracteres no válidos:', hasInvalidChars)
-
-            // Mostrar la API key completa en desarrollo (comentar en producción)
-            console.log('API key completa:', apiKey)
-        }
-
         if (!apiKey) {
             throw new Error('OPENAI_API_KEY no está configurada')
         }
 
-        // Crear cliente con la API key exacta proporcionada
         this.openai = new OpenAI({
-            apiKey: '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',
+            apiKey: apiKey,
             maxRetries: 3,
             timeout: 120000
         })
