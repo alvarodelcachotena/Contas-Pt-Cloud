@@ -51,28 +51,48 @@ export class DocumentAIService {
 
     constructor() {
         const apiKey = process.env.OPENAI_API_KEY
+
+        // Debug logging
+        console.log('🔍 Verificando API key...')
+        console.log('API key definida:', !!apiKey)
+        if (apiKey) {
+            console.log('Longitud de API key:', apiKey.length)
+            console.log('Primeros 12 caracteres:', apiKey.substring(0, 12))
+            console.log('Últimos 4 caracteres:', apiKey.substring(apiKey.length - 4))
+        }
+
         if (!apiKey) {
             throw new Error('OPENAI_API_KEY no está configurada')
         }
 
+        // Limpiar la API key por si acaso
+        const cleanApiKey = apiKey.trim()
+
         this.openai = new OpenAI({
-            apiKey: apiKey
+            apiKey: cleanApiKey
         })
     }
 
     async analyzeDocument(imageBuffer: Buffer, filename: string): Promise<DocumentAnalysisResult> {
         try {
             console.log(`🔍 Analizando documento: ${filename}`)
-            console.log('📊 Tamaño del buffer:', imageBuffer.length)
 
-            // Verificar que el buffer no esté vacío
-            if (!imageBuffer || imageBuffer.length === 0) {
-                throw new Error('Buffer de imagen vacío')
+            // Test de conexión antes de procesar la imagen
+            try {
+                console.log('🔄 Verificando conexión con OpenAI...')
+                const testResponse = await this.openai.chat.completions.create({
+                    model: "gpt-4",
+                    messages: [{ role: "user", content: "Test connection" }],
+                    max_tokens: 5
+                })
+                console.log('✅ Conexión verificada')
+            } catch (testError) {
+                console.error('❌ Error en test de conexión:', testError)
+                throw new Error(`Error de conexión: ${testError.message}`)
             }
 
-            // Convertir buffer a base64
-            const base64Image = imageBuffer.toString('base64')
-            console.log('📋 Longitud de base64:', base64Image.length)
+            // Continuar con el procesamiento de la imagen
+            console.log('📊 Tamaño de la imagen en base64:', base64Image.length)
 
             console.log('🤖 Enviando imagen a OpenAI para análisis...')
 
@@ -119,17 +139,10 @@ export class DocumentAIService {
             return analysisResult
 
         } catch (error) {
+            console.error('❌ Error en análisis:', error)
             if (error instanceof Error) {
-                console.error('❌ Error completo:', error)
-                console.error('❌ Error message:', error.message)
-                console.error('❌ Error stack:', error.stack)
-                // @ts-ignore
-                if ((error as any).response) {
-                    // @ts-ignore
-                    console.error('❌ Error response:', (error as any).response.data)
-                }
-            } else {
-                console.error('❌ Error desconocido:', error)
+                console.error('Mensaje:', error.message)
+                console.error('Stack:', error.stack)
             }
             throw error
         }
