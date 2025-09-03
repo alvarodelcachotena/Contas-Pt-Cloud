@@ -55,11 +55,11 @@ export class GeminiAIService {
         }
 
         this.genAI = new GoogleGenerativeAI(apiKey)
-        // Cambiamos al modelo específico para visión
+        // Actualizamos al modelo correcto
         this.model = this.genAI.getGenerativeModel({ 
-            model: 'gemini-pro-vision',
+            model: 'gemini-1.5-pro',  // Alternativa
             generationConfig: {
-                temperature: 0.1, // Hacemos las respuestas más precisas
+                temperature: 0.1,
                 maxOutputTokens: 2048,
             }
         })
