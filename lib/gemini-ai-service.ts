@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 
 export interface InvoiceData {
     vendor_name: string
@@ -21,6 +21,8 @@ export interface InvoiceData {
     }>
     payment_method?: string
     receipt_number?: string
+    number?: string
+    client_name?: string
 }
 
 export interface ExpenseData {
@@ -44,24 +46,17 @@ export interface DocumentAnalysisResult {
     processing_notes: string[]
 }
 
-export class GeminiAIService {
-    private genAI: GoogleGenerativeAI
-    private model: any
+export class DocumentAIService {
+    private openai: OpenAI
 
     constructor() {
-        const apiKey = process.env.GEMINI_AI_API_KEY
+        const apiKey = process.env.OPENAI_API_KEY
         if (!apiKey) {
-            throw new Error('GEMINI_AI_API_KEY no está configurada')
+            throw new Error('OPENAI_API_KEY no está configurada')
         }
 
-        this.genAI = new GoogleGenerativeAI(apiKey)
-        // Actualizamos al modelo correcto
-        this.model = this.genAI.getGenerativeModel({ 
-            model: 'gemini-1.5-pro',  // Alternativa
-            generationConfig: {
-                temperature: 0.1,
-                maxOutputTokens: 2048,
-            }
+        this.openai = new OpenAI({
+            apiKey: apiKey
         })
     }
 
@@ -69,72 +64,78 @@ export class GeminiAIService {
         try {
             console.log(`🔍 Analizando documento: ${filename}`)
 
-            // Convertir buffer a base64 para Gemini
+            // Convertir buffer a base64
             const base64Image = imageBuffer.toString('base64')
 
-            // Mejoramos el prompt para ser más específico
             const prompt = `
-        Analiza detalladamente esta imagen de un documento comercial (factura o recibo) y extrae TODOS los datos que encuentres.
+            Analiza detalladamente esta imagen de un documento comercial (factura o recibo) y extrae TODOS los datos que encuentres.
 
-        INSTRUCCIONES ESPECÍFICAS:
-        1. Busca y extrae TODOS los números que parezcan importes
-        2. Identifica específicamente el NIF/CIF/VAT number (suele empezar con letras como PT)
-        3. Busca la fecha (puede estar en varios formatos)
-        4. Encuentra el nombre del establecimiento/empresa
-        5. Identifica si hay número de factura o recibo
-        6. Busca el desglose del IVA (normalmente 23%, 13% o 6% en Portugal)
-        7. Determina si es una factura formal ("Fatura") o un recibo simple ("Recibo")
+            INSTRUCCIONES ESPECÍFICAS:
+            1. Busca y extrae TODOS los números que parezcan importes
+            2. Identifica específicamente el NIF/CIF/VAT number (suele empezar con letras como PT)
+            3. Busca la fecha (puede estar en varios formatos)
+            4. Encuentra el nombre del establecimiento/empresa
+            5. Identifica si hay número de factura o recibo
+            6. Busca el desglose del IVA (normalmente 23%, 13% o 6% en Portugal)
+            7. Determina si es una factura formal ("Fatura") o un recibo simple ("Recibo")
 
-        IMPORTANTE:
-        - NO INVENTES DATOS. Si no encuentras algo, déjalo vacío o null
-        - Busca el NIF en TODA la imagen (suele estar arriba o abajo)
-        - Los importes deben ser números (convierte strings a números)
-        - Si ves "Total", "Subtotal", "IVA" - EXTRÁELOS
-        - Extrae CUALQUIER texto que parezca relevante
+            IMPORTANTE:
+            - NO INVENTES DATOS. Si no encuentras algo, déjalo vacío o null
+            - Busca el NIF en TODA la imagen (suele estar arriba o abajo)
+            - Los importes deben ser números (convierte strings a números)
+            - Si ves "Total", "Subtotal", "IVA" - EXTRÁELOS
+            - Extrae CUALQUIER texto que parezca relevante
 
-        Responde en este formato JSON exacto:
-        {
-          "document_type": "invoice|expense|receipt|other",
-          "confidence": 0.95,
-          "extracted_data": {
-            "vendor_name": "Nombre exacto del establecimiento",
-            "vendor_nif": "Número fiscal encontrado",
-            "invoice_number": "Número de factura si existe",
-            "number": "Mismo número de factura",
-            "invoice_date": "YYYY-MM-DD",
-            "subtotal": 0.00,
-            "vat_rate": 23,
-            "vat_amount": 0.00,
-            "total_amount": 0.00,
-            "description": "Descripción de los productos/servicios",
-            "category": "restaurante|transporte|oficina|otros"
-          },
-          "processing_notes": ["Notas sobre lo encontrado o no encontrado"]
-        }
+            Responde en este formato JSON exacto:
+            {
+              "document_type": "invoice|expense|receipt|other",
+              "confidence": 0.95,
+              "extracted_data": {
+                "vendor_name": "Nombre exacto del establecimiento",
+                "vendor_nif": "Número fiscal encontrado",
+                "invoice_number": "Número de factura si existe",
+                "number": "Mismo número de factura",
+                "invoice_date": "YYYY-MM-DD",
+                "subtotal": 0.00,
+                "vat_rate": 23,
+                "vat_amount": 0.00,
+                "total_amount": 0.00,
+                "description": "Descripción de los productos/servicios",
+                "category": "restaurante|transporte|oficina|otros"
+              },
+              "processing_notes": ["Notas sobre lo encontrado o no encontrado"]
+            }
 
-        RECUERDA: Extrae TODOS los números y texto que veas en la imagen. NO OMITAS INFORMACIÓN.`
+            RECUERDA: Extrae TODOS los números y texto que veas en la imagen. NO OMITAS INFORMACIÓN.`
 
-            console.log('🤖 Enviando imagen a Gemini para análisis...')
+            console.log('🤖 Enviando imagen a OpenAI para análisis...')
 
-            const result = await this.model.generateContent([
-                {
-                    inlineData: {
-                        data: base64Image,
-                        mimeType: this.getMimeType(filename)
+            const response = await this.openai.chat.completions.create({
+                model: "gpt-4-vision-preview",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: prompt },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: `data:${this.getMimeType(filename)};base64,${base64Image}`
+                                }
+                            }
+                        ]
                     }
-                },
-                prompt
-            ])
+                ],
+                max_tokens: 4096
+            })
 
-            const response = await result.response
-            const text = response.text()
-
-            console.log(`📋 Respuesta completa de Gemini:`, text)
+            console.log(`📋 Respuesta completa de OpenAI:`, response.choices[0].message.content)
 
             // Extraer JSON de la respuesta
+            const text = response.choices[0].message.content || ''
             const jsonMatch = text.match(/\{[\s\S]*\}/)
             if (!jsonMatch) {
-                throw new Error('No se pudo extraer JSON de la respuesta de Gemini')
+                throw new Error('No se pudo extraer JSON de la respuesta de OpenAI')
             }
 
             let analysisResult: DocumentAnalysisResult
@@ -143,7 +144,7 @@ export class GeminiAIService {
                 console.log('✅ Datos extraídos:', JSON.stringify(analysisResult, null, 2))
             } catch (error) {
                 console.error('❌ Error al parsear JSON:', error)
-                throw new Error('El formato de respuesta de Gemini no es válido')
+                throw new Error('El formato de respuesta de OpenAI no es válido')
             }
 
             // Validar y limpiar los datos
@@ -152,7 +153,7 @@ export class GeminiAIService {
             return analysisResult
 
         } catch (error) {
-            console.error('❌ Error en análisis de Gemini:', error)
+            console.error('❌ Error en análisis de OpenAI:', error)
             throw error
         }
     }
