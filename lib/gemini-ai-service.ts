@@ -68,7 +68,7 @@ export class DocumentAIService {
             console.log(`📊 Tamaño de la imagen en base64: ${base64Image.length} caracteres`)
 
             const response = await this.openai.chat.completions.create({
-                model: "gpt-4-vision-preview",
+                model: "gpt-4-vision-preview-1106",
                 messages: [
                     {
                         role: "user",
