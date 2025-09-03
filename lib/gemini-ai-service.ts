@@ -50,20 +50,22 @@ export class DocumentAIService {
     private openai: OpenAI
 
     constructor() {
-        // Solo usar la variable de entorno directamente
         const apiKey = process.env.OPENAI_API_KEY
         if (!apiKey) {
             throw new Error('OPENAI_API_KEY no está configurada')
         }
 
+        console.log('🔧 Inicializando DocumentAIService')
         this.openai = new OpenAI({ apiKey })
     }
 
     async analyzeDocument(imageBuffer: Buffer, filename: string): Promise<DocumentAnalysisResult> {
         try {
             console.log(`🔍 Analizando documento: ${filename}`)
+            console.log(`📊 Tamaño del buffer: ${imageBuffer.length} bytes`)
 
             const base64Image = imageBuffer.toString('base64')
+            console.log(`📊 Tamaño de la imagen en base64: ${base64Image.length} caracteres`)
 
             const response = await this.openai.chat.completions.create({
                 model: "gpt-4-vision-preview",
@@ -84,28 +86,8 @@ export class DocumentAIService {
                 max_tokens: 4096
             })
 
-            console.log(`📋 Respuesta completa de OpenAI:`, response.choices[0].message.content)
-
-            // Extraer JSON de la respuesta
-            const text = response.choices[0].message.content || ''
-            const jsonMatch = text.match(/\{[\s\S]*\}/)
-            if (!jsonMatch) {
-                throw new Error('No se pudo extraer JSON de la respuesta de OpenAI')
-            }
-
-            let analysisResult: DocumentAnalysisResult
-            try {
-                analysisResult = JSON.parse(jsonMatch[0])
-                console.log('✅ Datos extraídos:', JSON.stringify(analysisResult, null, 2))
-            } catch (error) {
-                console.error('❌ Error al parsear JSON:', error)
-                throw new Error('El formato de respuesta de OpenAI no es válido')
-            }
-
-            // Validar y limpiar los datos
-            this.validateAndCleanData(analysisResult)
-
-            return analysisResult
+            console.log('✅ Respuesta de OpenAI recibida')
+            return this.processResponse(response)
 
         } catch (error) {
             console.error('❌ Error en análisis:', error)
@@ -115,6 +97,9 @@ export class DocumentAIService {
             }
             throw error
         }
+    }
+    processResponse(response: OpenAI.Chat.Completions.ChatCompletion & { _request_id?: string | null }): DocumentAnalysisResult | PromiseLike<DocumentAnalysisResult> {
+        throw new Error('Method not implemented.')
     }
 
     private getPrompt(): string {

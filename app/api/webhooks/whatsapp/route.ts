@@ -11,36 +11,51 @@ import {
 } from '../../../../lib/whatsapp-config'
 import { DocumentAIService } from '../../../../lib/gemini-ai-service'
 
-// Function to send WhatsApp message response
-async function sendWhatsAppMessage(phoneNumber: string, message: string) {
-  try {
-    const credentials = getWhatsAppCredentials()
-
-    const response = await fetch(`${WHATSAPP_API_BASE}/${credentials.phoneNumberId}/messages`, {
-      method: 'POST',
-      headers: {
-        'Authorization': `Bearer ${credentials.accessToken}`,
-        'Content-Type': 'application/json',
-      },
-      body: JSON.stringify({
-        messaging_product: 'whatsapp',
-        to: phoneNumber,
-        type: 'text',
-        text: { body: message }
-      })
-    })
-
-    if (response.ok) {
-      console.log(`✅ WhatsApp message sent successfully to ${phoneNumber}`)
-      return true
-    } else {
-      console.error(`❌ Failed to send WhatsApp message to ${phoneNumber}`)
-      return false
+// Función de verificación de API key
+function verifyApiKey() {
+    const apiKey = process.env.OPENAI_API_KEY
+    if (!apiKey) {
+        throw new Error('OPENAI_API_KEY no está configurada')
     }
-  } catch (error) {
-    console.error('❌ Error sending WhatsApp message:', error)
-    return false
-  }
+    return true
+}
+
+// Función para enviar mensajes de WhatsApp
+async function sendWhatsAppMessage(phoneNumber: string, message: string) {
+    try {
+        const credentials = getWhatsAppCredentials()
+        console.log('📤 Enviando mensaje a WhatsApp:', { phoneNumber, messageLength: message.length })
+
+        const response = await fetch(`${WHATSAPP_API_BASE}/${credentials.phoneNumberId}/messages`, {
+            method: 'POST',
+            headers: {
+                'Authorization': `Bearer ${credentials.accessToken}`,
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                messaging_product: 'whatsapp',
+                to: phoneNumber,
+                type: 'text',
+                text: { body: message }
+            })
+        })
+
+        if (!response.ok) {
+            const errorData = await response.text()
+            console.error('❌ Error en respuesta de WhatsApp:', {
+                status: response.status,
+                statusText: response.statusText,
+                error: errorData
+            })
+            return false
+        }
+
+        console.log(`✅ Mensaje enviado exitosamente a ${phoneNumber}`)
+        return true
+    } catch (error) {
+        console.error('❌ Error enviando mensaje de WhatsApp:', error)
+        return false
+    }
 }
 
 loadEnvStrict()
@@ -111,53 +126,67 @@ export async function GET(request: NextRequest) {
 
 // Handle WhatsApp webhook messages
 export async function POST(request: NextRequest) {
-  console.log('🚀 === WHATSAPP WEBHOOK POST RECIBIDO ===');
-  console.log('📅 Timestamp:', new Date().toISOString());
-  console.log('🌐 User Agent:', request.headers.get('user-agent'));
-  console.log('🔑 Content-Type:', request.headers.get('content-type'));
+    console.log('🚀 === WHATSAPP WEBHOOK POST RECIBIDO ===')
+    console.log('📅 Timestamp:', new Date().toISOString())
+    console.log('🌐 User Agent:', request.headers.get('user-agent'))
+    console.log('🔑 Content-Type:', request.headers.get('content-type'))
 
-  try {
-    // Verificar API key al inicio
-    verifyApiKey()
-    const body: WhatsAppWebhookPayload = await request.json()
-    console.log('📥 WhatsApp webhook payload:', JSON.stringify(body, null, 2))
+    try {
+        // Verificar variables de entorno
+        verifyApiKey()
+        
+        // Obtener y parsear el body
+        const body: WhatsAppWebhookPayload = await request.json()
+        console.log('📥 WhatsApp webhook payload:', JSON.stringify(body, null, 2))
 
-    // Process webhook data
-    if (body.entry && body.entry[0]?.changes) {
-      console.log(`📋 Procesando ${body.entry[0].changes.length} cambios`);
+        // Process webhook data
+        if (body.entry && body.entry[0]?.changes) {
+            console.log(`📋 Procesando ${body.entry[0].changes.length} cambios`);
 
-      for (const change of body.entry[0].changes) {
-        console.log(`🔄 Procesando cambio:`, change.field);
+            for (const change of body.entry[0].changes) {
+                console.log(`🔄 Procesando cambio:`, change.field);
 
-        if (change.value?.messages) {
-          console.log(`📱 Procesando ${change.value.messages.length} mensajes`);
+                if (change.value?.messages) {
+                    console.log(`📱 Procesando ${change.value.messages.length} mensajes`);
 
-          for (const message of change.value.messages) {
-            console.log(`💬 Procesando mensaje ID: ${message.id}, Tipo: ${message.type}`);
-            await processWhatsAppMessage(message, change.value.metadata?.phone_number_id)
-          }
+                    for (const message of change.value.messages) {
+                        console.log(`💬 Procesando mensaje ID: ${message.id}, Tipo: ${message.type}`);
+                        await processWhatsAppMessage(message, change.value.metadata?.phone_number_id)
+                    }
+                } else {
+                    console.log('⚠️ No hay mensajes en este cambio');
+                }
+            }
         } else {
-          console.log('⚠️ No hay mensajes en este cambio');
+            console.log('⚠️ Estructura del webhook no válida o sin cambios');
         }
-      }
-    } else {
-      console.log('⚠️ Estructura del webhook no válida o sin cambios');
-    }
 
-    console.log('✅ Webhook procesado exitosamente');
-    return NextResponse.json({ success: true, timestamp: new Date().toISOString() })
+        console.log('✅ Webhook procesado exitosamente');
+        return NextResponse.json({ success: true, timestamp: new Date().toISOString() })
 
-  } catch (error) {
-    console.error('❌ Error procesando webhook de WhatsApp:', error)
-    if (error instanceof Error) {
-      console.error('📋 Stack trace:', error.stack)
+    } catch (error) {
+        console.error('❌ Error procesando webhook:', error)
+        
+        // Si tenemos acceso al body y hay un error, intentar enviar mensaje al usuario
+        try {
+            const errorBody = await request.clone().json() as WhatsAppWebhookPayload
+            if (errorBody.entry?.[0]?.changes?.[0]?.value?.messages?.[0]?.from) {
+                const userPhone = errorBody.entry[0].changes[0].value.messages[0].from
+                await sendWhatsAppMessage(
+                    userPhone,
+                    `❌ Error en el procesamiento: ${error instanceof Error ? error.message : 'Error desconocido'}`
+                )
+            }
+        } catch (messageError) {
+            console.error('❌ No se pudo enviar mensaje de error al usuario:', messageError)
+        }
+
+        return NextResponse.json({
+            error: 'Webhook processing failed',
+            message: error instanceof Error ? error.message : 'Unknown error',
+            timestamp: new Date().toISOString()
+        }, { status: 500 })
     }
-    return NextResponse.json({
-      error: 'Webhook processing failed',
-      message: error instanceof Error ? error.message : 'Unknown error',
-      timestamp: new Date().toISOString()
-    }, { status: 500 })
-  }
 }
 
 async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: string) {
@@ -517,18 +546,4 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     console.error('❌ Error processing expense:', error)
     throw error
   }
-}
-
-function verifyApiKey() {
-  const apiKey = process.env.OPENAI_API_KEY
-  if (!apiKey) {
-    throw new Error('OPENAI_API_KEY no está configurada')
-  }
-  if (apiKey.endsWith('9OcA')) {
-    throw new Error('Se detectó una API key antigua/incorrecta')
-  }
-  if (!apiKey.startsWith('sk-svcacct-')) {
-    throw new Error('Formato de API key incorrecto')
-  }
-  return true
 }
