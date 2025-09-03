@@ -1,48 +1,49 @@
 import { drizzle } from 'drizzle-orm/postgres-js';
-import postgres from 'postgres';
+import { Pool } from 'pg';  // Cambiamos el import
 import { SUPABASE_URL } from './config';
 import * as schema from '../shared/schema';
 
-// Configuração melhorada da conexão
+// Configuración mejorada de la conexión
 const connectionString = SUPABASE_URL!;
 
-// Configurar cliente postgres com opções otimizadas
-const client = postgres(connectionString, {
-    max: 10, // Máximo de conexões
-    idle_timeout: 20, // Timeout de conexões ociosas
-    connect_timeout: 10, // Timeout de conexão
-    max_lifetime: 60 * 30, // Vida máxima da conexão (30 minutos)
-    ssl: 'require', // SSL obrigatório para Supabase
-    prepare: false, // Desabilitar prepared statements para melhor performance
-    debug: process.env.NODE_ENV === 'development' // Debug apenas em desenvolvimento
+// Configurar cliente postgres con opciones optimizadas
+const client = new Pool({  // Cambiamos a Pool de pg
+    connectionString,
+    max: 10,
+    idleTimeoutMillis: 20000,
+    connectionTimeoutMillis: 10000,
+    maxUses: 7200, // equivalente a max_lifetime
+    ssl: {
+        rejectUnauthorized: false // o true si tienes certificados SSL configurados
+    }
 });
 
-// Criar instância da base de dados
-export const db = drizzle(client, { schema });
+// Crear instancia de la base de datos
+export const db = drizzle(client);
 
-// Função para testar a conexão
+// Función para testar la conexión
 export async function testConnection() {
     try {
-        const result = await client`SELECT 1 as test`;
-        console.log('✅ Conexão com base de dados estabelecida com sucesso');
+        const result = await client.query('SELECT 1 as test');
+        console.log('✅ Conexión con base de datos establecida con suceso');
         return true;
     } catch (error) {
-        console.error('❌ Erro na conexão com base de dados:', error);
+        console.error('❌ Error en la conexión con base de datos:', error);
         return false;
     }
 }
 
-// Função para fechar conexões (útil para testes)
+// Función para cerrar conexiones (útil para tests)
 export async function closeConnection() {
     try {
         await client.end();
-        console.log('✅ Conexões da base de dados fechadas');
+        console.log('✅ Conexiones de base de datos cerradas');
     } catch (error) {
-        console.error('❌ Erro ao fechar conexões:', error);
+        console.error('❌ Error al cerrar conexiones:', error);
     }
 }
 
-// Verificar conexão na inicialização
+// Verificar conexión en la inicialización
 if (process.env.NODE_ENV === 'development') {
     testConnection().catch(console.error);
 }
