@@ -82,7 +82,7 @@ export class DocumentAIService {
             console.log('📋 Longitud de base64:', base64Image.length)
 
             console.log('🤖 Configurando llamada a OpenAI...')
-            
+
             // Intentar una llamada simple primero para verificar la API key
             try {
                 const testResponse = await this.openai.chat.completions.create({
@@ -91,9 +91,13 @@ export class DocumentAIService {
                     max_tokens: 5
                 })
                 console.log('✅ Test de conexión exitoso')
-            } catch (testError) {
+            } catch (testError: any) {
                 console.error('❌ Error en test de conexión:', testError)
-                throw new Error(`Error de autenticación: ${testError.message}`)
+                // Asegurarse de que testError tenga la propiedad 'message'
+                const mensaje = (testError && typeof testError.message === 'string')
+                    ? testError.message
+                    : JSON.stringify(testError)
+                throw new Error(`Error de autenticación: ${mensaje}`)
             }
 
             // Si el test pasa, proceder con el análisis de la imagen
@@ -143,11 +147,17 @@ export class DocumentAIService {
             return analysisResult
 
         } catch (error) {
-            console.error('❌ Error completo:', error)
-            console.error('❌ Error message:', error.message)
-            console.error('❌ Error stack:', error.stack)
-            if (error.response) {
-                console.error('❌ Error response:', error.response.data)
+            if (error instanceof Error) {
+                console.error('❌ Error completo:', error)
+                console.error('❌ Error message:', error.message)
+                console.error('❌ Error stack:', error.stack)
+                // @ts-ignore
+                if ((error as any).response) {
+                    // @ts-ignore
+                    console.error('❌ Error response:', (error as any).response.data)
+                }
+            } else {
+                console.error('❌ Error desconocido:', error)
             }
             throw error
         }
