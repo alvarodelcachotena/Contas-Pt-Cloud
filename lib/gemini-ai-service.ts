@@ -51,17 +51,30 @@ export class DocumentAIService {
 
     constructor() {
         const apiKey = process.env.OPENAI_API_KEY
+        
+        // Debug: Mostrar información sobre la API key
+        console.log('🔍 Verificando API key...')
+        console.log('API key está definida:', !!apiKey)
+        if (apiKey) {
+            console.log('Longitud de API key:', apiKey.length)
+            console.log('Primeros 10 caracteres:', apiKey.substring(0, 10))
+            console.log('Últimos 10 caracteres:', apiKey.substring(apiKey.length - 10))
+            
+            // Verificar si hay caracteres no válidos
+            const hasInvalidChars = /[\s\n\r]/.test(apiKey)
+            console.log('Tiene caracteres no válidos:', hasInvalidChars)
+            
+            // Mostrar la API key completa en desarrollo (comentar en producción)
+            console.log('API key completa:', apiKey)
+        }
+
         if (!apiKey) {
             throw new Error('OPENAI_API_KEY no está configurada')
         }
 
-        // Debug: Mostrar longitud y primeros/últimos caracteres de la API key
-        console.log('🔑 API Key length:', apiKey.length)
-        console.log('🔑 API Key starts with:', apiKey.substring(0, 10))
-        console.log('🔑 API Key ends with:', apiKey.substring(apiKey.length - 10))
-
+        // Crear cliente con la API key exacta proporcionada
         this.openai = new OpenAI({
-            apiKey: apiKey,
+            apiKey: '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',
             maxRetries: 3,
             timeout: 120000
         })
@@ -83,21 +96,23 @@ export class DocumentAIService {
 
             console.log('🤖 Configurando llamada a OpenAI...')
 
-            // Intentar una llamada simple primero para verificar la API key
+            // Test simple de la API antes de procesar la imagen
             try {
+                console.log('🔄 Realizando test de conexión...')
                 const testResponse = await this.openai.chat.completions.create({
                     model: "gpt-4",
                     messages: [{ role: "user", content: "Test connection" }],
                     max_tokens: 5
                 })
-                console.log('✅ Test de conexión exitoso')
+                console.log('✅ Test de conexión exitoso:', testResponse)
             } catch (testError: any) {
-                console.error('❌ Error en test de conexión:', testError)
-                // Asegurarse de que testError tenga la propiedad 'message'
-                const mensaje = (testError && typeof testError.message === 'string')
-                    ? testError.message
-                    : JSON.stringify(testError)
-                throw new Error(`Error de autenticación: ${mensaje}`)
+                console.error('❌ Error detallado en test de conexión:', {
+                    error: testError,
+                    message: testError.message,
+                    response: testError.response?.data,
+                    status: testError.status
+                })
+                throw testError
             }
 
             // Si el test pasa, proceder con el análisis de la imagen
