@@ -55,7 +55,14 @@ export class GeminiAIService {
         }
 
         this.genAI = new GoogleGenerativeAI(apiKey)
-        this.model = this.genAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
+        // Cambiamos al modelo específico para visión
+        this.model = this.genAI.getGenerativeModel({ 
+            model: 'gemini-pro-vision',
+            generationConfig: {
+                temperature: 0.1, // Hacemos las respuestas más precisas
+                maxOutputTokens: 2048,
+            }
+        })
     }
 
     async analyzeDocument(imageBuffer: Buffer, filename: string): Promise<DocumentAnalysisResult> {
@@ -65,66 +72,64 @@ export class GeminiAIService {
             // Convertir buffer a base64 para Gemini
             const base64Image = imageBuffer.toString('base64')
 
-            // Prompt específico para facturas portuguesas
+            // Mejoramos el prompt para ser más específico
             const prompt = `
-        Analiza esta imagen de un documento comercial (factura, recibo, etc.) y extrae toda la información relevante.
-        
-        Si es una factura, extrae:
-        - Nombre del vendedor/proveedor
-        - NIF del vendedor (número fiscal portugués)
-        - Dirección del vendedor
-        - Número de factura
-        - Fecha de factura
-        - Fecha de vencimiento (si existe)
-        - Subtotal (sin IVA)
-        - Porcentaje de IVA
-        - Monto de IVA
-        - Monto total
-        - Descripción de los productos/servicios
-        - Categoría (restaurante, oficina, transporte, etc.)
-        
-        Si es un recibo o gasto, extrae:
-        - Nombre del establecimiento
-        - NIF del establecimiento
-        - Monto total
-        - Porcentaje de IVA
-        - Monto de IVA
-        - Categoría
-        - Descripción
-        - Fecha
-        
-        Responde en formato JSON válido con esta estructura:
+        Analiza detalladamente esta imagen de un documento comercial (factura o recibo) y extrae TODOS los datos que encuentres.
+
+        INSTRUCCIONES ESPECÍFICAS:
+        1. Busca y extrae TODOS los números que parezcan importes
+        2. Identifica específicamente el NIF/CIF/VAT number (suele empezar con letras como PT)
+        3. Busca la fecha (puede estar en varios formatos)
+        4. Encuentra el nombre del establecimiento/empresa
+        5. Identifica si hay número de factura o recibo
+        6. Busca el desglose del IVA (normalmente 23%, 13% o 6% en Portugal)
+        7. Determina si es una factura formal ("Fatura") o un recibo simple ("Recibo")
+
+        IMPORTANTE:
+        - NO INVENTES DATOS. Si no encuentras algo, déjalo vacío o null
+        - Busca el NIF en TODA la imagen (suele estar arriba o abajo)
+        - Los importes deben ser números (convierte strings a números)
+        - Si ves "Total", "Subtotal", "IVA" - EXTRÁELOS
+        - Extrae CUALQUIER texto que parezca relevante
+
+        Responde en este formato JSON exacto:
         {
           "document_type": "invoice|expense|receipt|other",
           "confidence": 0.95,
           "extracted_data": {
-            // Los datos extraídos según el tipo de documento
+            "vendor_name": "Nombre exacto del establecimiento",
+            "vendor_nif": "Número fiscal encontrado",
+            "invoice_number": "Número de factura si existe",
+            "number": "Mismo número de factura",
+            "invoice_date": "YYYY-MM-DD",
+            "subtotal": 0.00,
+            "vat_rate": 23,
+            "vat_amount": 0.00,
+            "total_amount": 0.00,
+            "description": "Descripción de los productos/servicios",
+            "category": "restaurante|transporte|oficina|otros"
           },
-          "processing_notes": ["Notas sobre el procesamiento"]
+          "processing_notes": ["Notas sobre lo encontrado o no encontrado"]
         }
-        
-        IMPORTANTE: 
-        - Los montos deben ser números (no strings)
-        - Las fechas en formato YYYY-MM-DD
-        - El NIF debe ser solo números
-        - La categoría debe ser específica (ej: "restaurante", "gasolina", "oficina")
-        - Responde SOLO con el JSON, sin texto adicional
-      `
+
+        RECUERDA: Extrae TODOS los números y texto que veas en la imagen. NO OMITAS INFORMACIÓN.`
+
+            console.log('🤖 Enviando imagen a Gemini para análisis...')
 
             const result = await this.model.generateContent([
-                prompt,
                 {
                     inlineData: {
                         data: base64Image,
                         mimeType: this.getMimeType(filename)
                     }
-                }
+                },
+                prompt
             ])
 
             const response = await result.response
             const text = response.text()
 
-            console.log(`📋 Respuesta de Gemini:`, text)
+            console.log(`📋 Respuesta completa de Gemini:`, text)
 
             // Extraer JSON de la respuesta
             const jsonMatch = text.match(/\{[\s\S]*\}/)
@@ -132,12 +137,18 @@ export class GeminiAIService {
                 throw new Error('No se pudo extraer JSON de la respuesta de Gemini')
             }
 
-            const analysisResult: DocumentAnalysisResult = JSON.parse(jsonMatch[0])
+            let analysisResult: DocumentAnalysisResult
+            try {
+                analysisResult = JSON.parse(jsonMatch[0])
+                console.log('✅ Datos extraídos:', JSON.stringify(analysisResult, null, 2))
+            } catch (error) {
+                console.error('❌ Error al parsear JSON:', error)
+                throw new Error('El formato de respuesta de Gemini no es válido')
+            }
 
             // Validar y limpiar los datos
             this.validateAndCleanData(analysisResult)
 
-            console.log(`✅ Análisis completado: ${analysisResult.document_type}`)
             return analysisResult
 
         } catch (error) {
