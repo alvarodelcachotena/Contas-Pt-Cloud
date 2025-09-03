@@ -1,30 +1,27 @@
-import { drizzle } from 'drizzle-orm/postgres-js';
-import { Pool } from 'pg';  // Cambiamos el import
+import { createClient } from '@supabase/supabase-js';
 import { SUPABASE_URL } from './config';
 import * as schema from '../shared/schema';
 
-// Configuración mejorada de la conexión
-const connectionString = SUPABASE_URL!;
+if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
+    throw new Error('SUPABASE_SERVICE_ROLE_KEY no está configurada');
+}
 
-// Configurar cliente postgres con opciones optimizadas
-const client = new Pool({  // Cambiamos a Pool de pg
-    connectionString,
-    max: 10,
-    idleTimeoutMillis: 20000,
-    connectionTimeoutMillis: 10000,
-    maxUses: 7200, // equivalente a max_lifetime
-    ssl: {
-        rejectUnauthorized: false // o true si tienes certificados SSL configurados
+// Crear cliente de Supabase
+export const supabase = createClient(
+    SUPABASE_URL!,
+    process.env.SUPABASE_SERVICE_ROLE_KEY,
+    {
+        auth: {
+            persistSession: false
+        }
     }
-});
-
-// Crear instancia de la base de datos
-export const db = drizzle(client);
+);
 
 // Función para testar la conexión
 export async function testConnection() {
     try {
-        const result = await client.query('SELECT 1 as test');
+        const { data, error } = await supabase.from('tenants').select('count').single();
+        if (error) throw error;
         console.log('✅ Conexión con base de datos establecida con suceso');
         return true;
     } catch (error) {
@@ -33,14 +30,10 @@ export async function testConnection() {
     }
 }
 
-// Función para cerrar conexiones (útil para tests)
+// No necesitamos closeConnection con Supabase
 export async function closeConnection() {
-    try {
-        await client.end();
-        console.log('✅ Conexiones de base de datos cerradas');
-    } catch (error) {
-        console.error('❌ Error al cerrar conexiones:', error);
-    }
+    // No es necesario con Supabase
+    return;
 }
 
 // Verificar conexión en la inicialización
