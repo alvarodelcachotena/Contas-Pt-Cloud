@@ -12,7 +12,7 @@ async function testOpenAI() {
         console.log('🔍 Iniciando prueba de OpenAI...');
 
         const openai = new OpenAI({
-            apiKey: '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'
+            apiKey: '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'
         });
 
         console.log('🔄 Probando llamada simple...');
