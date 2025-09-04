@@ -78,3 +78,4 @@ COMMIT;
 \echo ''
 \echo '🔧 To verify setup, run: SELECT * FROM tenants;'
 
+

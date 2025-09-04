@@ -83,3 +83,4 @@ BEGIN
     RAISE NOTICE '✅ AI, RAG, and vector tables created successfully';
 END $$;
 
+

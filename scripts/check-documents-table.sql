@@ -24,3 +24,4 @@ SELECT * FROM documents LIMIT 3;
 -- 4. Verificar si hay datos en la tabla
 SELECT COUNT(*) as total_documents FROM documents;
 
+

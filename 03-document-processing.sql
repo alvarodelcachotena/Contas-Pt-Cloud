@@ -149,3 +149,4 @@ BEGIN
     RAISE NOTICE '✅ Document processing tables created successfully';
 END $$;
 
+

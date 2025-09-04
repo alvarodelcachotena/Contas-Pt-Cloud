@@ -259,3 +259,4 @@ Para problemas específicos con la configuración de la base de datos:
 **Versión**: 1.0.0  
 **Compatibilidad**: Supabase, PostgreSQL 15+
 
+

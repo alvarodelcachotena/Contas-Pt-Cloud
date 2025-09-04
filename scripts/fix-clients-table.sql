@@ -37,3 +37,4 @@ ORDER BY ordinal_position;
 -- 4. Mostrar datos de ejemplo (si existen)
 SELECT * FROM clients LIMIT 3;
 
+

@@ -64,3 +64,4 @@ BEGIN
     RAISE NOTICE '⚠️  To enable full vector functionality, enable pgvector extension in Supabase dashboard';
 END $$;
 
+

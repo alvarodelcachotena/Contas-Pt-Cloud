@@ -38,3 +38,4 @@ BEGIN
     RAISE NOTICE '📋 To enable pgvector: Supabase Dashboard → Database → Extensions → pgvector';
 END $$;
 
+

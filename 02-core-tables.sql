@@ -227,3 +227,4 @@ BEGIN
     RAISE NOTICE '✅ Core tables created successfully';
 END $$;
 
+

@@ -114,3 +114,4 @@ async function checkClientsSchema() {
 // Ejecutar la verificación
 checkClientsSchema()
 
+

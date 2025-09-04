@@ -45,3 +45,4 @@ AND table_schema = 'public';
 -- SELECT * FROM clients LIMIT 3;
 -- SELECT * FROM invoices LIMIT 3;
 -- SELECT * FROM expenses LIMIT 3;
+

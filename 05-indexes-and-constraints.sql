@@ -139,3 +139,4 @@ BEGIN
     RAISE NOTICE '✅ Indexes and constraints created successfully';
 END $$;
 
+

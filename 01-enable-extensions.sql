@@ -31,3 +31,4 @@ BEGIN
     RAISE NOTICE '✅ All required extensions enabled successfully';
 END $$;
 
+

@@ -145,3 +145,4 @@ async function testInvoiceAutocomplete() {
 // Ejecutar test
 testInvoiceAutocomplete()
 
+

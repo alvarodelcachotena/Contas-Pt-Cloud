@@ -123,3 +123,4 @@ BEGIN
     RAISE NOTICE '✅ Ahora puedes probar el dashboard con datos reales!';
 END $$;
 
+
