@@ -14,6 +14,14 @@ import { DocumentAIService } from '../../../../lib/gemini-ai-service'
 // Función de verificación de API key
 function verifyApiKey() {
   const apiKey = process.env.OPENAI_API_KEY
+  console.log('🔑 Verificando API key de OpenAI...')
+  console.log(`   API key configurada: ${apiKey ? '✅ Sí' : '❌ No'}`)
+  if (apiKey) {
+    console.log(`   Longitud: ${apiKey.length} caracteres`)
+    console.log(`   Empieza con: ${apiKey.substring(0, 10)}...`)
+    console.log(`   Termina con: ...${apiKey.substring(apiKey.length - 10)}`)
+    console.log(`   Formato correcto: ${apiKey.startsWith('sk-') ? '✅' : '❌'}`)
+  }
   if (!apiKey) {
     throw new Error('OPENAI_API_KEY no está configurada')
   }

@@ -51,11 +51,18 @@ export class DocumentAIService {
 
     constructor() {
         const apiKey = process.env.OPENAI_API_KEY
+        console.log('🔧 Inicializando DocumentAIService')
+        console.log(`   API key configurada: ${apiKey ? '✅ Sí' : '❌ No'}`)
+        if (apiKey) {
+            console.log(`   Longitud: ${apiKey.length} caracteres`)
+            console.log(`   Empieza con: ${apiKey.substring(0, 10)}...`)
+            console.log(`   Termina con: ...${apiKey.substring(apiKey.length - 10)}`)
+            console.log(`   Formato correcto: ${apiKey.startsWith('sk-') ? '✅' : '❌'}`)
+        }
         if (!apiKey) {
             throw new Error('OPENAI_API_KEY no está configurada')
         }
 
-        console.log('🔧 Inicializando DocumentAIService')
         this.openai = new OpenAI({ apiKey })
     }
 
@@ -68,7 +75,7 @@ export class DocumentAIService {
             console.log(`📊 Tamaño de la imagen en base64: ${base64Image.length} caracteres`)
 
             const response = await this.openai.chat.completions.create({
-                model: "gpt-4-vision-preview-1106",
+                model: "gpt-4o",
                 messages: [
                     {
                         role: "user",
