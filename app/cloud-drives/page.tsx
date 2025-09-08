@@ -264,6 +264,49 @@ export default function CloudDrivesPage() {
     }
   }
 
+  const testCloudIntegrationsAPI = async () => {
+    try {
+      const response = await fetch('/api/test-cloud-integrations-api')
+      const result = await response.json()
+      
+      if (result.success) {
+        const { summary, data } = result
+        let message = 'Test API Cloud Integrations:\n'
+        message += `• Status API: ${result.apiStatus}\n`
+        message += `• API OK: ${result.apiOk ? '✅' : '❌'}\n`
+        message += `• Tiene integraciones: ${summary.hasIntegrations ? '✅' : '❌'}\n`
+        message += `• Cantidad: ${summary.integrationsCount}\n`
+        message += `• Tiene error: ${summary.hasError ? '❌' : '✅'}\n`
+        
+        if (summary.hasError) {
+          message += `• Error: ${summary.error}\n`
+        }
+        
+        if (data.integrations && data.integrations.length > 0) {
+          message += `\nPrimera integración:\n`
+          message += `• ID: ${data.integrations[0].id}\n`
+          message += `• Provider: ${data.integrations[0].provider}\n`
+          message += `• Status: ${data.integrations[0].status}\n`
+        }
+        
+        setNotification({
+          type: summary.hasIntegrations ? 'success' : 'error',
+          message: message
+        })
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Error en test API: ' + result.error
+        })
+      }
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Error ejecutando test API'
+      })
+    }
+  }
+
   const debugCloudIntegrations = async () => {
     try {
       const response = await fetch('/api/debug-cloud-integrations')
@@ -542,6 +585,14 @@ export default function CloudDrivesPage() {
                 >
                   <Settings className="w-4 h-4" />
                   <span>Verificar Dropbox</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="bg-white flex items-center space-x-2"
+                  onClick={testCloudIntegrationsAPI}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Test API</span>
                 </Button>
                 <Button 
                   variant="outline" 

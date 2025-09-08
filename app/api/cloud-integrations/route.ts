@@ -37,11 +37,12 @@ function createSupabaseClient(useServiceRole = false) {
 
 export async function GET(request: NextRequest) {
   try {
-    // Create fresh Supabase client
-    const supabase = createSupabaseClient()
+    // Create fresh Supabase client with service role for reading data
+    const supabase = createSupabaseClient(true)
 
     // Get tenant ID dynamically (multi-tenant support)
     const tenantId = await getTenantId(request)
+    console.log('🏢 GET - Using tenant ID:', tenantId)
 
     // Get cloud drive configurations from database
     const { data: configs, error } = await supabase
@@ -54,6 +55,8 @@ export async function GET(request: NextRequest) {
       console.error('Error fetching cloud drive configs:', error)
       return NextResponse.json({ error: 'Erro ao buscar configurações' }, { status: 500 })
     }
+
+    console.log('📊 GET - Found configs:', configs?.length || 0)
 
     // Transform database records to match the expected frontend format
     const integrations = configs?.map(config => ({
@@ -68,6 +71,8 @@ export async function GET(request: NextRequest) {
       updated_at: config.created_at,
       folder_path: config.folder_path
     })) || []
+
+    console.log('🔄 GET - Transformed integrations:', integrations.length)
 
     return NextResponse.json({ integrations })
   } catch (error) {
