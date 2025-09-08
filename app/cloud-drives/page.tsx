@@ -264,6 +264,44 @@ export default function CloudDrivesPage() {
     }
   }
 
+  const debugCloudIntegrations = async () => {
+    try {
+      const response = await fetch('/api/debug-cloud-integrations')
+      const result = await response.json()
+      
+      if (result.success) {
+        const { debug } = result
+        let message = 'Debug Cloud Integrations:\n'
+        message += `• Tenant ID usado: ${debug.tenantId}\n`
+        message += `• Total configuraciones: ${debug.summary.totalConfigs}\n`
+        message += `• Configuraciones activas: ${debug.summary.activeConfigs}\n`
+        message += `• Tenants disponibles: ${debug.summary.tenantsCount}\n\n`
+        
+        if (debug.allConfigs.length > 0) {
+          message += 'Configuraciones encontradas:\n'
+          debug.allConfigs.forEach((config: any, index: number) => {
+            message += `${index + 1}. ${config.provider} (Tenant: ${config.tenant_id}, Activo: ${config.is_active})\n`
+          })
+        }
+        
+        setNotification({
+          type: 'success',
+          message: message
+        })
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Error en debug: ' + result.error
+        })
+      }
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Error ejecutando debug'
+      })
+    }
+  }
+
   const testNetlifyDropbox = async () => {
     try {
       const response = await fetch('/api/test-netlify-dropbox')
@@ -504,6 +542,14 @@ export default function CloudDrivesPage() {
                 >
                   <Settings className="w-4 h-4" />
                   <span>Verificar Dropbox</span>
+                </Button>
+                <Button 
+                  variant="outline" 
+                  className="bg-white flex items-center space-x-2"
+                  onClick={debugCloudIntegrations}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Debug</span>
                 </Button>
                 <Button 
                   variant="outline" 
