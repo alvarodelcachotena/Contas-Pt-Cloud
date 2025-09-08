@@ -63,7 +63,7 @@ export async function GET(request: NextRequest) {
       id: config.id.toString(),
       provider: config.provider,
       provider_user_id: config.id.toString(),
-      user_email: 'aki.diamondnxt@gmail.com', // You might want to get this from user session
+      user_email: 'user@example.com', // Generic email - will be replaced with actual user email when available
       access_token: config.access_token,
       refresh_token: config.refresh_token,
       status: config.is_active ? 'connected' : 'disconnected',

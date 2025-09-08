@@ -513,57 +513,8 @@ export default function CloudDrivesPage() {
       }
     })
 
-  const recentFiles = [
-    {
-      id: 1,
-      name: 'Fatura_Microsoft_Office_2025.pdf',
-      source: 'Dropbox',
-      uploadDate: '2025-06-20T14:30:00',
-      size: '245 KB',
-      status: 'processed',
-      category: 'Despesa'
-    },
-    {
-      id: 2,
-      name: 'Recibo_EDP_Energia_Junho.pdf',
-      source: 'Google Drive',
-      uploadDate: '2025-06-19T16:20:00',
-      size: '189 KB',
-      status: 'processing',
-      category: 'Utilidade'
-    },
-    {
-      id: 3,
-      name: 'Fatura_Fornecedor_ABC_Lda.pdf',
-      source: 'OneDrive',
-      uploadDate: '2025-06-18T11:45:00',
-      size: '387 KB',
-      status: 'pending',
-      category: 'Despesa'
-    }
-  ]
 
-  const getStatusColor = (status: string) => {
-    switch (status) {
-      case 'connected': return 'bg-green-100 text-green-800'
-      case 'error': return 'bg-red-100 text-red-800'
-      case 'pending': return 'bg-yellow-100 text-yellow-800'
-      case 'processing': return 'bg-blue-100 text-blue-800'
-      case 'processed': return 'bg-green-100 text-green-800'
-      default: return 'bg-gray-100 text-gray-800'
-    }
-  }
 
-  const getStatusText = (status: string) => {
-    switch (status) {
-      case 'connected': return 'Conectado'
-      case 'error': return 'Erro'
-      case 'pending': return 'Pendente'
-      case 'processing': return 'Processando'
-      case 'processed': return 'Processado'
-      default: return 'Desconhecido'
-    }
-  }
 
   return (
     <div className="flex h-screen bg-background" suppressHydrationWarning>
@@ -731,8 +682,16 @@ export default function CloudDrivesPage() {
                       </div>
                       <div className="flex items-center space-x-3">
                         <div className="text-right">
-                          <Badge className={getStatusColor(drive.status)}>
-                            {getStatusText(drive.status)}
+                          <Badge className={
+                            drive.status === 'connected' ? 'bg-green-100 text-green-800' :
+                            drive.status === 'error' ? 'bg-red-100 text-red-800' :
+                            drive.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                            'bg-gray-100 text-gray-800'
+                          }>
+                            {drive.status === 'connected' ? 'Conectado' :
+                             drive.status === 'error' ? 'Erro' :
+                             drive.status === 'pending' ? 'Pendente' :
+                             'Desconhecido'}
                           </Badge>
                           <div className="text-sm text-gray-500 mt-1">{drive.filesCount} arquivos</div>
                         </div>
@@ -770,81 +729,6 @@ export default function CloudDrivesPage() {
                   ))}
                 </div>
               )}
-            </div>
-
-            {/* Recent Files */}
-            <div className="bg-white rounded-lg border shadow-sm">
-              <div className="p-6 border-b">
-                <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground">Arquivos Recentes</h3>
-                  <div className="flex items-center space-x-3">
-                    <div className="relative">
-                      <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
-                      <Input
-                        placeholder="Pesquisar arquivos..."
-                        value={searchTerm}
-                        onChange={(e) => setSearchTerm(e.target.value)}
-                        className="pl-10 w-64"
-                      />
-                    </div>
-                    <Button variant="outline" size="sm">
-                      <Settings className="w-4 h-4" />
-                    </Button>
-                  </div>
-                </div>
-              </div>
-              <div className="overflow-x-auto">
-                <table className="w-full">
-                  <thead>
-                    <tr className="border-b">
-                      <th className="text-left p-4 font-medium text-gray-600">Nome do Arquivo</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Origem</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Data Upload</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Tamanho</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Categoria</th>
-                      <th className="text-left p-4 font-medium text-gray-600">Status</th>
-                      <th className="text-right p-4 font-medium text-gray-600">Ações</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {recentFiles
-                      .filter(file =>
-                        searchTerm === '' ||
-                        file.name.toLowerCase().includes(searchTerm.toLowerCase())
-                      )
-                      .map((file) => (
-                        <tr key={file.id} className="border-b hover:bg-muted/50">
-                          <td className="p-4">
-                            <div className="flex items-center space-x-3">
-                              <File className="w-5 h-5 text-gray-400" />
-                              <span className="font-medium">{file.name}</span>
-                            </div>
-                          </td>
-                          <td className="p-4">{file.source}</td>
-                          <td className="p-4">
-                            {new Date(file.uploadDate).toLocaleDateString('pt-PT')}
-                          </td>
-                          <td className="p-4">{file.size}</td>
-                          <td className="p-4">
-                            <Badge variant="outline" className="text-xs">
-                              {file.category}
-                            </Badge>
-                          </td>
-                          <td className="p-4">
-                            <Badge className={getStatusColor(file.status)}>
-                              {getStatusText(file.status)}
-                            </Badge>
-                          </td>
-                          <td className="p-4 text-right">
-                            <Button variant="ghost" size="sm">
-                              <Download className="w-4 h-4" />
-                            </Button>
-                          </td>
-                        </tr>
-                      ))}
-                  </tbody>
-                </table>
-              </div>
             </div>
           </div>
         </main>
