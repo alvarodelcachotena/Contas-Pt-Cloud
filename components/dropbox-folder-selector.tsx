@@ -68,7 +68,7 @@ export default function DropboxFolderSelector({
     try {
       console.log(`🔍 Loading folders for path: ${path}`)
       
-      const response = await fetch('/api/debug-dropbox-folders', {
+      const response = await fetch('/api/simple-debug-dropbox', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from 'next/server'
-import { DropboxApiClient } from '../../../../server/dropbox-api-client'
+import { DropboxApiClient } from '../../../server/dropbox-api-client'
 
 export async function POST(request: NextRequest) {
   try {
