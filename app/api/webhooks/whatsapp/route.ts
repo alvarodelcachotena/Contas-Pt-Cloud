@@ -311,16 +311,28 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             console.log(`📊 Resultado del análisis:`, analysisResult)
 
-            // Update document with AI analysis results
+            // Generate new filename based on extracted data
+            const extractedData = analysisResult.extracted_data
+            const clientName = extractedData?.company_name || extractedData?.vendor_name || extractedData?.client_name || 'Cliente Desconocido'
+            const documentDate = extractedData?.date || extractedData?.invoice_date || new Date().toISOString().split('T')[0]
+            const originalExtension = document.filename ? document.filename.substring(document.filename.lastIndexOf('.')) : '.jpg'
+            const newFileName = generateFileName(clientName, documentDate, originalExtension)
+
+            console.log(`📁 Nuevo nombre de archivo: ${newFileName}`)
+
+            // Update document with AI analysis results and new filename
             await supabase
               .from('documents')
               .update({
                 processing_status: 'completed',
                 confidence_score: analysisResult.confidence,
+                filename: newFileName,
                 extracted_data: {
                   ...document.extracted_data,
                   ai_analysis: analysisResult,
-                  processed_at: new Date().toISOString()
+                  processed_at: new Date().toISOString(),
+                  original_filename: document.filename,
+                  new_filename: newFileName
                 }
               })
               .eq('id', document.id)
@@ -335,7 +347,6 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             console.log(`✅ Document processing completed with AI: ${document.id}`)
 
             // Send success message to WhatsApp with extracted data
-            const extractedData = analysisResult.extracted_data
             let dataSummary = ''
 
             // Format extracted data for WhatsApp message
@@ -510,6 +521,21 @@ function generateInvoiceNumber(clientName: string, dateString: string): string {
     return `${cleanClientName} ${new Date().toISOString().split('T')[0].replace(/-/g, '-')}`
   } else {
     return `FAT-${Date.now()}`
+  }
+}
+
+// Función para generar nombre de archivo
+function generateFileName(clientName: string, dateString: string, originalExtension: string): string {
+  const formattedDate = formatDate(dateString)
+  const cleanClientName = clientName.replace(/[^a-zA-Z0-9\s]/g, '').trim().replace(/\s+/g, ' ')
+
+  if (formattedDate && cleanClientName) {
+    return `${cleanClientName} ${formattedDate}${originalExtension}`
+  } else if (cleanClientName) {
+    const currentDate = new Date().toISOString().split('T')[0].replace(/-/g, '-')
+    return `${cleanClientName} ${currentDate}${originalExtension}`
+  } else {
+    return `documento_${Date.now()}${originalExtension}`
   }
 }
 

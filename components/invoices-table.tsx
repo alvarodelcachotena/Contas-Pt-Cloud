@@ -383,7 +383,7 @@ export default function InvoicesTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nº Fatura</TableHead>
+              <TableHead>Nombre del archivo</TableHead>
               <TableHead>Cliente</TableHead>
               <TableHead>NIF</TableHead>
               <TableHead>Valor</TableHead>
