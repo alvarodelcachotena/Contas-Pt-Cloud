@@ -334,8 +334,28 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             console.log(`✅ Document processing completed with AI: ${document.id}`)
 
-            // Send success message to WhatsApp
-            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${analysisResult.document_type}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos\n\nEl documento aparecerá en tu aplicación.`
+            // Send success message to WhatsApp with extracted data
+            const extractedData = analysisResult.extracted_data
+            let dataSummary = ''
+
+            // Format extracted data for WhatsApp message
+            if (extractedData) {
+              const importantFields = [
+                'company_name', 'total_amount', 'date', 'invoice_number',
+                'vat_number', 'client_name', 'client_email', 'client_nif',
+                'description', 'items', 'tax_rate', 'subtotal'
+              ]
+
+              dataSummary = '\n📋 Datos extraídos:\n'
+              importantFields.forEach(field => {
+                if (extractedData[field] && extractedData[field] !== '') {
+                  const fieldName = field.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())
+                  dataSummary += `• ${fieldName}: ${extractedData[field]}\n`
+                }
+              })
+            }
+
+            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${analysisResult.document_type}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}\n\nEl documento aparecerá en tu aplicación.`
             await sendWhatsAppMessage(message.from, successMessage)
 
           } catch (aiError) {
@@ -428,16 +448,18 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string) {
 // Process invoice data and create invoice record
 async function processInvoice(invoiceData: any, documentId: number, supabase: any, tenantId: number) {
   try {
-    console.log(`📄 Procesando factura: ${invoiceData.invoice_number}`)
+    console.log(`📄 Procesando factura: ${invoiceData.invoice_number || 'Sin número'}`)
+    console.log(`📊 Datos recibidos:`, JSON.stringify(invoiceData, null, 2))
 
     // Create or find client
     let clientId = null
-    if (invoiceData.vendor_nif) {
+    if (invoiceData.vendor_nif || invoiceData.client_nif) {
+      const nifToSearch = invoiceData.vendor_nif || invoiceData.client_nif
       const { data: existingClient } = await supabase
         .from('clients')
         .select('id')
         .eq('tenant_id', tenantId)
-        .eq('nif', invoiceData.vendor_nif)
+        .eq('nif', nifToSearch)
         .single()
 
       if (existingClient) {
@@ -449,9 +471,10 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
           .from('clients')
           .insert({
             tenant_id: tenantId,
-            name: invoiceData.vendor_name,
-            nif: invoiceData.vendor_nif,
-            address: invoiceData.vendor_address
+            name: invoiceData.vendor_name || invoiceData.client_name || 'Cliente Desconocido',
+            nif: nifToSearch,
+            address: invoiceData.vendor_address || invoiceData.client_address || null,
+            email: invoiceData.client_email || null
           })
           .select()
           .single()
@@ -469,19 +492,19 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
       .insert({
         tenant_id: tenantId,
         client_id: clientId,
-        number: invoiceData.invoice_number,
-        client_name: invoiceData.vendor_name,
-        client_email: null,
-        client_tax_id: invoiceData.vendor_nif,
-        issue_date: invoiceData.invoice_date,
-        due_date: invoiceData.due_date,
-        amount: invoiceData.subtotal,
-        vat_amount: invoiceData.vat_amount,
-        vat_rate: invoiceData.vat_rate,
-        total_amount: invoiceData.total_amount,
+        number: invoiceData.invoice_number || `FAT-${Date.now()}`,
+        client_name: invoiceData.vendor_name || invoiceData.client_name || 'Cliente Desconocido',
+        client_email: invoiceData.client_email || null,
+        client_tax_id: invoiceData.vendor_nif || invoiceData.client_nif || null,
+        issue_date: invoiceData.invoice_date || invoiceData.date || new Date().toISOString().split('T')[0],
+        due_date: invoiceData.due_date || null,
+        amount: invoiceData.subtotal || invoiceData.amount || 0,
+        vat_amount: invoiceData.vat_amount || 0,
+        vat_rate: invoiceData.vat_rate || 0,
+        total_amount: invoiceData.total_amount || invoiceData.total || 0,
         status: 'pending',
-        description: invoiceData.description,
-        payment_terms: null
+        description: invoiceData.description || `Factura procesada desde WhatsApp`,
+        payment_terms: invoiceData.payment_terms || null
       })
       .select()
       .single()
