@@ -23,13 +23,13 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Modal } from "@/components/ui/modal"
 import DropboxFolderSelector from "@/components/dropbox-folder-selector"
-import { 
-  Cloud, 
-  Plus, 
-  Search, 
-  Settings, 
-  Folder, 
-  File, 
+import {
+  Cloud,
+  Plus,
+  Search,
+  Settings,
+  Folder,
+  File,
   Download,
   Upload,
   RefreshCw,
@@ -43,13 +43,13 @@ import {
 export default function CloudDrivesPage() {
   // Clean up browser extension attributes to prevent hydration mismatches
   useBrowserExtensionCleanup()
-  
+
   const [searchTerm, setSearchTerm] = useState('')
   const [syncStatus, setSyncStatus] = useState<'syncing' | 'completed' | 'error'>('completed')
   const [showConnectModal, setShowConnectModal] = useState(false)
   const [integrations, setIntegrations] = useState<CloudIntegration[]>([])
   const [loading, setLoading] = useState(true)
-  const [notification, setNotification] = useState<{type: 'success' | 'error', message: string} | null>(null)
+  const [notification, setNotification] = useState<{ type: 'success' | 'error', message: string } | null>(null)
   const [showFolderSelector, setShowFolderSelector] = useState(false)
   const [selectedIntegration, setSelectedIntegration] = useState<CloudIntegration | null>(null)
   const [testResults, setTestResults] = useState<any>(null)
@@ -87,7 +87,9 @@ export default function CloudDrivesPage() {
         'token_failed': 'Erro ao obter token de acesso',
         'user_failed': 'Erro ao obter dados do usuário',
         'save_failed': 'Erro ao guardar a configuração',
-        'callback_failed': 'Erro no processo de autenticação'
+        'callback_failed': 'Erro no processo de autenticação',
+        'config_missing': 'Configuração de Dropbox não encontrada. Verifique as variáveis de ambiente DROPBOX_CLIENT_ID e DROPBOX_CLIENT_SECRET.',
+        'token_exchange_failed': 'Erro ao trocar código por token de acesso'
       }
       setNotification({
         type: 'error',
@@ -101,24 +103,24 @@ export default function CloudDrivesPage() {
   const loadIntegrations = async () => {
     try {
       const response = await fetch('/api/cloud-integrations')
-      
+
       if (!response.ok) {
         throw new Error(`Error HTTP: ${response.status}`)
       }
-      
+
       const data = await response.json()
       console.log('Dados recebidos da API:', data)
-      
+
       if (data.integrations && Array.isArray(data.integrations)) {
         // Validar cada integração antes de definir
-        const validIntegrations = data.integrations.filter((integration: any) => 
-          integration && 
-          integration.id && 
-          integration.provider && 
+        const validIntegrations = data.integrations.filter((integration: any) =>
+          integration &&
+          integration.id &&
+          integration.provider &&
           integration.user_email &&
           integration.status
         )
-        
+
         console.log('Integrações válidas:', validIntegrations)
         setIntegrations(validIntegrations)
       } else {
@@ -176,7 +178,7 @@ export default function CloudDrivesPage() {
     // Listen for messages from popup
     const handleMessage = (event: MessageEvent) => {
       if (event.origin !== window.location.origin) return
-      
+
       if (event.data.type === 'DROPBOX_AUTH_SUCCESS') {
         popup?.close()
         setNotification({
@@ -203,7 +205,7 @@ export default function CloudDrivesPage() {
       const response = await fetch(`/api/cloud-integrations?id=${integrationId}`, {
         method: 'DELETE'
       })
-      
+
       if (response.ok) {
         setNotification({
           type: 'success',
@@ -225,10 +227,71 @@ export default function CloudDrivesPage() {
     setNotification(null)
   }
 
+  const checkDropboxConfig = async () => {
+    try {
+      const response = await fetch('/api/check-dropbox-config')
+      const result = await response.json()
+
+      if (result.success) {
+        const { config } = result
+        let message = 'Configuración de Dropbox:\n'
+        message += `• CLIENT_ID: ${config.hasClientId ? '✅ Configurado' : '❌ No configurado'}\n`
+        message += `• CLIENT_SECRET: ${config.hasClientSecret ? '✅ Configurado' : '❌ No configurado'}\n`
+
+        if (config.hasClientId) {
+          message += `• CLIENT_ID Preview: ${config.clientIdPreview}\n`
+        }
+
+        if (config.hasClientSecret) {
+          message += `• CLIENT_SECRET Preview: ${config.clientSecretPreview}\n`
+        }
+
+        setNotification({
+          type: config.hasClientId && config.hasClientSecret ? 'success' : 'error',
+          message: message
+        })
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Error verificando configuración: ' + result.error
+        })
+      }
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Error verificando configuración de Dropbox'
+      })
+    }
+  }
+
+  const checkDropboxRedirectUri = async () => {
+    try {
+      const response = await fetch('/api/dropbox-redirect-uri')
+      const result = await response.json()
+
+      if (result.success) {
+        setNotification({
+          type: 'success',
+          message: `URL de redirección: ${result.redirectUri}\n\nCopia esta URL y añádela en tu aplicación de Dropbox en:\nhttps://www.dropbox.com/developers/apps`
+        })
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Error obteniendo URL de redirección: ' + result.error
+        })
+      }
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Error obteniendo URL de redirección'
+      })
+    }
+  }
+
   const handleTestProcessing = async (integration: CloudIntegration) => {
     try {
       console.log('🧪 Testing document processing for integration:', integration.id)
-      
+
       const response = await fetch('/api/dropbox/test-processing', {
         method: 'POST',
         headers: {
@@ -240,7 +303,7 @@ export default function CloudDrivesPage() {
       })
 
       const result = await response.json()
-      
+
       if (response.ok) {
         setTestResults(result)
         setNotification({
@@ -315,8 +378,8 @@ export default function CloudDrivesPage() {
           status: integration.status || 'unknown',
           lastSync: integration.updated_at || new Date().toISOString(),
           filesCount: 247, // Simulado por ahora
-          folderPath: integration.provider === 'dropbox' ? '/Documentos' : 
-                      integration.provider === 'googledrive' ? '/Contabilidade' : '/Empresa',
+          folderPath: integration.provider === 'dropbox' ? '/Documentos' :
+            integration.provider === 'googledrive' ? '/Contabilidade' : '/Empresa',
           userEmail: integration.user_email,
           integrationId: integration.id
         }
@@ -402,8 +465,24 @@ export default function CloudDrivesPage() {
                 <p className="text-gray-600 mt-1">Gestão de armazenamento em nuvem e sincronização automática</p>
               </div>
               <div className="flex items-center space-x-3">
-                <Button 
-                  variant="outline" 
+                <Button
+                  variant="outline"
+                  className="bg-white flex items-center space-x-2"
+                  onClick={checkDropboxConfig}
+                >
+                  <Settings className="w-4 h-4" />
+                  <span>Verificar Dropbox</span>
+                </Button>
+                <Button
+                  variant="outline"
+                  className="bg-white flex items-center space-x-2"
+                  onClick={checkDropboxRedirectUri}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>URL Redirección</span>
+                </Button>
+                <Button
+                  variant="outline"
                   className="bg-white flex items-center space-x-2"
                   onClick={handleManualSync}
                   disabled={syncStatus === 'syncing'}
@@ -411,7 +490,7 @@ export default function CloudDrivesPage() {
                   <RefreshCw className={`w-4 h-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
                   <span>{syncStatus === 'syncing' ? 'Sincronizando...' : 'Sincronizar'}</span>
                 </Button>
-                <Button 
+                <Button
                   className="flex items-center space-x-2"
                   onClick={() => setShowConnectModal(true)}
                 >
@@ -489,7 +568,7 @@ export default function CloudDrivesPage() {
                   <Cloud className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                   <h4 className="text-lg font-medium text-gray-900 mb-2">Não há drives conectados</h4>
                   <p className="text-gray-500 mb-4">Conecte a sua primeira conta de armazenamento na nuvem</p>
-                  <Button 
+                  <Button
                     onClick={() => setShowConnectModal(true)}
                     className="flex items-center space-x-2"
                   >
@@ -592,8 +671,8 @@ export default function CloudDrivesPage() {
                   </thead>
                   <tbody>
                     {recentFiles
-                      .filter(file => 
-                        searchTerm === '' || 
+                      .filter(file =>
+                        searchTerm === '' ||
                         file.name.toLowerCase().includes(searchTerm.toLowerCase())
                       )
                       .map((file) => (
@@ -635,14 +714,14 @@ export default function CloudDrivesPage() {
       </div>
 
       {/* Modal para conectar fornecedor */}
-      <Modal 
+      <Modal
         isOpen={showConnectModal}
         onClose={() => setShowConnectModal(false)}
         title="Conectar Armazenamento na Nuvem"
       >
         <div>
           <p className="text-gray-600 mb-6">Selecione o fornecedor que deseja conectar:</p>
-          
+
           <div className="space-y-3">
             <Button
               onClick={() => {
@@ -702,11 +781,10 @@ export default function CloudDrivesPage() {
       {/* Notificaciones */}
       {notification && (
         <div className="fixed top-4 right-4 z-50">
-          <div className={`flex items-center p-4 rounded-lg shadow-lg ${
-            notification.type === 'success' 
-              ? 'bg-green-50 border border-green-200 text-green-800' 
-              : 'bg-red-50 border border-red-200 text-red-800'
-          }`}>
+          <div className={`flex items-center p-4 rounded-lg shadow-lg ${notification.type === 'success'
+            ? 'bg-green-50 border border-green-200 text-green-800'
+            : 'bg-red-50 border border-red-200 text-red-800'
+            }`}>
             {notification.type === 'success' ? (
               <CheckCircle className="w-5 h-5 mr-3" />
             ) : (
@@ -757,7 +835,7 @@ export default function CloudDrivesPage() {
                 <X className="w-4 h-4" />
               </Button>
             </div>
-            
+
             <div className="space-y-4">
               <div className="bg-blue-50 border border-blue-200 rounded-lg p-4">
                 <h4 className="font-medium text-blue-900 mb-2">Informações da Integração</h4>

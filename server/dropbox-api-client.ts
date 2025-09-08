@@ -78,10 +78,10 @@ export class DropboxApiClient {
     }
 
     const tokenData: DropboxTokenResponse = await response.json();
-    
+
     this.accessToken = tokenData.access_token;
     this.tokenExpiresAt = new Date(Date.now() + tokenData.expires_in * 1000);
-    
+
     console.log('✅ Dropbox access token refreshed successfully');
   }
 
@@ -122,7 +122,7 @@ export class DropboxApiClient {
     if (response.status === 401 && this.refreshToken) {
       console.log('🔄 Got 401, attempting token refresh...');
       await this.refreshAccessToken();
-      
+
       // Update headers with new token
       const retryHeaders = {
         ...defaultHeaders,
@@ -207,26 +207,73 @@ export class DropboxApiClient {
     const result = await response.json();
     return result.cursor;
   }
-/**
-   * Download a file from Dropbox
-   */
-async downloadFile(path: string): Promise<Buffer> {
-  // Use makeRequest to handle token validation and refresh
-  const response = await this.makeRequest('https://content.dropboxapi.com/2/files/download', {
-    method: 'POST',
-    headers: {
-      'Dropbox-API-Arg': JSON.stringify({ path }),
-      'Content-Type': 'application/octet-stream',
-    },
-  });
+  /**
+     * Download a file from Dropbox
+     */
+  async downloadFile(path: string): Promise<Buffer> {
+    // Use makeRequest to handle token validation and refresh
+    const response = await this.makeRequest('https://content.dropboxapi.com/2/files/download', {
+      method: 'POST',
+      headers: {
+        'Dropbox-API-Arg': JSON.stringify({ path }),
+        'Content-Type': 'application/octet-stream',
+      },
+    });
 
-  if (!response.ok) {
-    const errorText = await response.text();
-    throw new Error(`Download file failed: ${response.status} ${errorText}`);
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Download file failed: ${response.status} ${errorText}`);
+    }
+
+    return Buffer.from(await response.arrayBuffer());
   }
 
-  return Buffer.from(await response.arrayBuffer());
-}
+  /**
+   * Upload a file to Dropbox
+   */
+  async uploadFile(filePath: string, fileBuffer: Buffer, mode: 'add' | 'overwrite' | 'update' = 'overwrite'): Promise<DropboxFile> {
+    const response = await this.makeRequest('https://content.dropboxapi.com/2/files/upload', {
+      method: 'POST',
+      headers: {
+        'Dropbox-API-Arg': JSON.stringify({
+          path: filePath,
+          mode: mode,
+          autorename: false,
+          mute: false,
+          strict_conflict: false
+        }),
+        'Content-Type': 'application/octet-stream',
+      },
+      body: fileBuffer,
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Upload file failed: ${response.status} ${errorText}`);
+    }
+
+    return await response.json();
+  }
+
+  /**
+   * Create a folder in Dropbox
+   */
+  async createFolder(path: string): Promise<DropboxFile> {
+    const response = await this.makeRequest('https://api.dropboxapi.com/2/files/create_folder_v2', {
+      method: 'POST',
+      body: JSON.stringify({
+        path,
+        autorename: false,
+      }),
+    });
+
+    if (!response.ok) {
+      const errorText = await response.text();
+      throw new Error(`Create folder failed: ${response.status} ${errorText}`);
+    }
+
+    return await response.json();
+  }
 
   /**
    * Get file metadata

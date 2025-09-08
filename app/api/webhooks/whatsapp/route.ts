@@ -10,6 +10,7 @@ import {
   WHATSAPP_API_BASE
 } from '../../../../lib/whatsapp-config'
 import { DocumentAIService } from '../../../../lib/gemini-ai-service'
+import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 
 // Función de verificación de API key
 function verifyApiKey() {
@@ -346,6 +347,19 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             console.log(`✅ Document processing completed with AI: ${document.id}`)
 
+            // Upload to Dropbox
+            const uploadSuccess = await uploadToDropbox(
+              Buffer.from(mediaData.buffer),
+              newFileName,
+              tenantId
+            )
+
+            if (uploadSuccess) {
+              console.log(`☁️ Archivo subido a Dropbox exitosamente: ${newFileName}`)
+            } else {
+              console.log(`⚠️ No se pudo subir el archivo a Dropbox: ${newFileName}`)
+            }
+
             // Send success message to WhatsApp with extracted data
             let dataSummary = ''
 
@@ -380,7 +394,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               }
             }
 
-            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${analysisResult.document_type}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}\n\nEl documento aparecerá en tu aplicación.`
+            const dropboxStatus = uploadSuccess ? '☁️ Subido a Dropbox' : '⚠️ Error subiendo a Dropbox'
+            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${analysisResult.document_type}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}\n\n${dropboxStatus}\nEl documento aparecerá en tu aplicación.`
             await sendWhatsAppMessage(message.from, successMessage)
 
           } catch (aiError) {
@@ -536,6 +551,55 @@ function generateFileName(clientName: string, dateString: string, originalExtens
     return `${cleanClientName} ${currentDate}${originalExtension}`
   } else {
     return `documento_${Date.now()}${originalExtension}`
+  }
+}
+
+// Función para subir archivo a Dropbox
+async function uploadToDropbox(fileBuffer: Buffer, fileName: string, tenantId: number): Promise<boolean> {
+  try {
+    console.log(`☁️ Subiendo archivo a Dropbox: ${fileName}`)
+
+    // Obtener configuración de Dropbox
+    const supabase = createSupabaseClient()
+    const { data: dropboxConfig, error: configError } = await supabase
+      .from('cloud_drive_configs')
+      .select('*')
+      .eq('tenant_id', tenantId)
+      .eq('provider', 'dropbox')
+      .eq('is_active', true)
+      .single()
+
+    if (configError || !dropboxConfig) {
+      console.error('❌ No se encontró configuración de Dropbox:', configError)
+      return false
+    }
+
+    // Crear cliente de Dropbox
+    const dropboxClient = new DropboxApiClient(
+      dropboxConfig.access_token,
+      dropboxConfig.refresh_token
+    )
+
+    // Crear carpeta "prueba" si no existe
+    const folderPath = '/prueba'
+    try {
+      await dropboxClient.createFolder(folderPath)
+      console.log(`📁 Carpeta ${folderPath} creada o ya existe`)
+    } catch (error) {
+      // La carpeta ya existe, continuar
+      console.log(`📁 Carpeta ${folderPath} ya existe`)
+    }
+
+    // Subir archivo
+    const dropboxFilePath = `${folderPath}/${fileName}`
+    await dropboxClient.uploadFile(dropboxFilePath, fileBuffer, 'overwrite')
+
+    console.log(`✅ Archivo subido exitosamente a Dropbox: ${dropboxFilePath}`)
+    return true
+
+  } catch (error) {
+    console.error('❌ Error subiendo archivo a Dropbox:', error)
+    return false
   }
 }
 

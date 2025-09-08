@@ -28,9 +28,9 @@ export async function GET(request: NextRequest) {
 
     if (error) {
       console.error('❌ Dropbox OAuth error:', error)
-      return NextResponse.json({ 
-        success: false, 
-        error: error 
+      return NextResponse.json({
+        success: false,
+        error: error
       }, { status: 400 })
     }
 
@@ -45,11 +45,19 @@ export async function GET(request: NextRequest) {
       // Get the correct base URL (same logic as callback route)
       const host = request.headers.get('host')
       const protocol = request.headers.get('x-forwarded-proto') || 'http'
-      
-      // Use HTTPS for Replit domains
-      const baseUrl = (host && host.includes('replit.dev')) ? `https://${host}` : `${protocol}://${host}`
+
+      // Handle localhost and development environments
+      let baseUrl: string
+      if (host && host.includes('localhost')) {
+        baseUrl = `http://${host}`
+      } else if (host && host.includes('replit.dev')) {
+        baseUrl = `https://${host}`
+      } else {
+        baseUrl = `${protocol}://${host}`
+      }
+
       const redirectUri = `${baseUrl}/api/auth/dropbox/callback`
-      
+
       const authUrl = `https://www.dropbox.com/oauth2/authorize?` +
         `client_id=${clientId}&` +
         `response_type=code&` +
@@ -74,9 +82,19 @@ export async function GET(request: NextRequest) {
       // Get the correct base URL (same logic as callback route)
       const host = request.headers.get('host')
       const protocol = request.headers.get('x-forwarded-proto') || 'http'
-      const baseUrl = (host && host.includes('replit.dev')) ? `https://${host}` : `${protocol}://${host}`
+
+      // Handle localhost and development environments
+      let baseUrl: string
+      if (host && host.includes('localhost')) {
+        baseUrl = `http://${host}`
+      } else if (host && host.includes('replit.dev')) {
+        baseUrl = `https://${host}`
+      } else {
+        baseUrl = `${protocol}://${host}`
+      }
+
       const redirectUri = `${baseUrl}/api/auth/dropbox/callback`
-      
+
       console.log('🔄 Exchanging code for tokens...')
       const tokenResponse = await fetch('https://api.dropboxapi.com/oauth2/token', {
         method: 'POST',
@@ -140,12 +158,12 @@ export async function GET(request: NextRequest) {
       }
 
       console.log('✅ Dropbox integration saved to database')
-      
+
       // Return success response
-      return NextResponse.json({ 
-        success: true, 
+      return NextResponse.json({
+        success: true,
         message: 'Dropbox connected successfully',
-        userEmail: userEmail 
+        userEmail: userEmail
       })
     }
 
