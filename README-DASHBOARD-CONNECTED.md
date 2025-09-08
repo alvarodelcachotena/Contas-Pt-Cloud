@@ -152,3 +152,4 @@ Agora quando subires **20 documentos**, o recuadro de documentos mostrará **20*
 **Nota**: O dashboard está configurado para o tenant ID 1. Para múltiplos tenants, ajustar o header `x-tenant-id` na API.
 
 
+

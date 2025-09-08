@@ -110,3 +110,4 @@ Con estas correcciones, tu dashboard debería funcionar perfectamente y mostrar:
 **¡Ahora el script SQL debería ejecutarse sin errores!** 🎉
 
 
+

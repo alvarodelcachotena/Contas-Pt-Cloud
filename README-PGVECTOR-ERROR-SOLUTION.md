@@ -67,3 +67,4 @@ Si continúas teniendo problemas:
 **Nota**: La versión sin pgvector es completamente funcional para la mayoría de casos de uso, solo las funcionalidades avanzadas de IA estarán limitadas.
 
 
+

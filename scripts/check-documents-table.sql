@@ -25,3 +25,4 @@ SELECT * FROM documents LIMIT 3;
 SELECT COUNT(*) as total_documents FROM documents;
 
 
+

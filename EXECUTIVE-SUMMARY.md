@@ -184,3 +184,4 @@ El sistema está diseñado para ser **escalable**, **seguro** y **fácil de mant
 **Próxima revisión**: Febrero 2025
 
 
+

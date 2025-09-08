@@ -114,3 +114,4 @@ ON CONFLICT DO NOTHING;
 **¡Con estos cambios, la vista de clients debería funcionar perfectamente!** 🎉
 
 
+

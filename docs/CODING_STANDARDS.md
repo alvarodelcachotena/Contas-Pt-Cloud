@@ -284,3 +284,4 @@ Closes #123
 **Recuerda**: Los estándares de código son herramientas para mejorar la calidad y mantenibilidad del código. Sé consistente pero también pragmático.
 
 
+

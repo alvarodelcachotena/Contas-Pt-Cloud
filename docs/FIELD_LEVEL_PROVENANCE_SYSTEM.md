@@ -381,3 +381,4 @@ console.log('Provenance metadata stored:', {
 El sistema de Field-Level Provenance Metadata proporciona transparencia completa sobre el origen de cada dato extraído, facilitando el debugging, la auditoría y la optimización del sistema de extracción de documentos. La implementación es robusta, escalable y sigue las mejores prácticas de desarrollo.
 
 
+
