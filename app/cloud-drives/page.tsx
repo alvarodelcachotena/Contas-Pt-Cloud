@@ -156,48 +156,8 @@ export default function CloudDrivesPage() {
   }
 
   const handleDropboxAuth = () => {
-    const popup = window.open(
-      `/api/auth/dropbox?action=connect`,
-      'dropbox-auth',
-      'width=600,height=700,scrollbars=yes,resizable=yes'
-    )
-
-    // Listen for popup completion
-    const checkClosed = setInterval(() => {
-      if (popup?.closed) {
-        clearInterval(checkClosed)
-        // Reload integrations after auth
-        loadIntegrations()
-        setNotification({
-          type: 'success',
-          message: 'Verificando conexão Dropbox...'
-        })
-      }
-    }, 1000)
-
-    // Listen for messages from popup
-    const handleMessage = (event: MessageEvent) => {
-      if (event.origin !== window.location.origin) return
-
-      if (event.data.type === 'DROPBOX_AUTH_SUCCESS') {
-        popup?.close()
-        setNotification({
-          type: 'success',
-          message: 'Dropbox conectado com sucesso!'
-        })
-        loadIntegrations()
-        window.removeEventListener('message', handleMessage)
-      } else if (event.data.type === 'DROPBOX_AUTH_ERROR') {
-        popup?.close()
-        setNotification({
-          type: 'error',
-          message: 'Erro ao conectar Dropbox: ' + event.data.error
-        })
-        window.removeEventListener('message', handleMessage)
-      }
-    }
-
-    window.addEventListener('message', handleMessage)
+    // Redirect to the same tab instead of opening a popup
+    window.location.href = `/api/auth/dropbox?action=connect`
   }
 
   const handleDisconnectProvider = async (integrationId: string) => {
@@ -268,7 +228,7 @@ export default function CloudDrivesPage() {
     try {
       const response = await fetch('/api/test-cloud-integrations-api')
       const result = await response.json()
-      
+
       if (result.success) {
         const { summary, data } = result
         let message = 'Test API Cloud Integrations:\n'
@@ -277,18 +237,18 @@ export default function CloudDrivesPage() {
         message += `• Tiene integraciones: ${summary.hasIntegrations ? '✅' : '❌'}\n`
         message += `• Cantidad: ${summary.integrationsCount}\n`
         message += `• Tiene error: ${summary.hasError ? '❌' : '✅'}\n`
-        
+
         if (summary.hasError) {
           message += `• Error: ${summary.error}\n`
         }
-        
+
         if (data.integrations && data.integrations.length > 0) {
           message += `\nPrimera integración:\n`
           message += `• ID: ${data.integrations[0].id}\n`
           message += `• Provider: ${data.integrations[0].provider}\n`
           message += `• Status: ${data.integrations[0].status}\n`
         }
-        
+
         setNotification({
           type: summary.hasIntegrations ? 'success' : 'error',
           message: message
@@ -311,7 +271,7 @@ export default function CloudDrivesPage() {
     try {
       const response = await fetch('/api/debug-cloud-integrations')
       const result = await response.json()
-      
+
       if (result.success) {
         const { debug } = result
         let message = 'Debug Cloud Integrations:\n'
@@ -319,14 +279,14 @@ export default function CloudDrivesPage() {
         message += `• Total configuraciones: ${debug.summary.totalConfigs}\n`
         message += `• Configuraciones activas: ${debug.summary.activeConfigs}\n`
         message += `• Tenants disponibles: ${debug.summary.tenantsCount}\n\n`
-        
+
         if (debug.allConfigs.length > 0) {
           message += 'Configuraciones encontradas:\n'
           debug.allConfigs.forEach((config: any, index: number) => {
             message += `${index + 1}. ${config.provider} (Tenant: ${config.tenant_id}, Activo: ${config.is_active})\n`
           })
         }
-        
+
         setNotification({
           type: 'success',
           message: message
@@ -349,7 +309,7 @@ export default function CloudDrivesPage() {
     try {
       const response = await fetch('/api/test-netlify-dropbox')
       const result = await response.json()
-      
+
       if (result.success) {
         const { config } = result
         let message = 'Configuración de Dropbox en Netlify:\n'
@@ -358,7 +318,7 @@ export default function CloudDrivesPage() {
         message += `• Entorno: ${config.environment}\n`
         message += `• Es Netlify: ${config.isNetlify ? '✅ Sí' : '❌ No'}\n`
         message += `• URL Netlify: ${config.netlifyUrl}\n`
-        
+
         setNotification({
           type: 'success',
           message: message
@@ -530,55 +490,6 @@ export default function CloudDrivesPage() {
               </div>
               <div className="flex items-center space-x-3">
                 <Button
-                  variant="outline"
-                  className="bg-white flex items-center space-x-2"
-                  onClick={checkDropboxConfig}
-                >
-                  <Settings className="w-4 h-4" />
-                  <span>Verificar Dropbox</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white flex items-center space-x-2"
-                  onClick={testCloudIntegrationsAPI}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Test API</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white flex items-center space-x-2"
-                  onClick={debugCloudIntegrations}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Debug</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white flex items-center space-x-2"
-                  onClick={testNetlifyDropbox}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  <span>Probar Netlify</span>
-                </Button>
-                <Button 
-                  variant="outline" 
-                  className="bg-white flex items-center space-x-2"
-                  onClick={checkDropboxRedirectUri}
-                >
-                  <AlertCircle className="w-4 h-4" />
-                  <span>URL Redirección</span>
-                </Button>
-                <Button
-                  variant="outline"
-                  className="bg-white flex items-center space-x-2"
-                  onClick={handleManualSync}
-                  disabled={syncStatus === 'syncing'}
-                >
-                  <RefreshCw className={`w-4 h-4 ${syncStatus === 'syncing' ? 'animate-spin' : ''}`} />
-                  <span>{syncStatus === 'syncing' ? 'Sincronizando...' : 'Sincronizar'}</span>
-                </Button>
-                <Button
                   className="flex items-center space-x-2"
                   onClick={() => setShowConnectModal(true)}
                 >
@@ -684,14 +595,14 @@ export default function CloudDrivesPage() {
                         <div className="text-right">
                           <Badge className={
                             drive.status === 'connected' ? 'bg-green-100 text-green-800' :
-                            drive.status === 'error' ? 'bg-red-100 text-red-800' :
-                            drive.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                            'bg-gray-100 text-gray-800'
+                              drive.status === 'error' ? 'bg-red-100 text-red-800' :
+                                drive.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                  'bg-gray-100 text-gray-800'
                           }>
                             {drive.status === 'connected' ? 'Conectado' :
-                             drive.status === 'error' ? 'Erro' :
-                             drive.status === 'pending' ? 'Pendente' :
-                             'Desconhecido'}
+                              drive.status === 'error' ? 'Erro' :
+                                drive.status === 'pending' ? 'Pendente' :
+                                  'Desconhecido'}
                           </Badge>
                           <div className="text-sm text-gray-500 mt-1">{drive.filesCount} arquivos</div>
                         </div>
