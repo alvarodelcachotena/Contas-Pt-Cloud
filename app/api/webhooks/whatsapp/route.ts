@@ -343,7 +343,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               const importantFields = [
                 'company_name', 'total_amount', 'date', 'invoice_number',
                 'vat_number', 'client_name', 'client_email', 'client_nif',
-                'description', 'items', 'tax_rate', 'subtotal'
+                'description', 'items', 'subtotal'
               ]
 
               dataSummary = '\n📋 Datos extraídos:\n'
@@ -353,6 +353,20 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
                   dataSummary += `• ${fieldName}: ${extractedData[field]}\n`
                 }
               })
+
+              // Add tax information separately with percentage
+              if (extractedData.tax_rate && extractedData.tax_rate !== '') {
+                const taxRate = parseFloat(extractedData.tax_rate)
+                if (!isNaN(taxRate)) {
+                  dataSummary += `• Tasa de IVA: ${taxRate}%\n`
+                } else {
+                  dataSummary += `• Tasa de IVA: ${extractedData.tax_rate}\n`
+                }
+              }
+
+              if (extractedData.vat_amount && extractedData.vat_amount !== '') {
+                dataSummary += `• Importe IVA: €${extractedData.vat_amount}\n`
+              }
             }
 
             const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${analysisResult.document_type}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}\n\nEl documento aparecerá en tu aplicación.`
@@ -445,6 +459,60 @@ async function downloadWhatsAppMedia(mediaId: string, accessToken: string) {
   }
 }
 
+// Función para formatear fecha
+function formatDate(dateString: string): string {
+  if (!dateString) return ''
+
+  try {
+    // Intentar diferentes formatos de fecha
+    let date: Date
+
+    // Formato DD/MM/YYYY o DD-MM-YYYY
+    if (dateString.includes('/') || dateString.includes('-')) {
+      const parts = dateString.split(/[\/\-]/)
+      if (parts.length === 3) {
+        const day = parts[0].padStart(2, '0')
+        const month = parts[1].padStart(2, '0')
+        const year = parts[2]
+        date = new Date(`${year}-${month}-${day}`)
+      } else {
+        date = new Date(dateString)
+      }
+    } else {
+      date = new Date(dateString)
+    }
+
+    // Verificar que la fecha es válida
+    if (isNaN(date.getTime())) {
+      return ''
+    }
+
+    // Formatear como DD-MM-YYYY
+    const day = date.getDate().toString().padStart(2, '0')
+    const month = (date.getMonth() + 1).toString().padStart(2, '0')
+    const year = date.getFullYear()
+
+    return `${day}-${month}-${year}`
+  } catch (error) {
+    console.error('Error formatting date:', error)
+    return ''
+  }
+}
+
+// Función para generar número de factura
+function generateInvoiceNumber(clientName: string, dateString: string): string {
+  const formattedDate = formatDate(dateString)
+  const cleanClientName = clientName.replace(/[^a-zA-Z0-9\s]/g, '').trim()
+
+  if (formattedDate && cleanClientName) {
+    return `${cleanClientName} ${formattedDate}`
+  } else if (cleanClientName) {
+    return `${cleanClientName} ${new Date().toISOString().split('T')[0].replace(/-/g, '-')}`
+  } else {
+    return `FAT-${Date.now()}`
+  }
+}
+
 // Process invoice data and create invoice record
 async function processInvoice(invoiceData: any, documentId: number, supabase: any, tenantId: number) {
   try {
@@ -486,17 +554,24 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
       }
     }
 
+    // Generate invoice number with client name and date
+    const clientName = invoiceData.vendor_name || invoiceData.client_name || 'Cliente Desconocido'
+    const invoiceDate = invoiceData.invoice_date || invoiceData.date || new Date().toISOString().split('T')[0]
+    const invoiceNumber = generateInvoiceNumber(clientName, invoiceDate)
+
+    console.log(`📋 Número de factura generado: ${invoiceNumber}`)
+
     // Create invoice record
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .insert({
         tenant_id: tenantId,
         client_id: clientId,
-        number: invoiceData.invoice_number || `FAT-${Date.now()}`,
-        client_name: invoiceData.vendor_name || invoiceData.client_name || 'Cliente Desconocido',
+        number: invoiceNumber,
+        client_name: clientName,
         client_email: invoiceData.client_email || null,
         client_tax_id: invoiceData.vendor_nif || invoiceData.client_nif || null,
-        issue_date: invoiceData.invoice_date || invoiceData.date || new Date().toISOString().split('T')[0],
+        issue_date: invoiceDate,
         due_date: invoiceData.due_date || null,
         amount: invoiceData.subtotal || invoiceData.amount || 0,
         vat_amount: invoiceData.vat_amount || 0,
