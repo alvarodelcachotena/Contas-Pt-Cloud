@@ -7,16 +7,17 @@ import { getTenantId, getTenantInfo } from '../../../lib/tenant-utils'
 loadEnvStrict()
 
 // Create a fresh Supabase client for each request to avoid caching issues
-function createSupabaseClient() {
+function createSupabaseClient(useServiceRole = false) {
   // Force reload environment variables
   loadEnvStrict()
 
   const url = getSupabaseUrl()
-  const key = getSupabaseAnonKey()
+  const key = useServiceRole ? process.env.SUPABASE_SERVICE_ROLE_KEY : getSupabaseAnonKey()
 
   console.log('🔍 Creating Supabase client with:')
   console.log('- URL ends with:', url?.slice(-10) || 'MISSING')
-  console.log('- Anon key ends with:', key?.slice(-10) || 'MISSING')
+  console.log('- Key type:', useServiceRole ? 'SERVICE_ROLE' : 'ANON')
+  console.log('- Key ends with:', key?.slice(-10) || 'MISSING')
 
   return createClient(url, key, {
     auth: {
@@ -88,8 +89,8 @@ export async function POST(request: NextRequest) {
     console.log('Access token length:', access_token?.length || 0)
     console.log('Refresh token length:', refresh_token?.length || 0)
 
-    // Create fresh Supabase client for this request
-    const supabase = createSupabaseClient()
+    // Create fresh Supabase client for this request (using service role for write operations)
+    const supabase = createSupabaseClient(true)
 
     // Get tenant ID dynamically using utility function
     const tenantId = await getTenantId(request, user_email)
@@ -114,34 +115,25 @@ export async function POST(request: NextRequest) {
       folder_path: configData.folder_path
     })
 
-    // Use webhook save endpoint to maintain consistency with webhook system
+    // Save directly to Supabase database
     let config: any
     try {
-      const saveResponse = await fetch('http://localhost:5000/api/webhooks/save-config', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          provider: configData.provider,
-          access_token: configData.access_token,
-          refresh_token: configData.refresh_token,
-          user_email: user_email
-        })
-      })
+      const { data: savedConfig, error: saveError } = await supabase
+        .from('cloud_drive_configs')
+        .insert(configData)
+        .select()
+        .single()
 
-      const saveResult = await saveResponse.json()
-
-      if (!saveResult.success) {
-        console.error('❌ Failed to save via webhook:', saveResult.error)
-        return NextResponse.json({ error: saveResult.error }, { status: 500 })
+      if (saveError) {
+        console.error('❌ Failed to save to database:', saveError)
+        return NextResponse.json({ error: 'Erro ao guardar configuração na base de dados' }, { status: 500 })
       }
 
-      config = saveResult.integration
-      console.log(`✅ Successfully saved ${provider} configuration via webhook`)
-    } catch (webhookError) {
-      console.error('❌ Webhook save failed:', webhookError)
-      return NextResponse.json({ error: 'Erro ao guardar configuração via webhook' }, { status: 500 })
+      config = savedConfig
+      console.log(`✅ Successfully saved ${provider} configuration to database`)
+    } catch (dbError) {
+      console.error('❌ Database save failed:', dbError)
+      return NextResponse.json({ error: 'Erro ao guardar configuração na base de dados' }, { status: 500 })
     }
 
     console.log(`✅ Configuração ${provider} guardada com ID: ${config.id}`)

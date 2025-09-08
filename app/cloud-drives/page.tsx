@@ -264,6 +264,38 @@ export default function CloudDrivesPage() {
     }
   }
 
+  const testNetlifyDropbox = async () => {
+    try {
+      const response = await fetch('/api/test-netlify-dropbox')
+      const result = await response.json()
+      
+      if (result.success) {
+        const { config } = result
+        let message = 'Configuración de Dropbox en Netlify:\n'
+        message += `• CLIENT_ID: ${config.hasClientId ? '✅ Configurado' : '❌ No configurado'}\n`
+        message += `• SERVICE_ROLE_KEY: ${config.hasClientSecret ? '✅ Configurado' : '❌ No configurado'}\n`
+        message += `• Entorno: ${config.environment}\n`
+        message += `• Es Netlify: ${config.isNetlify ? '✅ Sí' : '❌ No'}\n`
+        message += `• URL Netlify: ${config.netlifyUrl}\n`
+        
+        setNotification({
+          type: 'success',
+          message: message
+        })
+      } else {
+        setNotification({
+          type: 'error',
+          message: 'Error verificando configuración en Netlify: ' + result.error
+        })
+      }
+    } catch (error) {
+      setNotification({
+        type: 'error',
+        message: 'Error verificando configuración en Netlify'
+      })
+    }
+  }
+
   const checkDropboxRedirectUri = async () => {
     try {
       const response = await fetch('/api/dropbox-redirect-uri')
@@ -473,8 +505,16 @@ export default function CloudDrivesPage() {
                   <Settings className="w-4 h-4" />
                   <span>Verificar Dropbox</span>
                 </Button>
-                <Button
-                  variant="outline"
+                <Button 
+                  variant="outline" 
+                  className="bg-white flex items-center space-x-2"
+                  onClick={testNetlifyDropbox}
+                >
+                  <AlertCircle className="w-4 h-4" />
+                  <span>Probar Netlify</span>
+                </Button>
+                <Button 
+                  variant="outline" 
                   className="bg-white flex items-center space-x-2"
                   onClick={checkDropboxRedirectUri}
                 >
