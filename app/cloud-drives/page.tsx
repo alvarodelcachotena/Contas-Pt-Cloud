@@ -23,6 +23,7 @@ import { Input } from "@/components/ui/input"
 import { Badge } from "@/components/ui/badge"
 import { Modal } from "@/components/ui/modal"
 import DropboxFolderSelector from "@/components/dropbox-folder-selector"
+import DropboxManager from "@/components/dropbox-manager"
 import {
   Cloud,
   Plus,
@@ -53,12 +54,29 @@ export default function CloudDrivesPage() {
   const [showFolderSelector, setShowFolderSelector] = useState(false)
   const [selectedIntegration, setSelectedIntegration] = useState<CloudIntegration | null>(null)
   const [testResults, setTestResults] = useState<any>(null)
+  const [showDropboxManager, setShowDropboxManager] = useState(false)
+  const [activeDropboxIntegration, setActiveDropboxIntegration] = useState<CloudIntegration | null>(null)
 
   // Carregar integrações ao montar o componente
   useEffect(() => {
     loadIntegrations()
     checkUrlParams()
   }, [])
+
+  // Auto-activate Dropbox manager when Dropbox integration is available
+  useEffect(() => {
+    const dropboxIntegration = integrations.find(integration => 
+      integration.provider === 'dropbox' && 
+      integration.status === 'connected' && 
+      integration.access_token
+    )
+    
+    if (dropboxIntegration && !activeDropboxIntegration) {
+      setActiveDropboxIntegration(dropboxIntegration)
+    } else if (!dropboxIntegration && activeDropboxIntegration) {
+      setActiveDropboxIntegration(null)
+    }
+  }, [integrations, activeDropboxIntegration])
 
   const checkUrlParams = () => {
     const urlParams = new URLSearchParams(window.location.search)
@@ -361,6 +379,19 @@ export default function CloudDrivesPage() {
     }
   }
 
+  const openDropboxManager = (integration: CloudIntegration) => {
+    if (integration.provider === 'dropbox' && integration.access_token) {
+      setSelectedIntegration(integration)
+      setActiveDropboxIntegration(integration)
+      setShowDropboxManager(true)
+    }
+  }
+
+  const closeDropboxManager = () => {
+    setActiveDropboxIntegration(null)
+    setShowDropboxManager(false)
+  }
+
   const handleTestProcessing = async (integration: CloudIntegration) => {
     try {
       console.log('🧪 Testing document processing for integration:', integration.id)
@@ -554,28 +585,54 @@ export default function CloudDrivesPage() {
               </div>
             </div>
 
-            {/* Connected Drives */}
+            {/* Connected Drives or Dropbox Manager */}
             <div className="bg-white rounded-lg border shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Drives Conectados</h3>
-              {loading ? (
-                <div className="text-center py-8">
-                  <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
-                  <p className="text-gray-500">A carregar configurações...</p>
-                </div>
-              ) : cloudDrives.length === 0 ? (
-                <div className="text-center py-8">
-                  <Cloud className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                  <h4 className="text-lg font-medium text-gray-900 mb-2">Não há drives conectados</h4>
-                  <p className="text-gray-500 mb-4">Conecte a sua primeira conta de armazenamento na nuvem</p>
-                  <Button
-                    onClick={() => setShowConnectModal(true)}
-                    className="flex items-center space-x-2"
-                  >
-                    <Plus className="w-4 h-4" />
-                    <span>Conectar Drive</span>
-                  </Button>
+              {activeDropboxIntegration ? (
+                <div>
+                  <div className="flex items-center justify-between mb-4">
+                    <h3 className="text-lg font-semibold text-foreground">Gestión de Dropbox</h3>
+                    <div className="flex items-center space-x-2">
+                      <Badge className="bg-green-100 text-green-800">
+                        Conectado
+                      </Badge>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={closeDropboxManager}
+                        className="text-gray-600 hover:text-gray-700"
+                      >
+                        <X className="w-4 h-4 mr-1" />
+                        Cerrar
+                      </Button>
+                    </div>
+                  </div>
+                  <DropboxManager
+                    accessToken={activeDropboxIntegration.access_token!}
+                    refreshToken={activeDropboxIntegration.refresh_token}
+                  />
                 </div>
               ) : (
+                <>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">Drives Conectados</h3>
+                  {loading ? (
+                    <div className="text-center py-8">
+                      <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
+                      <p className="text-gray-500">A carregar configurações...</p>
+                    </div>
+                  ) : cloudDrives.length === 0 ? (
+                    <div className="text-center py-8">
+                      <Cloud className="w-12 h-12 mx-auto text-gray-400 mb-4" />
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">Não há drives conectados</h4>
+                      <p className="text-gray-500 mb-4">Conecte a sua primeira conta de armazenamento na nuvem</p>
+                      <Button
+                        onClick={() => setShowConnectModal(true)}
+                        className="flex items-center space-x-2"
+                      >
+                        <Plus className="w-4 h-4" />
+                        <span>Conectar Drive</span>
+                      </Button>
+                    </div>
+                  ) : (
                 <div className="space-y-4">
                   {cloudDrives.map((drive) => (
                     <div key={drive.id} className="flex items-center justify-between p-4 border rounded-lg">
@@ -625,6 +682,17 @@ export default function CloudDrivesPage() {
                             <FolderOpen className="w-4 h-4" />
                             <span>Pasta</span>
                           </Button>
+                          {drive.name.toLowerCase().includes('dropbox') && (
+                            <Button
+                              variant="outline"
+                              size="sm"
+                              onClick={() => openDropboxManager(integrations.find(i => i.id === drive.integrationId)!)}
+                              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 flex items-center space-x-1"
+                            >
+                              <Settings className="w-4 h-4" />
+                              <span>Gestionar</span>
+                            </Button>
+                          )}
                           <Button
                             variant="outline"
                             size="sm"
@@ -639,6 +707,8 @@ export default function CloudDrivesPage() {
                     </div>
                   ))}
                 </div>
+                  )}
+                </>
               )}
             </div>
           </div>
