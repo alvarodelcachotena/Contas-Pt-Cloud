@@ -339,9 +339,12 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               .eq('id', document.id)
 
             // Process based on document type
+            // IMPORTANT: Invoices are expenses (money YOU paid), not invoices TO clients
             if (analysisResult.document_type === 'invoice') {
+              console.log(`💰 Procesando INVOICE como GASTO (dinero que pagaste)`)
               await processInvoice(analysisResult.extracted_data, document.id, supabase, tenantId)
             } else if (analysisResult.document_type === 'expense') {
+              console.log(`💰 Procesando EXPENSE como GASTO`)
               await processExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
             }
 
@@ -395,7 +398,9 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             }
 
             const dropboxStatus = uploadSuccess ? '☁️ Subido a Dropbox' : '⚠️ Error subiendo a Dropbox'
-            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${analysisResult.document_type}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}\n\n${dropboxStatus}\nEl documento aparecerá en tu aplicación.`
+            const documentTypeText = analysisResult.document_type === 'invoice' ? 'Factura (gasto que pagaste)' : 'Gasto'
+            const locationText = analysisResult.document_type === 'invoice' ? 'Faturas Y Despesas' : 'Despesas'
+            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${documentTypeText}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}\n💰 Guardado en ${locationText} (no se creó cliente)\n\n${dropboxStatus}\nEl documento aparecerá en la sección correspondiente.`
             await sendWhatsAppMessage(message.from, successMessage)
 
           } catch (aiError) {
@@ -609,40 +614,10 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
     console.log(`📄 Procesando factura: ${invoiceData.invoice_number || 'Sin número'}`)
     console.log(`📊 Datos recibidos:`, JSON.stringify(invoiceData, null, 2))
 
-    // Create or find client
+    // For WhatsApp invoices, we don't create clients automatically
+    // These are typically one-time expenses, not recurring clients
     let clientId = null
-    if (invoiceData.vendor_nif || invoiceData.client_nif) {
-      const nifToSearch = invoiceData.vendor_nif || invoiceData.client_nif
-      const { data: existingClient } = await supabase
-        .from('clients')
-        .select('id')
-        .eq('tenant_id', tenantId)
-        .eq('nif', nifToSearch)
-        .single()
-
-      if (existingClient) {
-        clientId = existingClient.id
-        console.log(`👤 Cliente existente encontrado: ${clientId}`)
-      } else {
-        // Create new client
-        const { data: newClient } = await supabase
-          .from('clients')
-          .insert({
-            tenant_id: tenantId,
-            name: invoiceData.vendor_name || invoiceData.client_name || 'Cliente Desconocido',
-            nif: nifToSearch,
-            address: invoiceData.vendor_address || invoiceData.client_address || null,
-            email: invoiceData.client_email || null
-          })
-          .select()
-          .single()
-
-        if (newClient) {
-          clientId = newClient.id
-          console.log(`✅ Nuevo cliente creado: ${clientId}`)
-        }
-      }
-    }
+    console.log(`📝 Procesando como gasto puntual - no se creará cliente automáticamente`)
 
     // Generate invoice number with client name and date
     const clientName = invoiceData.vendor_name || invoiceData.client_name || 'Cliente Desconocido'
@@ -669,13 +644,44 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
         total_amount: invoiceData.total_amount || invoiceData.total || 0,
         status: 'pending',
         description: invoiceData.description || `Factura procesada desde WhatsApp`,
-        payment_terms: invoiceData.payment_terms || null
+        payment_terms: invoiceData.payment_terms || null,
+        payment_type: 'bank_transfer', // Default payment type for WhatsApp invoices
+        supplier_id: null // No supplier for one-time expenses
       })
       .select()
       .single()
 
     if (invoiceError) {
       throw new Error(`Error creating invoice: ${invoiceError.message}`)
+    }
+
+    console.log(`✅ Factura creada exitosamente: ${invoice.id}`)
+
+    // Create corresponding expense record automatically
+    // This ensures the expense appears in the expenses view
+    const { data: expense, error: expenseError } = await supabase
+      .from('expenses')
+      .insert({
+        tenant_id: tenantId,
+        vendor: clientName,
+        amount: invoiceData.subtotal || invoiceData.amount || 0,
+        vat_amount: invoiceData.vat_amount || 0,
+        vat_rate: invoiceData.vat_rate || 0,
+        category: 'General',
+        description: invoiceData.description || `Gasto procesado desde WhatsApp`,
+        receipt_number: invoiceNumber,
+        expense_date: invoiceDate,
+        is_deductible: true,
+        invoice_id: invoice.id,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (expenseError) {
+      console.log(`⚠️ Error creating expense (invoice will still be created): ${expenseError.message}`)
+    } else {
+      console.log(`✅ Despesa creada automáticamente: ${expense.id}`)
     }
 
     console.log(`✅ Factura creada: ${invoice.id}`)
@@ -700,23 +706,39 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
 // Process expense data and create expense record
 async function processExpense(expenseData: any, documentId: number, supabase: any, tenantId: number) {
   try {
-    console.log(`💰 Procesando gasto: ${expenseData.description}`)
+    console.log(`💰 Procesando gasto desde WhatsApp: ${expenseData.description || expenseData.vendor_name || 'Sin descripción'}`)
+    console.log(`📊 Datos del gasto:`, JSON.stringify(expenseData, null, 2))
+
+    // Extract data from WhatsApp document (could be invoice or expense format)
+    const vendorName = expenseData.vendor_name || expenseData.vendor || expenseData.client_name || 'Proveedor Desconocido'
+    const amount = expenseData.total_amount || expenseData.total || expenseData.amount || expenseData.subtotal || 0
+    const vatAmount = expenseData.vat_amount || 0
+    const vatRate = expenseData.vat_rate || 0
+    const description = expenseData.description || `Gasto procesado desde WhatsApp - ${vendorName}`
+    const expenseDate = expenseData.expense_date || expenseData.invoice_date || expenseData.date || new Date().toISOString().split('T')[0]
+    const receiptNumber = expenseData.invoice_number || expenseData.receipt_number || `WHATSAPP-${Date.now()}`
+
+    console.log(`📋 Datos extraídos:`)
+    console.log(`   - Proveedor: ${vendorName}`)
+    console.log(`   - Importe: €${amount}`)
+    console.log(`   - Fecha: ${expenseDate}`)
+    console.log(`   - Descripción: ${description}`)
 
     // Create expense record
     const { data: expense, error: expenseError } = await supabase
       .from('expenses')
       .insert({
         tenant_id: tenantId,
-        vendor: expenseData.vendor,
-        amount: expenseData.amount,
-        vat_amount: expenseData.vat_amount,
-        vat_rate: expenseData.vat_rate,
-        category: expenseData.category,
-        description: expenseData.description,
-        receipt_number: expenseData.receipt_number,
-        expense_date: expenseData.expense_date,
-        is_deductible: expenseData.is_deductible,
-        processing_method: 'whatsapp_ai'
+        vendor: vendorName,
+        amount: amount,
+        vat_amount: vatAmount,
+        vat_rate: vatRate,
+        category: 'General',
+        description: description,
+        receipt_number: receiptNumber,
+        expense_date: expenseDate,
+        is_deductible: true,
+        created_at: new Date().toISOString()
       })
       .select()
       .single()
