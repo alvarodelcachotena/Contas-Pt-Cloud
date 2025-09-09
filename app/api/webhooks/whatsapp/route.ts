@@ -14,6 +14,9 @@ import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 
 // Función de verificación de API key
 function verifyApiKey() {
+  // Cargar variables de entorno primero
+  loadEnvStrict()
+
   const apiKey = process.env.GEMINI_API_KEY
   console.log('🔑 Verificando API key de Gemini AI...')
   console.log(`   API key configurada: ${apiKey ? '✅ Sí' : '❌ No'}`)
@@ -24,6 +27,8 @@ function verifyApiKey() {
     console.log(`   Formato correcto: ${apiKey.startsWith('AIza') ? '✅' : '❌'}`)
   }
   if (!apiKey) {
+    console.error('❌ GEMINI_API_KEY no está configurada')
+    console.error('📋 Variables disponibles:', Object.keys(process.env).filter(key => key.includes('GEMINI') || key.includes('GOOGLE')))
     throw new Error('GEMINI_API_KEY no está configurada')
   }
   return true
