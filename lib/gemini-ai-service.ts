@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import { MAIN_COMPANY_CONFIG, isMainCompany } from './main-company-config'
 
 export interface InvoiceData {
     vendor_name: string
@@ -161,11 +162,16 @@ export class DocumentAIService {
         return `
 Analiza detalladamente este documento comercial (factura, recibo o gasto) y extrae TODOS los datos que encuentres.
 
+INFORMACIÓN IMPORTANTE SOBRE LA EMPRESA PRINCIPAL:
+- La empresa principal es: DIAMOND NXT TRADING LDA
+- NIF de la empresa principal: 517124548
+- Cuando encuentres DOS nombres/NIFs en el documento, SIEMPRE extrae los datos del OTRO (no de DIAMOND NXT TRADING LDA)
+
 INSTRUCCIONES ESPECÍFICAS:
 1. Busca y extrae TODOS los números que parezcan importes
 2. Identifica específicamente el NIF/CIF/VAT number (suele empezar con letras como PT)
 3. Busca la fecha (puede estar en varios formatos)
-4. Encuentra el nombre del establecimiento/empresa
+4. Encuentra el nombre del establecimiento/empresa (SIEMPRE el que NO sea DIAMOND NXT TRADING LDA)
 5. Identifica si hay número de factura o recibo
 6. Busca el desglose del IVA (normalmente 23%, 13% o 6% en Portugal)
 7. Determina si es una factura formal ("Fatura") o un recibo simple ("Recibo")
@@ -176,14 +182,15 @@ IMPORTANTE:
 - Los importes deben ser números (convierte strings a números)
 - Si ves "Total", "Subtotal", "IVA" - EXTRÁELOS
 - Extrae CUALQUIER texto que parezca relevante
+- SIEMPRE extrae los datos del proveedor/cliente, NO de DIAMOND NXT TRADING LDA
 
 Responde ÚNICAMENTE en este formato JSON exacto:
 {
   "document_type": "invoice|expense|receipt|other",
   "confidence": 0.95,
   "extracted_data": {
-    "vendor_name": "Nombre exacto del establecimiento",
-    "vendor_nif": "Número fiscal encontrado",
+    "vendor_name": "Nombre exacto del establecimiento (NO DIAMOND NXT TRADING LDA)",
+    "vendor_nif": "Número fiscal encontrado (NO 517124548)",
     "invoice_number": "Número de factura si existe",
     "number": "Mismo número de factura",
     "invoice_date": "YYYY-MM-DD",
@@ -197,7 +204,7 @@ Responde ÚNICAMENTE en este formato JSON exacto:
   "processing_notes": ["Notas sobre lo encontrado o no encontrado"]
 }
 
-RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS INFORMACIÓN.`
+RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS INFORMACIÓN. SIEMPRE extrae los datos del OTRO proveedor/cliente, no de DIAMOND NXT TRADING LDA.`
     }
 
     private getMimeType(filename: string): string {
@@ -225,6 +232,9 @@ RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS 
         if (result.confidence < 0 || result.confidence > 1) {
             result.confidence = 0.5
         }
+
+        // Validar que no se extraigan datos de la empresa principal
+        this.validateNotMainCompany(result)
 
         // Limpiar datos según el tipo
         if (result.document_type === 'invoice') {
@@ -354,6 +364,43 @@ RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS 
     private isValidDate(dateString: string): boolean {
         const date = new Date(dateString)
         return date instanceof Date && !isNaN(date.getTime())
+    }
+
+    private validateNotMainCompany(result: DocumentAnalysisResult) {
+        console.log('🔍 Validando que no se extraigan datos de la empresa principal...')
+
+        // Verificar si se extrajeron datos de la empresa principal
+        if (result.document_type === 'invoice') {
+            const invoiceData = result.extracted_data as InvoiceData
+
+            // Verificar si es la empresa principal
+            if (isMainCompany(invoiceData.vendor_name, invoiceData.vendor_nif)) {
+                console.log('⚠️ Detectados datos de empresa principal, corrigiendo...')
+                console.log(`   Nombre detectado: ${invoiceData.vendor_name}`)
+                console.log(`   NIF detectado: ${invoiceData.vendor_nif}`)
+
+                invoiceData.vendor_name = 'Proveedor Desconocido'
+                invoiceData.vendor_nif = '000000000'
+                result.processing_notes.push('Datos de empresa principal detectados y corregidos')
+            }
+        }
+
+        if (result.document_type === 'expense') {
+            const expenseData = result.extracted_data as ExpenseData
+
+            // Verificar si es la empresa principal
+            if (isMainCompany(expenseData.vendor, expenseData.vendor_nif)) {
+                console.log('⚠️ Detectados datos de empresa principal, corrigiendo...')
+                console.log(`   Nombre detectado: ${expenseData.vendor}`)
+                console.log(`   NIF detectado: ${expenseData.vendor_nif}`)
+
+                expenseData.vendor = 'Proveedor Desconocido'
+                expenseData.vendor_nif = '000000000'
+                result.processing_notes.push('Datos de empresa principal detectados y corregidos')
+            }
+        }
+
+        console.log('✅ Validación de empresa principal completada')
     }
 
     // Método para categorizar automáticamente gastos
