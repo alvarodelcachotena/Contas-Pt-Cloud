@@ -19,7 +19,8 @@ import {
   Cloud,
   Activity,
   Settings,
-  UserCircle
+  UserCircle,
+  Truck
 } from 'lucide-react'
 
 const navigation = [
@@ -28,6 +29,7 @@ const navigation = [
   { name: 'Despesas', href: '/expenses', icon: Receipt },
   { name: 'Pagamentos', href: '/payments', icon: CreditCard },
   { name: 'Clientes', href: '/clients', icon: Users },
+  { name: 'Fornecedores', href: '/suppliers', icon: Truck },
   { name: 'Documentos', href: '/documents', icon: Folder },
   { name: 'Bancos', href: '/banking', icon: Building2 },
   { name: 'IVA', href: '/vat', icon: Calculator },

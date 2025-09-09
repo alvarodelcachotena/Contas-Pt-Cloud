@@ -10,6 +10,7 @@ import { Label } from '@/components/ui/label'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { FormModal } from '@/components/ui/modal'
 import { Search, Plus, Users, Mail, Phone, MapPin, AlertCircle } from 'lucide-react'
+import DeleteAllButton from '@/components/delete-all-button'
 
 interface Client {
   id: number
@@ -142,10 +143,21 @@ export default function ClientsPage() {
                 <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
                 <p className="text-muted-foreground">Gerir informações dos clientes</p>
               </div>
-              <Button onClick={handleOpenModal} className="flex items-center space-x-2">
-                <Plus className="w-4 h-4" />
-                <span>Novo Cliente</span>
-              </Button>
+              <div className="flex items-center space-x-2">
+                <DeleteAllButton
+                  entityName="cliente"
+                  entityNamePlural="clientes"
+                  apiEndpoint="/api/clients/delete-all"
+                  onSuccess={() => {
+                    // Refresh the clients list
+                    queryClient.invalidateQueries({ queryKey: ['/api/clients'] })
+                  }}
+                />
+                <Button onClick={handleOpenModal} className="flex items-center space-x-2">
+                  <Plus className="w-4 h-4" />
+                  <span>Novo Cliente</span>
+                </Button>
+              </div>
             </div>
 
             <Card>

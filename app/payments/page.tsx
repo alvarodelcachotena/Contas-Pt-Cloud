@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { FormModal } from "@/components/ui/modal"
 import { Search, Plus, Download, CreditCard, AlertCircle, Eye } from "lucide-react"
+import DeleteAllButton from "@/components/delete-all-button"
 
 interface Payment {
   id: number
@@ -306,13 +307,24 @@ export default function PaymentsPage() {
                 <h1 className="text-3xl font-bold text-foreground">Pagamentos</h1>
                 <p className="text-gray-600 mt-1">Gestão de pagamentos e recebimentos</p>
               </div>
-              <Button
-                className="flex items-center space-x-2"
-                onClick={handleOpenModal}
-              >
-                <Plus className="w-4 h-4" />
-                <span>Registar Pagamento</span>
-              </Button>
+              <div className="flex items-center space-x-2">
+                <DeleteAllButton
+                  entityName="pagamento"
+                  entityNamePlural="pagamentos"
+                  apiEndpoint="/api/payments/delete-all"
+                  onSuccess={() => {
+                    // Refresh the payments list
+                    queryClient.invalidateQueries({ queryKey: ['/api/payments'] })
+                  }}
+                />
+                <Button
+                  className="flex items-center space-x-2"
+                  onClick={handleOpenModal}
+                >
+                  <Plus className="w-4 h-4" />
+                  <span>Registar Pagamento</span>
+                </Button>
+              </div>
             </div>
 
             <div className="flex items-center space-x-4">

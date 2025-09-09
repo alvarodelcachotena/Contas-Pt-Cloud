@@ -65,12 +65,12 @@ export default function CloudDrivesPage() {
 
   // Auto-activate Dropbox manager when Dropbox integration is available
   useEffect(() => {
-    const dropboxIntegration = integrations.find(integration => 
-      integration.provider === 'dropbox' && 
-      integration.status === 'connected' && 
+    const dropboxIntegration = integrations.find(integration =>
+      integration.provider === 'dropbox' &&
+      integration.status === 'connected' &&
       integration.access_token
     )
-    
+
     if (dropboxIntegration && !activeDropboxIntegration) {
       setActiveDropboxIntegration(dropboxIntegration)
     } else if (!dropboxIntegration && activeDropboxIntegration) {
@@ -633,80 +633,80 @@ export default function CloudDrivesPage() {
                       </Button>
                     </div>
                   ) : (
-                <div className="space-y-4">
-                  {cloudDrives.map((drive) => (
-                    <div key={drive.id} className="flex items-center justify-between p-4 border rounded-lg">
-                      <div className="flex items-center space-x-4">
-                        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
-                          <Cloud className="w-6 h-6 text-blue-600" />
-                        </div>
-                        <div>
-                          <div className="font-medium">{drive.name}</div>
-                          <div className="text-sm text-gray-500">{drive.folderPath}</div>
-                          <div className="text-xs text-gray-400">
-                            Última sincronização: {new Date(drive.lastSync).toLocaleString('pt-PT')}
+                    <div className="space-y-4">
+                      {cloudDrives.map((drive) => (
+                        <div key={drive.id} className="flex items-center justify-between p-4 border rounded-lg">
+                          <div className="flex items-center space-x-4">
+                            <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+                              <Cloud className="w-6 h-6 text-blue-600" />
+                            </div>
+                            <div>
+                              <div className="font-medium">{drive.name}</div>
+                              <div className="text-sm text-gray-500">{drive.folderPath}</div>
+                              <div className="text-xs text-gray-400">
+                                Última sincronização: {new Date(drive.lastSync).toLocaleString('pt-PT')}
+                              </div>
+                            </div>
+                          </div>
+                          <div className="flex items-center space-x-3">
+                            <div className="text-right">
+                              <Badge className={
+                                drive.status === 'connected' ? 'bg-green-100 text-green-800' :
+                                  drive.status === 'error' ? 'bg-red-100 text-red-800' :
+                                    drive.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
+                                      'bg-gray-100 text-gray-800'
+                              }>
+                                {drive.status === 'connected' ? 'Conectado' :
+                                  drive.status === 'error' ? 'Erro' :
+                                    drive.status === 'pending' ? 'Pendente' :
+                                      'Desconhecido'}
+                              </Badge>
+                              <div className="text-sm text-gray-500 mt-1">{drive.filesCount} arquivos</div>
+                            </div>
+                            <div className="flex items-center space-x-2">
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleTestProcessing(integrations.find(i => i.id === drive.integrationId)!)}
+                                className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center space-x-1"
+                              >
+                                <Play className="w-4 h-4" />
+                                <span>Testar</span>
+                              </Button>
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleSelectFolder(integrations.find(i => i.id === drive.integrationId)!)}
+                                className="text-green-600 hover:text-green-700 hover:bg-green-50 flex items-center space-x-1"
+                              >
+                                <FolderOpen className="w-4 h-4" />
+                                <span>Pasta</span>
+                              </Button>
+                              {drive.name.toLowerCase().includes('dropbox') && (
+                                <Button
+                                  variant="outline"
+                                  size="sm"
+                                  onClick={() => openDropboxManager(integrations.find(i => i.id === drive.integrationId)!)}
+                                  className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 flex items-center space-x-1"
+                                >
+                                  <Settings className="w-4 h-4" />
+                                  <span>Gestionar</span>
+                                </Button>
+                              )}
+                              <Button
+                                variant="outline"
+                                size="sm"
+                                onClick={() => handleDisconnectProvider(drive.integrationId)}
+                                className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center space-x-1"
+                              >
+                                <X className="w-4 h-4" />
+                                <span>Desconectar</span>
+                              </Button>
+                            </div>
                           </div>
                         </div>
-                      </div>
-                      <div className="flex items-center space-x-3">
-                        <div className="text-right">
-                          <Badge className={
-                            drive.status === 'connected' ? 'bg-green-100 text-green-800' :
-                              drive.status === 'error' ? 'bg-red-100 text-red-800' :
-                                drive.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
-                                  'bg-gray-100 text-gray-800'
-                          }>
-                            {drive.status === 'connected' ? 'Conectado' :
-                              drive.status === 'error' ? 'Erro' :
-                                drive.status === 'pending' ? 'Pendente' :
-                                  'Desconhecido'}
-                          </Badge>
-                          <div className="text-sm text-gray-500 mt-1">{drive.filesCount} arquivos</div>
-                        </div>
-                        <div className="flex items-center space-x-2">
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleTestProcessing(integrations.find(i => i.id === drive.integrationId)!)}
-                            className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center space-x-1"
-                          >
-                            <Play className="w-4 h-4" />
-                            <span>Testar</span>
-                          </Button>
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleSelectFolder(integrations.find(i => i.id === drive.integrationId)!)}
-                            className="text-green-600 hover:text-green-700 hover:bg-green-50 flex items-center space-x-1"
-                          >
-                            <FolderOpen className="w-4 h-4" />
-                            <span>Pasta</span>
-                          </Button>
-                          {drive.name.toLowerCase().includes('dropbox') && (
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => openDropboxManager(integrations.find(i => i.id === drive.integrationId)!)}
-                              className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 flex items-center space-x-1"
-                            >
-                              <Settings className="w-4 h-4" />
-                              <span>Gestionar</span>
-                            </Button>
-                          )}
-                          <Button
-                            variant="outline"
-                            size="sm"
-                            onClick={() => handleDisconnectProvider(drive.integrationId)}
-                            className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center space-x-1"
-                          >
-                            <X className="w-4 h-4" />
-                            <span>Desconectar</span>
-                          </Button>
-                        </div>
-                      </div>
+                      ))}
                     </div>
-                  ))}
-                </div>
                   )}
                 </>
               )}

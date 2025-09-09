@@ -1,0 +1,52 @@
+import fs from 'fs'
+import path from 'path'
+import { fileURLToPath } from 'url'
+
+const __filename = fileURLToPath(import.meta.url)
+const __dirname = path.dirname(__filename)
+
+console.log('🏗️  Suppliers Table Creation Guide')
+console.log('=====================================')
+console.log('')
+console.log('📋 Para crear la tabla de fornecedores, sigue estos pasos:')
+console.log('')
+console.log('1. 🌐 Ve a tu dashboard de Supabase:')
+console.log('   https://supabase.com/dashboard')
+console.log('')
+console.log('2. 📂 Selecciona tu proyecto')
+console.log('')
+console.log('3. 🔧 Ve a la sección "SQL Editor" en el menú lateral')
+console.log('')
+console.log('4. 📄 Copia y pega el siguiente SQL:')
+console.log('')
+console.log('=' * 60)
+
+// Read and display the SQL file
+const sqlPath = path.join(__dirname, 'create-suppliers-table.sql')
+const sqlContent = fs.readFileSync(sqlPath, 'utf8')
+
+console.log(sqlContent)
+
+console.log('=' * 60)
+console.log('')
+console.log('5. ▶️  Haz clic en "Run" para ejecutar el SQL')
+console.log('')
+console.log('6. ✅ Verifica que todas las tablas se crearon correctamente')
+console.log('')
+console.log('📋 Lo que se creará:')
+console.log('   • Tabla "suppliers" con todas las columnas necesarias')
+console.log('   • Índices para mejor rendimiento')
+console.log('   • Políticas RLS para seguridad multi-tenant')
+console.log('   • Columna "payment_type" añadida a la tabla "invoices"')
+console.log('   • Columna "supplier_id" añadida a la tabla "invoices"')
+console.log('   • Columna "invoice_id" añadida a la tabla "expenses"')
+console.log('   • Trigger para crear automáticamente expenses desde invoices')
+console.log('   • Trigger updated_at para la tabla suppliers')
+console.log('')
+console.log('✨ Después de ejecutar el SQL podrás:')
+console.log('   • Crear fornecedores en la página /suppliers')
+console.log('   • Seleccionar tipos de pago al crear facturas')
+console.log('   • Vincular facturas con fornecedores')
+console.log('   • Sincronizar automáticamente facturas con despesas')
+console.log('')
+console.log('🚀 ¡Una vez completado, podrás usar todas las nuevas funcionalidades!')

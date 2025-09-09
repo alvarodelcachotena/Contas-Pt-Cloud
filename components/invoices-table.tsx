@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { FormModal } from '@/components/ui/modal'
 import { Search, Plus, FileText, Eye, AlertCircle, Download } from 'lucide-react'
+import DeleteAllButton from './delete-all-button'
 
 interface Invoice {
   id: number
@@ -32,6 +33,8 @@ interface Invoice {
   status: string
   description: string | null
   paymentTerms: string | null
+  paymentType: string
+  supplierId: number | null
   createdAt: string
 }
 
@@ -41,6 +44,23 @@ interface Client {
   email: string | null
   taxId: string | null
   createdAt: string
+}
+
+interface Supplier {
+  id: number
+  name: string
+  tax_id: string | null
+  email: string | null
+  phone: string | null
+  address: string | null
+  postal_code: string | null
+  city: string | null
+  contact_person: string | null
+  payment_terms: string | null
+  notes: string | null
+  is_active: boolean
+  created_at: string
+  updated_at: string
 }
 
 export default function InvoicesTable() {
@@ -55,7 +75,9 @@ export default function InvoicesTable() {
     clientTaxId: '',
     amount: '',
     vatRate: '23',
-    description: ''
+    description: '',
+    paymentType: 'bank_transfer',
+    supplierId: ''
   })
 
   const queryClient = useQueryClient()
@@ -82,6 +104,19 @@ export default function InvoicesTable() {
         }
       })
       if (!response.ok) throw new Error('Failed to fetch clients')
+      return response.json()
+    }
+  })
+
+  const { data: suppliers } = useQuery<Supplier[]>({
+    queryKey: ['/api/suppliers'],
+    queryFn: async () => {
+      const response = await fetch('/api/suppliers', {
+        headers: {
+          'x-tenant-id': '1'
+        }
+      })
+      if (!response.ok) throw new Error('Failed to fetch suppliers')
       return response.json()
     }
   })
@@ -141,7 +176,9 @@ export default function InvoicesTable() {
       clientTaxId: '',
       amount: '',
       vatRate: '23',
-      description: ''
+      description: '',
+      paymentType: 'bank_transfer',
+      supplierId: ''
     })
     setError(null) // Limpiar errores anteriores
     setClientFound(null) // Limpiar cliente encontrado
@@ -156,7 +193,9 @@ export default function InvoicesTable() {
       clientTaxId: '',
       amount: '',
       vatRate: '23',
-      description: ''
+      description: '',
+      paymentType: 'bank_transfer',
+      supplierId: ''
     })
     setError(null) // Limpiar errores al cerrar
     setClientFound(null) // Limpiar cliente encontrado
@@ -219,7 +258,9 @@ export default function InvoicesTable() {
         description: formData.description || null,
         issueDate: new Date().toISOString().split('T')[0],
         dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 days
-        status: 'pending'
+        status: 'pending',
+        paymentType: formData.paymentType,
+        supplierId: formData.supplierId ? Number(formData.supplierId) : null
       }
 
       const response = await fetch('/api/invoices', {
@@ -338,13 +379,24 @@ export default function InvoicesTable() {
           <h1 className="text-3xl font-bold text-foreground">Faturas</h1>
           <p className="text-muted-foreground mt-1">Gestão e emissão de faturas</p>
         </div>
-        <Button
-          className="flex items-center space-x-2"
-          onClick={handleOpenModal}
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nova Fatura</span>
-        </Button>
+        <div className="flex items-center space-x-2">
+          <DeleteAllButton
+            entityName="fatura"
+            entityNamePlural="faturas"
+            apiEndpoint="/api/invoices/delete-all"
+            onSuccess={() => {
+              // Refresh the invoices list
+              queryClient.invalidateQueries({ queryKey: ['/api/invoices'] })
+            }}
+          />
+          <Button
+            className="flex items-center space-x-2"
+            onClick={handleOpenModal}
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nova Fatura</span>
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center space-x-4">
@@ -388,6 +440,7 @@ export default function InvoicesTable() {
               <TableHead>NIF</TableHead>
               <TableHead>Valor</TableHead>
               <TableHead>Total</TableHead>
+              <TableHead>Tipo Pagamento</TableHead>
               <TableHead>Data Emissão</TableHead>
               <TableHead>Vencimento</TableHead>
               <TableHead>Estado</TableHead>
@@ -397,7 +450,7 @@ export default function InvoicesTable() {
           <TableBody>
             {filteredInvoices.length === 0 ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-8 text-gray-500">
+                <TableCell colSpan={10} className="text-center py-8 text-gray-500">
                   Nenhuma fatura encontrada
                 </TableCell>
               </TableRow>
@@ -410,6 +463,15 @@ export default function InvoicesTable() {
                   <TableCell>€{parseFloat(invoice.amount.toString()).toFixed(2)}</TableCell>
                   <TableCell className="font-medium">
                     €{parseFloat(invoice.totalAmount.toString()).toFixed(2)}
+                  </TableCell>
+                  <TableCell>
+                    <Badge variant={
+                      invoice.paymentType === 'bank_transfer' ? 'default' :
+                      invoice.paymentType === 'card' ? 'secondary' : 'outline'
+                    }>
+                      {invoice.paymentType === 'bank_transfer' ? 'Transferência' :
+                       invoice.paymentType === 'card' ? 'Cartão' : 'Crédito'}
+                    </Badge>
                   </TableCell>
                   <TableCell>
                     {new Date(invoice.issueDate).toLocaleDateString('pt-PT')}
@@ -591,6 +653,47 @@ export default function InvoicesTable() {
               onChange={handleInputChange}
               placeholder="Descrição dos serviços ou produtos"
             />
+          </div>
+
+          {/* Payment Type and Supplier Selection */}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div>
+              <Label htmlFor="paymentType" className="block mb-1">
+                Tipo de Pagamento *
+              </Label>
+              <select
+                id="paymentType"
+                name="paymentType"
+                value={formData.paymentType}
+                onChange={handleInputChange}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+                required
+              >
+                <option value="bank_transfer">Transferência Bancária</option>
+                <option value="card">Cartão</option>
+                <option value="supplier_credit">Crédito de Fornecedor</option>
+              </select>
+            </div>
+
+            <div>
+              <Label htmlFor="supplierId" className="block mb-1">
+                Fornecedor
+              </Label>
+              <select
+                id="supplierId"
+                name="supplierId"
+                value={formData.supplierId}
+                onChange={handleInputChange}
+                className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
+              >
+                <option value="">Selecionar fornecedor (opcional)</option>
+                {suppliers?.map((supplier) => (
+                  <option key={supplier.id} value={supplier.id}>
+                    {supplier.name} {supplier.tax_id && `(${supplier.tax_id})`}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
 
           {/* Preview do Cálculo */}

@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { FormModal } from "@/components/ui/modal"
 import { Search, Plus, Download, FileText, AlertCircle, Eye, Trash2, Upload, CheckCircle, Clock, XCircle } from "lucide-react"
+import DeleteAllButton from "@/components/delete-all-button"
 
 interface Document {
     id: number
@@ -340,13 +341,24 @@ export default function DocumentsPage() {
                                 <h1 className="text-3xl font-bold text-foreground">Documentos</h1>
                                 <p className="text-gray-600 mt-1">Gestão de documentos e arquivos</p>
                             </div>
-                            <Button
-                                className="flex items-center space-x-2"
-                                onClick={handleOpenModal}
-                            >
-                                <Upload className="w-4 h-4" />
-                                <span>Novo Documento</span>
-                            </Button>
+                            <div className="flex items-center space-x-2">
+                                <DeleteAllButton
+                                    entityName="documento"
+                                    entityNamePlural="documentos"
+                                    apiEndpoint="/api/documents/delete-all"
+                                    onSuccess={() => {
+                                        // Refresh the documents list
+                                        queryClient.invalidateQueries({ queryKey: ['/api/documents'] })
+                                    }}
+                                />
+                                <Button
+                                    className="flex items-center space-x-2"
+                                    onClick={handleOpenModal}
+                                >
+                                    <Upload className="w-4 h-4" />
+                                    <span>Novo Documento</span>
+                                </Button>
+                            </div>
                         </div>
 
                         <div className="flex items-center space-x-4">

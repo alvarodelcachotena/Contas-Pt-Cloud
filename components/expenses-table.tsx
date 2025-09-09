@@ -16,6 +16,7 @@ import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { FormModal } from '@/components/ui/modal'
 import { Search, Plus, FileText, AlertCircle, Download, Eye } from 'lucide-react'
+import DeleteAllButton from './delete-all-button'
 
 interface Expense {
   id: number
@@ -269,13 +270,24 @@ export default function ExpensesTable() {
           <h1 className="text-3xl font-bold text-foreground">Despesas</h1>
           <p className="text-muted-foreground mt-1">Gestão e controlo de despesas</p>
         </div>
-        <Button
-          onClick={handleOpenModal}
-          className="flex items-center space-x-2"
-        >
-          <Plus className="w-4 h-4" />
-          <span>Nova Despesa</span>
-        </Button>
+        <div className="flex items-center space-x-2">
+          <DeleteAllButton
+            entityName="despesa"
+            entityNamePlural="despesas"
+            apiEndpoint="/api/expenses/delete-all"
+            onSuccess={() => {
+              // Refresh the expenses list
+              queryClient.invalidateQueries({ queryKey: ['/api/expenses'] })
+            }}
+          />
+          <Button
+            onClick={handleOpenModal}
+            className="flex items-center space-x-2"
+          >
+            <Plus className="w-4 h-4" />
+            <span>Nova Despesa</span>
+          </Button>
+        </div>
       </div>
 
       <div className="flex items-center space-x-4">
