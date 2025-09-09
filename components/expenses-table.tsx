@@ -193,10 +193,10 @@ export default function ExpensesTable() {
 
       // Generate CSV content
       const csvContent = [
-        ['Fornecedor', 'Valor', 'IVA', 'Taxa IVA', 'Categoria', 'Data', 'Dedutível', 'Descrição', 'Nº Recibo'].join(','),
+        ['Fornecedor', 'Total', 'IVA', 'Taxa IVA', 'Categoria', 'Data', 'Dedutível', 'Descrição', 'Nº Recibo'].join(','),
         ...expenses.map((expense) => [
           `"${expense.vendor}"`,
-          expense.amount,
+          (expense.amount + (expense.vatAmount || 0)).toFixed(2),
           expense.vatAmount || 0,
           expense.vatRate || 0,
           `"${expense.category}"`,
@@ -315,7 +315,7 @@ export default function ExpensesTable() {
           <TableHeader>
             <TableRow>
               <TableHead>Fornecedor</TableHead>
-              <TableHead>Valor</TableHead>
+              <TableHead>Total</TableHead>
               <TableHead>IVA</TableHead>
               <TableHead>Categoria</TableHead>
               <TableHead>Data</TableHead>
@@ -334,7 +334,7 @@ export default function ExpensesTable() {
               filteredExpenses.map((expense) => (
                 <TableRow key={expense.id}>
                   <TableCell className="font-medium">{expense.vendor}</TableCell>
-                  <TableCell>€{parseFloat(expense.amount.toString()).toFixed(2)}</TableCell>
+                  <TableCell>€{parseFloat((expense.amount + (expense.vatAmount || 0)).toString()).toFixed(2)}</TableCell>
                   <TableCell>
                     {expense.vatAmount ? (
                       <span>€{parseFloat(expense.vatAmount.toString()).toFixed(2)} ({expense.vatRate}%)</span>
@@ -373,7 +373,7 @@ export default function ExpensesTable() {
 
       <div className="text-sm text-gray-500">
         Total: {filteredExpenses.length} despesa(s) •
-        Valor Total: €{filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()), 0).toFixed(2)}
+        Valor Total: €{filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()) + parseFloat((exp.vatAmount || 0).toString()), 0).toFixed(2)}
       </div>
 
       {/* Modal de Nova Despesa */}

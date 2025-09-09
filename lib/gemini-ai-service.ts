@@ -1,4 +1,4 @@
-import OpenAI from 'openai'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 
 export interface InvoiceData {
     vendor_name: string
@@ -47,57 +47,74 @@ export interface DocumentAnalysisResult {
 }
 
 export class DocumentAIService {
-    private openai: OpenAI
+    private genAI: GoogleGenerativeAI
 
     constructor() {
-        const apiKey = process.env.OPENAI_API_KEY
-        console.log('🔧 Inicializando DocumentAIService')
+        const apiKey = process.env.GEMINI_API_KEY
+        console.log('🔧 Inicializando DocumentAIService con Gemini AI')
         console.log(`   API key configurada: ${apiKey ? '✅ Sí' : '❌ No'}`)
         if (apiKey) {
             console.log(`   Longitud: ${apiKey.length} caracteres`)
             console.log(`   Empieza con: ${apiKey.substring(0, 10)}...`)
             console.log(`   Termina con: ...${apiKey.substring(apiKey.length - 10)}`)
-            console.log(`   Formato correcto: ${apiKey.startsWith('sk-') ? '✅' : '❌'}`)
         }
         if (!apiKey) {
-            throw new Error('OPENAI_API_KEY no está configurada')
+            throw new Error('GEMINI_API_KEY no está configurada')
         }
 
-        this.openai = new OpenAI({ apiKey })
+        this.genAI = new GoogleGenerativeAI(apiKey)
     }
 
-    async analyzeDocument(imageBuffer: Buffer, filename: string): Promise<DocumentAnalysisResult> {
+    async analyzeDocument(fileBuffer: Buffer, filename: string, mimeType?: string): Promise<DocumentAnalysisResult> {
         try {
-            console.log(`🔍 Analizando documento: ${filename}`)
-            console.log(`📊 Tamaño del buffer: ${imageBuffer.length} bytes`)
+            console.log(`🔍 Analizando documento con Gemini AI: ${filename}`)
+            console.log(`📊 Tamaño del buffer: ${fileBuffer.length} bytes`)
 
-            const base64Image = imageBuffer.toString('base64')
-            console.log(`📊 Tamaño de la imagen en base64: ${base64Image.length} caracteres`)
+            // Convertir buffer a base64
+            const base64Data = fileBuffer.toString('base64')
 
-            const response = await this.openai.chat.completions.create({
-                model: "gpt-4o",
-                messages: [
-                    {
-                        role: "user",
-                        content: [
-                            { type: "text", text: this.getPrompt() },
-                            {
-                                type: "image_url",
-                                image_url: {
-                                    url: `data:${this.getMimeType(filename)};base64,${base64Image}`
-                                }
-                            }
-                        ]
-                    }
-                ],
-                max_tokens: 4096
+            // Determinar el tipo MIME - usar el proporcionado o detectar por extensión
+            const detectedMimeType = mimeType || this.getMimeType(filename)
+            console.log(`📄 Tipo MIME detectado: ${detectedMimeType}`)
+            console.log(`📄 MIME type proporcionado: ${mimeType || 'No proporcionado'}`)
+            console.log(`📄 MIME type por extensión: ${this.getMimeType(filename)}`)
+
+            // Crear el modelo Gemini
+            const model = this.genAI.getGenerativeModel({
+                model: "gemini-1.5-flash",
+                generationConfig: {
+                    temperature: 0.1,
+                    topK: 32,
+                    topP: 1,
+                    maxOutputTokens: 4096,
+                }
             })
 
-            console.log('✅ Respuesta de OpenAI recibida')
-            return this.processResponse(response)
+            // Preparar el prompt
+            const prompt = this.getPrompt()
+
+            // Crear la parte de la imagen/archivo
+            const fileData = {
+                inlineData: {
+                    data: base64Data,
+                    mimeType: detectedMimeType
+                }
+            }
+
+            console.log(`🤖 Enviando documento a Gemini AI...`)
+
+            // Generar contenido
+            const result = await model.generateContent([prompt, fileData])
+            const response = await result.response
+            const text = response.text()
+
+            console.log('✅ Respuesta de Gemini AI recibida')
+            console.log(`📝 Longitud de respuesta: ${text.length} caracteres`)
+
+            return this.processResponse(text)
 
         } catch (error) {
-            console.error('❌ Error en análisis:', error)
+            console.error('❌ Error en análisis con Gemini AI:', error)
             if (error instanceof Error) {
                 console.error('Mensaje:', error.message)
                 console.error('Stack:', error.stack)
@@ -105,20 +122,15 @@ export class DocumentAIService {
             throw error
         }
     }
-    processResponse(response: OpenAI.Chat.Completions.ChatCompletion): DocumentAnalysisResult {
-        try {
-            console.log('🔄 Procesando respuesta de OpenAI:', response.choices[0]?.message?.content)
 
-            // Extraer el texto de la respuesta
-            const text = response.choices[0]?.message?.content
-            if (!text) {
-                throw new Error('Respuesta vacía de OpenAI')
-            }
+    private processResponse(text: string): DocumentAnalysisResult {
+        try {
+            console.log('🔄 Procesando respuesta de Gemini AI')
 
             // Intentar extraer JSON de la respuesta
             const jsonMatch = text.match(/\{[\s\S]*\}/)
             if (!jsonMatch) {
-                throw new Error('No se pudo extraer JSON de la respuesta')
+                throw new Error('No se pudo extraer JSON de la respuesta de Gemini')
             }
 
             // Parsear el JSON
@@ -126,8 +138,11 @@ export class DocumentAIService {
 
             // Validar el resultado
             if (!analysisResult.document_type || !analysisResult.confidence) {
-                throw new Error('Respuesta incompleta de OpenAI')
+                throw new Error('Respuesta incompleta de Gemini AI')
             }
+
+            // Validar y limpiar datos
+            this.validateAndCleanData(analysisResult)
 
             console.log('✅ Respuesta procesada exitosamente:', {
                 type: analysisResult.document_type,
@@ -138,63 +153,66 @@ export class DocumentAIService {
 
         } catch (error) {
             console.error('❌ Error procesando respuesta:', error)
-            throw new Error(`Error procesando respuesta de OpenAI: ${error instanceof Error ? error.message : 'Error desconocido'}`)
+            throw new Error(`Error procesando respuesta de Gemini AI: ${error instanceof Error ? error.message : 'Error desconocido'}`)
         }
     }
 
     private getPrompt(): string {
         return `
-            Analiza detalladamente esta imagen de un documento comercial (factura o recibo) y extrae TODOS los datos que encuentres.
+Analiza detalladamente este documento comercial (factura, recibo o gasto) y extrae TODOS los datos que encuentres.
 
-            INSTRUCCIONES ESPECÍFICAS:
-            1. Busca y extrae TODOS los números que parezcan importes
-            2. Identifica específicamente el NIF/CIF/VAT number (suele empezar con letras como PT)
-            3. Busca la fecha (puede estar en varios formatos)
-            4. Encuentra el nombre del establecimiento/empresa
-            5. Identifica si hay número de factura o recibo
-            6. Busca el desglose del IVA (normalmente 23%, 13% o 6% en Portugal)
-            7. Determina si es una factura formal ("Fatura") o un recibo simple ("Recibo")
+INSTRUCCIONES ESPECÍFICAS:
+1. Busca y extrae TODOS los números que parezcan importes
+2. Identifica específicamente el NIF/CIF/VAT number (suele empezar con letras como PT)
+3. Busca la fecha (puede estar en varios formatos)
+4. Encuentra el nombre del establecimiento/empresa
+5. Identifica si hay número de factura o recibo
+6. Busca el desglose del IVA (normalmente 23%, 13% o 6% en Portugal)
+7. Determina si es una factura formal ("Fatura") o un recibo simple ("Recibo")
 
-            IMPORTANTE:
-            - NO INVENTES DATOS. Si no encuentras algo, déjalo vacío o null
-            - Busca el NIF en TODA la imagen (suele estar arriba o abajo)
-            - Los importes deben ser números (convierte strings a números)
-            - Si ves "Total", "Subtotal", "IVA" - EXTRÁELOS
-            - Extrae CUALQUIER texto que parezca relevante
+IMPORTANTE:
+- NO INVENTES DATOS. Si no encuentras algo, déjalo vacío o null
+- Busca el NIF en TODA la imagen (suele estar arriba o abajo)
+- Los importes deben ser números (convierte strings a números)
+- Si ves "Total", "Subtotal", "IVA" - EXTRÁELOS
+- Extrae CUALQUIER texto que parezca relevante
 
-            Responde en este formato JSON exacto:
-            {
-              "document_type": "invoice|expense|receipt|other",
-              "confidence": 0.95,
-              "extracted_data": {
-                "vendor_name": "Nombre exacto del establecimiento",
-                "vendor_nif": "Número fiscal encontrado",
-                "invoice_number": "Número de factura si existe",
-                "number": "Mismo número de factura",
-                "invoice_date": "YYYY-MM-DD",
-                "subtotal": 0.00,
-                "vat_rate": 23,
-                "vat_amount": 0.00,
-                "total_amount": 0.00,
-                "description": "Descripción de los productos/servicios",
-                "category": "restaurante|transporte|oficina|otros"
-              },
-              "processing_notes": ["Notas sobre lo encontrado o no encontrado"]
-            }
+Responde ÚNICAMENTE en este formato JSON exacto:
+{
+  "document_type": "invoice|expense|receipt|other",
+  "confidence": 0.95,
+  "extracted_data": {
+    "vendor_name": "Nombre exacto del establecimiento",
+    "vendor_nif": "Número fiscal encontrado",
+    "invoice_number": "Número de factura si existe",
+    "number": "Mismo número de factura",
+    "invoice_date": "YYYY-MM-DD",
+    "subtotal": 0.00,
+    "vat_rate": 23,
+    "vat_amount": 0.00,
+    "total_amount": 0.00,
+    "description": "Descripción de los productos/servicios",
+    "category": "restaurante|transporte|oficina|otros"
+  },
+  "processing_notes": ["Notas sobre lo encontrado o no encontrado"]
+}
 
-            RECUERDA: Extrae TODOS los números y texto que veas en la imagen. NO OMITAS INFORMACIÓN.`
+RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS INFORMACIÓN.`
     }
 
     private getMimeType(filename: string): string {
         const ext = filename.toLowerCase().split('.').pop()
         const mimeTypes: { [key: string]: string } = {
+            'pdf': 'application/pdf',
             'jpg': 'image/jpeg',
             'jpeg': 'image/jpeg',
             'png': 'image/png',
             'gif': 'image/gif',
-            'webp': 'image/webp'
+            'webp': 'image/webp',
+            'bmp': 'image/bmp',
+            'tiff': 'image/tiff'
         }
-        return mimeTypes[ext || ''] || 'image/jpeg'
+        return mimeTypes[ext || ''] || 'application/pdf'
     }
 
     private validateAndCleanData(result: DocumentAnalysisResult) {
@@ -214,7 +232,6 @@ export class DocumentAIService {
 
             // Asegurar que los campos obligatorios existan
             if (!invoiceData.invoice_number) {
-                // Generar un número de factura temporal si no existe
                 const timestamp = new Date().getTime()
                 invoiceData.invoice_number = `AUTO-${timestamp}`
                 result.processing_notes.push('Se generó un número de factura automático')
@@ -254,7 +271,6 @@ export class DocumentAIService {
                 const totalAmountStr = invoiceData.total_amount as string
                 invoiceData.total_amount = parseFloat(totalAmountStr.replace(/[^\d.,]/g, '').replace(',', '.')) || 0
             } else if (typeof invoiceData.total_amount !== 'number') {
-                // Si no hay total, intentar calcularlo del subtotal + IVA
                 invoiceData.total_amount = (invoiceData.subtotal || 0) + (invoiceData.vat_amount || 0)
                 result.processing_notes.push('Total calculado automáticamente')
             }

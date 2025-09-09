@@ -436,13 +436,11 @@ export default function InvoicesTable() {
           <TableHeader>
             <TableRow>
               <TableHead>Nombre del archivo</TableHead>
-              <TableHead>Cliente</TableHead>
               <TableHead>NIF</TableHead>
-              <TableHead>Valor</TableHead>
+              <TableHead>IVA</TableHead>
               <TableHead>Total</TableHead>
               <TableHead>Tipo Pagamento</TableHead>
               <TableHead>Data Emissão</TableHead>
-              <TableHead>Vencimento</TableHead>
               <TableHead>Estado</TableHead>
               <TableHead>Ações</TableHead>
             </TableRow>
@@ -458,26 +456,22 @@ export default function InvoicesTable() {
               filteredInvoices.map((invoice) => (
                 <TableRow key={invoice.id}>
                   <TableCell className="font-medium">{invoice.number}</TableCell>
-                  <TableCell>{invoice.clientName}</TableCell>
                   <TableCell>{invoice.clientTaxId || '-'}</TableCell>
-                  <TableCell>€{parseFloat(invoice.amount.toString()).toFixed(2)}</TableCell>
+                  <TableCell>€{parseFloat(invoice.vatAmount.toString()).toFixed(2)} ({invoice.vatRate}%)</TableCell>
                   <TableCell className="font-medium">
                     €{parseFloat(invoice.totalAmount.toString()).toFixed(2)}
                   </TableCell>
                   <TableCell>
                     <Badge variant={
                       invoice.paymentType === 'bank_transfer' ? 'default' :
-                      invoice.paymentType === 'card' ? 'secondary' : 'outline'
+                        invoice.paymentType === 'card' ? 'secondary' : 'outline'
                     }>
                       {invoice.paymentType === 'bank_transfer' ? 'Transferência' :
-                       invoice.paymentType === 'card' ? 'Cartão' : 'Crédito'}
+                        invoice.paymentType === 'card' ? 'Cartão' : 'Crédito'}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     {new Date(invoice.issueDate).toLocaleDateString('pt-PT')}
-                  </TableCell>
-                  <TableCell>
-                    {new Date(invoice.dueDate).toLocaleDateString('pt-PT')}
                   </TableCell>
                   <TableCell>
                     <Badge variant={getStatusColor(invoice.status)}>

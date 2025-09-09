@@ -84,18 +84,21 @@ export async function GET(request: NextRequest) {
     const totalRevenue = revenueData?.reduce((sum, invoice) =>
       sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0) || 0
 
-    // 7. Expenses calculation (sum of all expense amounts)
+    // 7. Expenses calculation (sum of all expense amounts + VAT)
     const { data: expenseData, error: expenseAmountError } = await supabase
       .from('expenses')
-      .select('amount, is_deductible')
+      .select('amount, vat_amount, is_deductible')
       .eq('tenant_id', tenantId)
 
     if (expenseAmountError) {
       console.error('❌ Error fetching expense amounts:', expenseAmountError)
     }
 
-    const totalExpenseAmount = expenseData?.reduce((sum, expense) =>
-      sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0) || 0
+    const totalExpenseAmount = expenseData?.reduce((sum, expense) => {
+      const baseAmount = parseFloat(expense.amount?.toString() || '0') || 0
+      const vatAmount = parseFloat(expense.vat_amount?.toString() || '0') || 0
+      return sum + baseAmount + vatAmount
+    }, 0) || 0
 
     // 8. Current month metrics
     const { data: currentMonthInvoices, error: monthInvoicesError } = await supabase
@@ -114,7 +117,7 @@ export async function GET(request: NextRequest) {
 
     const { data: currentMonthExpenses, error: monthExpensesError } = await supabase
       .from('expenses')
-      .select('amount')
+      .select('amount, vat_amount')
       .eq('tenant_id', tenantId)
       .gte('expense_date', `${currentMonth}-01`)
       .lte('expense_date', `${currentMonth}-31`)
@@ -123,8 +126,11 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error fetching current month expenses:', monthExpensesError)
     }
 
-    const currentMonthExpenseAmount = currentMonthExpenses?.reduce((sum, expense) =>
-      sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0) || 0
+    const currentMonthExpenseAmount = currentMonthExpenses?.reduce((sum, expense) => {
+      const baseAmount = parseFloat(expense.amount?.toString() || '0') || 0
+      const vatAmount = parseFloat(expense.vat_amount?.toString() || '0') || 0
+      return sum + baseAmount + vatAmount
+    }, 0) || 0
 
     // 9. Calculate net profit
     const netProfit = totalRevenue - totalExpenseAmount

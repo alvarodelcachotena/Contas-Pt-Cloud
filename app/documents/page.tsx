@@ -144,8 +144,8 @@ export default function DocumentsPage() {
         }
     }
 
-    const formatFileSize = (bytes: number) => {
-        if (bytes === 0) return '0 Bytes'
+    const formatFileSize = (bytes: number | null | undefined) => {
+        if (!bytes || bytes === 0) return '0 Bytes'
         const k = 1024
         const sizes = ['Bytes', 'KB', 'MB', 'GB']
         const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -280,10 +280,10 @@ export default function DocumentsPage() {
                     document.id,
                     `"${document.filename}"`,
                     document.mime_type || 'N/A',
-                    document.file_size ? formatFileSize(document.file_size) : 'N/A',
+                    formatFileSize(document.file_size),
                     document.processing_status,
                     `"${document.source || 'N/A'}"`,
-                    new Date(document.created_at).toLocaleDateString('pt-PT'),
+                    document.created_at ? new Date(document.created_at).toLocaleDateString('pt-PT') : 'N/A',
                     document.confidence_score ? (document.confidence_score * 100).toFixed(1) : '0'
                 ].join(','))
             ].join('\n')
@@ -479,10 +479,10 @@ export default function DocumentsPage() {
                                                     <TableCell>
                                                         <Badge variant="outline">{document.mime_type || 'N/A'}</Badge>
                                                     </TableCell>
-                                                    <TableCell>{document.file_size ? formatFileSize(document.file_size) : 'N/A'}</TableCell>
+                                                    <TableCell>{formatFileSize(document.file_size)}</TableCell>
                                                     <TableCell>{document.source || 'N/A'}</TableCell>
                                                     <TableCell>
-                                                        {new Date(document.created_at).toLocaleDateString('pt-PT')}
+                                                        {document.created_at ? new Date(document.created_at).toLocaleDateString('pt-PT') : 'N/A'}
                                                     </TableCell>
                                                     <TableCell>
                                                         {document.confidence_score ? `${(document.confidence_score * 100).toFixed(1)}%` : '-'}

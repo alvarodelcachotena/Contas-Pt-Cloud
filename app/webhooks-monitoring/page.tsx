@@ -119,8 +119,8 @@ export default function WebhooksMonitoringPage() {
     }
   }
 
-  const formatFileSize = (bytes: number) => {
-    if (bytes === 0) return '0 Bytes'
+  const formatFileSize = (bytes: number | null | undefined) => {
+    if (!bytes || bytes === 0) return '0 Bytes'
     const k = 1024
     const sizes = ['Bytes', 'KB', 'MB', 'GB']
     const i = Math.floor(Math.log(bytes) / Math.log(k))
@@ -283,7 +283,7 @@ export default function WebhooksMonitoringPage() {
                               }
                             </TableCell>
                             <TableCell>
-                              {new Date(document.created_at).toLocaleDateString('pt-PT')}
+                              {document.created_at ? new Date(document.created_at).toLocaleDateString('pt-PT') : 'N/A'}
                             </TableCell>
                             <TableCell>
                               <div className="flex space-x-2">
@@ -333,7 +333,7 @@ export default function WebhooksMonitoringPage() {
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Tipo:</span>
-                    <p className="font-medium">{selectedDocument.mime_type}</p>
+                    <p className="font-medium">{selectedDocument.mime_type || 'N/A'}</p>
                   </div>
                   <div>
                     <span className="text-sm text-gray-600">Status:</span>

@@ -46,17 +46,15 @@ export async function GET(request: NextRequest) {
         // Map the data to our expected format, handling missing columns gracefully
         const formattedDocuments = documents?.map(doc => ({
             id: doc.id,
-            filename: doc.filename || doc.name || 'Unknown',
-            filePath: doc.file_path || doc.path || '',
-            fileType: doc.file_type || doc.type || 'unknown',
-            fileSize: doc.file_size || doc.size || 0,
-            status: doc.status || 'pending',
-            uploadedAt: doc.uploaded_at || doc.created_at || doc.upload_date || new Date().toISOString(),
-            processedAt: doc.processed_at || doc.processed_date || null,
-            documentType: doc.document_type || doc.doc_type || 'other',
-            extractedData: doc.extracted_data || doc.data || {},
-            confidence: doc.confidence || 0,
-            createdAt: doc.created_at || new Date().toISOString()
+            filename: doc.filename || 'Unknown',
+            file_path: doc.file_path || '',
+            file_size: doc.file_size || 0,
+            mime_type: doc.mime_type || 'unknown',
+            processing_status: doc.processing_status || 'pending',
+            source: doc.processing_method || 'upload',
+            extracted_data: doc.extracted_data || {},
+            confidence_score: doc.confidence_score || 0,
+            created_at: doc.created_at || new Date().toISOString()
         })) || []
 
         return NextResponse.json(formattedDocuments)

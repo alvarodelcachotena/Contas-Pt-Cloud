@@ -14,17 +14,17 @@ import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 
 // Función de verificación de API key
 function verifyApiKey() {
-  const apiKey = process.env.OPENAI_API_KEY
-  console.log('🔑 Verificando API key de OpenAI...')
+  const apiKey = process.env.GEMINI_API_KEY
+  console.log('🔑 Verificando API key de Gemini AI...')
   console.log(`   API key configurada: ${apiKey ? '✅ Sí' : '❌ No'}`)
   if (apiKey) {
     console.log(`   Longitud: ${apiKey.length} caracteres`)
     console.log(`   Empieza con: ${apiKey.substring(0, 10)}...`)
     console.log(`   Termina con: ...${apiKey.substring(apiKey.length - 10)}`)
-    console.log(`   Formato correcto: ${apiKey.startsWith('sk-') ? '✅' : '❌'}`)
+    console.log(`   Formato correcto: ${apiKey.startsWith('AIza') ? '✅' : '❌'}`)
   }
   if (!apiKey) {
-    throw new Error('OPENAI_API_KEY no está configurada')
+    throw new Error('GEMINI_API_KEY no está configurada')
   }
   return true
 }
@@ -224,6 +224,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
       if (mediaData) {
         console.log(`🔄 Processing media file: ${mediaData.filename}`)
+        console.log(`📄 MIME type from WhatsApp: ${mediaData.mime_type}`)
+        console.log(`📏 File size: ${mediaData.size} bytes`)
 
         // Check if media type is supported
         if (!isMediaTypeSupported(mediaData.mime_type)) {
@@ -304,10 +306,15 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
           // Process with Gemini AI
           try {
             console.log(`🤖 Procesando con Gemini AI...`)
+            console.log(`📄 Archivo: ${mediaData.filename}`)
+            console.log(`📄 MIME type: ${mediaData.mime_type}`)
+            console.log(`📄 Buffer size: ${mediaData.buffer.length} bytes`)
+
             const aiService = new DocumentAIService()
             const analysisResult = await aiService.analyzeDocument(
               Buffer.from(mediaData.buffer),
-              mediaData.filename
+              mediaData.filename,
+              mediaData.mime_type
             )
 
             console.log(`📊 Resultado del análisis:`, analysisResult)
@@ -369,7 +376,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             // Format extracted data for WhatsApp message
             if (extractedData) {
               const importantFields = [
-                'company_name', 'total_amount', 'date', 'invoice_number',
+                'company_name', 'amount', 'date', 'invoice_number',
                 'vat_number', 'client_name', 'client_email', 'client_nif',
                 'description', 'items', 'subtotal'
               ]
@@ -608,16 +615,132 @@ async function uploadToDropbox(fileBuffer: Buffer, fileName: string, tenantId: n
   }
 }
 
+// Helper function to create or find client automatically
+async function createOrFindClient(clientData: any, tenantId: number, supabase: any): Promise<number | null> {
+  try {
+    const clientName = clientData.vendor_name || clientData.client_name
+    const clientEmail = clientData.client_email
+    const clientNif = clientData.vendor_nif || clientData.client_nif
+
+    if (!clientName) {
+      console.log(`⚠️ No se puede crear cliente sin nombre`)
+      return null
+    }
+
+    // First, try to find existing client by name
+    const { data: existingClient } = await supabase
+      .from('clients')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('name', clientName)
+      .single()
+
+    if (existingClient) {
+      console.log(`✅ Cliente encontrado existente: ${clientName} (ID: ${existingClient.id})`)
+      return existingClient.id
+    }
+
+    // Create new client
+    const clientToInsert = {
+      tenant_id: tenantId,
+      name: clientName,
+      email: clientEmail || null,
+      phone: null,
+      address: null,
+      nif: clientNif || null,
+      is_active: true
+    }
+
+    console.log(`👤 Creando nuevo cliente:`, clientToInsert)
+
+    const { data: newClient, error: clientError } = await supabase
+      .from('clients')
+      .insert(clientToInsert)
+      .select('id')
+      .single()
+
+    if (clientError) {
+      console.error(`❌ Error creando cliente:`, clientError)
+      return null
+    }
+
+    console.log(`✅ Cliente creado exitosamente: ${clientName} (ID: ${newClient.id})`)
+    return newClient.id
+
+  } catch (error) {
+    console.error(`❌ Error en createOrFindClient:`, error)
+    return null
+  }
+}
+
+// Helper function to create or find supplier automatically
+async function createOrFindSupplier(supplierData: any, tenantId: number, supabase: any): Promise<number | null> {
+  try {
+    const supplierName = supplierData.vendor_name || supplierData.client_name
+    const supplierEmail = supplierData.client_email
+    const supplierNif = supplierData.vendor_nif || supplierData.client_nif
+
+    if (!supplierName) {
+      console.log(`⚠️ No se puede crear proveedor sin nombre`)
+      return null
+    }
+
+    // First, try to find existing supplier by name
+    const { data: existingSupplier } = await supabase
+      .from('suppliers')
+      .select('id')
+      .eq('tenant_id', tenantId)
+      .eq('name', supplierName)
+      .single()
+
+    if (existingSupplier) {
+      console.log(`✅ Proveedor encontrado existente: ${supplierName} (ID: ${existingSupplier.id})`)
+      return existingSupplier.id
+    }
+
+    // Create new supplier
+    const supplierToInsert = {
+      tenant_id: tenantId,
+      name: supplierName,
+      tax_id: supplierNif || null,
+      email: supplierEmail || null,
+      phone: null,
+      address: null,
+      postal_code: null,
+      city: null,
+      contact_person: null,
+      payment_terms: null,
+      notes: `Proveedor creado automáticamente desde WhatsApp`,
+      is_active: true
+    }
+
+    console.log(`🏢 Creando nuevo proveedor:`, supplierToInsert)
+
+    const { data: newSupplier, error: supplierError } = await supabase
+      .from('suppliers')
+      .insert(supplierToInsert)
+      .select('id')
+      .single()
+
+    if (supplierError) {
+      console.error(`❌ Error creando proveedor:`, supplierError)
+      return null
+    }
+
+    console.log(`✅ Proveedor creado exitosamente: ${supplierName} (ID: ${newSupplier.id})`)
+    return newSupplier.id
+
+  } catch (error) {
+    console.error(`❌ Error en createOrFindSupplier:`, error)
+    return null
+  }
+}
+
 // Process invoice data and create invoice record
 async function processInvoice(invoiceData: any, documentId: number, supabase: any, tenantId: number) {
   try {
     console.log(`📄 Procesando factura: ${invoiceData.invoice_number || 'Sin número'}`)
     console.log(`📊 Datos recibidos:`, JSON.stringify(invoiceData, null, 2))
-
-    // For WhatsApp invoices, we don't create clients automatically
-    // These are typically one-time expenses, not recurring clients
-    let clientId = null
-    console.log(`📝 Procesando como gasto puntual - no se creará cliente automáticamente`)
 
     // Generate invoice number with client name and date
     const clientName = invoiceData.vendor_name || invoiceData.client_name || 'Cliente Desconocido'
@@ -625,6 +748,14 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
     const invoiceNumber = generateInvoiceNumber(clientName, invoiceDate)
 
     console.log(`📋 Número de factura generado: ${invoiceNumber}`)
+
+    // Create or find client automatically
+    const clientId = await createOrFindClient(invoiceData, tenantId, supabase)
+    console.log(`👤 Cliente ID: ${clientId || 'null'}`)
+
+    // Create or find supplier automatically
+    const supplierId = await createOrFindSupplier(invoiceData, tenantId, supabase)
+    console.log(`🏢 Proveedor ID: ${supplierId || 'null'}`)
 
     // Create invoice record
     const { data: invoice, error: invoiceError } = await supabase
@@ -641,12 +772,12 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
         amount: invoiceData.subtotal || invoiceData.amount || 0,
         vat_amount: invoiceData.vat_amount || 0,
         vat_rate: invoiceData.vat_rate || 0,
-        total_amount: invoiceData.total_amount || invoiceData.total || 0,
+        total_amount: invoiceData.amount || invoiceData.total || 0,
         status: 'pending',
         description: invoiceData.description || `Factura procesada desde WhatsApp`,
         payment_terms: invoiceData.payment_terms || null,
         payment_type: 'bank_transfer', // Default payment type for WhatsApp invoices
-        supplier_id: null // No supplier for one-time expenses
+        supplier_id: supplierId // Link to supplier if created
       })
       .select()
       .single()
@@ -659,29 +790,34 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
 
     // Create corresponding expense record automatically
     // This ensures the expense appears in the expenses view
-    const { data: expense, error: expenseError } = await supabase
-      .from('expenses')
-      .insert({
-        tenant_id: tenantId,
-        vendor: clientName,
-        amount: invoiceData.subtotal || invoiceData.amount || 0,
-        vat_amount: invoiceData.vat_amount || 0,
-        vat_rate: invoiceData.vat_rate || 0,
-        category: 'General',
-        description: invoiceData.description || `Gasto procesado desde WhatsApp`,
-        receipt_number: invoiceNumber,
-        expense_date: invoiceDate,
-        is_deductible: true,
-        invoice_id: invoice.id,
-        created_at: new Date().toISOString()
-      })
-      .select()
-      .single()
+    try {
+      const { data: expense, error: expenseError } = await supabase
+        .from('expenses')
+        .insert({
+          tenant_id: tenantId,
+          vendor: clientName,
+          amount: invoiceData.subtotal || invoiceData.amount || 0,
+          vat_amount: invoiceData.vat_amount || 0,
+          vat_rate: invoiceData.vat_rate || 0,
+          category: 'General',
+          description: invoiceData.description || `Gasto procesado desde WhatsApp`,
+          receipt_number: invoiceNumber,
+          expense_date: invoiceDate,
+          is_deductible: true,
+          invoice_id: invoice.id,
+          created_at: new Date().toISOString()
+        })
+        .select()
+        .single()
 
-    if (expenseError) {
-      console.log(`⚠️ Error creating expense (invoice will still be created): ${expenseError.message}`)
-    } else {
-      console.log(`✅ Despesa creada automáticamente: ${expense.id}`)
+      if (expenseError) {
+        console.log(`⚠️ Error creating expense (invoice will still be created): ${expenseError.message}`)
+        console.log(`📝 Expense error details:`, expenseError)
+      } else {
+        console.log(`✅ Despesa creada automáticamente: ${expense.id}`)
+      }
+    } catch (expenseException) {
+      console.log(`⚠️ Exception creating expense: ${expenseException.message}`)
     }
 
     console.log(`✅ Factura creada: ${invoice.id}`)
@@ -711,7 +847,7 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
 
     // Extract data from WhatsApp document (could be invoice or expense format)
     const vendorName = expenseData.vendor_name || expenseData.vendor || expenseData.client_name || 'Proveedor Desconocido'
-    const amount = expenseData.total_amount || expenseData.total || expenseData.amount || expenseData.subtotal || 0
+    const amount = expenseData.amount || expenseData.total || expenseData.subtotal || 0
     const vatAmount = expenseData.vat_amount || 0
     const vatRate = expenseData.vat_rate || 0
     const description = expenseData.description || `Gasto procesado desde WhatsApp - ${vendorName}`
@@ -723,6 +859,10 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     console.log(`   - Importe: €${amount}`)
     console.log(`   - Fecha: ${expenseDate}`)
     console.log(`   - Descripción: ${description}`)
+
+    // Create or find supplier automatically for expenses
+    const supplierId = await createOrFindSupplier(expenseData, tenantId, supabase)
+    console.log(`🏢 Proveedor ID para gasto: ${supplierId || 'null'}`)
 
     // Create expense record
     const { data: expense, error: expenseError } = await supabase
@@ -738,6 +878,8 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
         receipt_number: receiptNumber,
         expense_date: expenseDate,
         is_deductible: true,
+        supplier_id: supplierId, // Link to supplier if created
+        document_id: documentId, // Link to original document
         created_at: new Date().toISOString()
       })
       .select()
