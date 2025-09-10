@@ -375,7 +375,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               const companyName = analysisResult.extracted_data?.client_name || analysisResult.extracted_data?.vendor || 'UNKNOWN'
               const documentDate = analysisResult.extracted_data?.date || new Date()
               const imageName = `${companyName.replace(/[^A-Z0-9\s]/g, '').replace(/\s+/g, '')} ${new Date(documentDate).toISOString().split('T')[0]}`
-              
+
               // Save to images table
               const { data: savedImage, error: imageError } = await supabase
                 .from('images')

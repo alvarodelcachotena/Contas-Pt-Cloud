@@ -64,7 +64,7 @@ export default function FilesModal({ children }: FilesModalProps) {
             </div>
 
             <Dialog open={isOpen} onOpenChange={setIsOpen}>
-                <DialogContent className="max-w-4xl max-h-[80vh] overflow-hidden">
+                <DialogContent className="max-w-6xl max-h-[90vh] overflow-hidden">
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <HardDrive className="w-5 h-5" />
@@ -72,7 +72,7 @@ export default function FilesModal({ children }: FilesModalProps) {
                         </DialogTitle>
                     </DialogHeader>
 
-                    <div className="flex-1 overflow-auto">
+                    <div className="flex-1 overflow-y-auto">
                         {isLoading && (
                             <div className="flex items-center justify-center py-8">
                                 <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600"></div>
@@ -119,13 +119,13 @@ export default function FilesModal({ children }: FilesModalProps) {
                                 </div>
 
                                 {/* Mostrar imágenes desde base de datos */}
-                                <div className="grid grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-2">
+                                <div className="grid grid-cols-3 gap-6">
                                     {images.map((image, index) => (
                                         <div key={image.id} className="relative group">
                                             <img
                                                 src={image.image_data}
                                                 alt={image.name}
-                                                className="w-full h-24 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity"
+                                                className="w-full h-64 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-lg"
                                                 onClick={() => handlePreview(image)}
                                                 onError={(e) => {
                                                     console.log('❌ Error cargando imagen:', image.name, image.id);
@@ -142,17 +142,17 @@ export default function FilesModal({ children }: FilesModalProps) {
                                                         onClick={() => handleDownload(image)}
                                                         variant="secondary"
                                                         size="sm"
-                                                        className="h-6 px-2 text-xs bg-white bg-opacity-90"
+                                                        className="h-8 px-3 text-sm bg-white bg-opacity-90 hover:bg-opacity-100"
                                                     >
-                                                        <Download className="w-3 h-3" />
+                                                        <Download className="w-4 h-4" />
                                                     </Button>
                                                 </div>
                                             </div>
                                             {/* Información de la imagen */}
-                                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-50 text-white text-xs p-1 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
-                                                <div className="truncate">{image.name}</div>
+                                            <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-sm p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <div className="truncate font-medium">{image.name}</div>
                                                 {image.company_name && (
-                                                    <div className="truncate text-xs opacity-75">{image.company_name}</div>
+                                                    <div className="truncate text-xs opacity-75 mt-1">{image.company_name}</div>
                                                 )}
                                             </div>
                                         </div>
