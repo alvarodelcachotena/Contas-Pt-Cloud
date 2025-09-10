@@ -10,7 +10,7 @@ export async function POST(request: NextRequest) {
     const tenantId = await getTenantId(request)
     const formData = await request.formData()
     const file = formData.get('file') as File
-    
+
     if (!file) {
       return NextResponse.json(
         { error: 'No file provided' },
@@ -20,7 +20,7 @@ export async function POST(request: NextRequest) {
 
     // Create Supabase client
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_KEY!,
       {
         auth: {

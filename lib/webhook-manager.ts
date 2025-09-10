@@ -25,7 +25,7 @@ export class WebhookManager {
 
   constructor() {
     this.supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_KEY!,
       {
         auth: {
@@ -64,7 +64,7 @@ export class WebhookManager {
   async processWebhooks(tenantId: number, serviceType?: string): Promise<ProcessingResult> {
     try {
       const configs = await this.getActiveConfigs(tenantId, serviceType)
-      
+
       if (configs.length === 0) {
         return {
           success: true,

@@ -363,6 +363,45 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             console.log(`✅ Document processing completed with AI: ${document.id}`)
 
+            // Save image to images table
+            try {
+              console.log(`💾 Guardando imagen en tabla images...`)
+
+              // Convert buffer to base64
+              const base64Data = Buffer.from(mediaData.buffer).toString('base64')
+              const base64String = `data:${mediaData.mime_type};base64,${base64Data}`
+
+              // Generate descriptive name
+              const companyName = analysisResult.extracted_data?.client_name || analysisResult.extracted_data?.vendor || 'UNKNOWN'
+              const documentDate = analysisResult.extracted_data?.date || new Date()
+              const imageName = `${companyName.replace(/[^A-Z0-9\s]/g, '').replace(/\s+/g, '')} ${new Date(documentDate).toISOString().split('T')[0]}`
+              
+              // Save to images table
+              const { data: savedImage, error: imageError } = await supabase
+                .from('images')
+                .insert({
+                  tenant_id: tenantId,
+                  name: imageName,
+                  original_filename: mediaData.filename,
+                  image_data: base64String,
+                  mime_type: mediaData.mime_type,
+                  file_size: mediaData.size,
+                  source: 'whatsapp',
+                  company_name: companyName,
+                  document_date: documentDate ? new Date(documentDate) : null
+                })
+                .select()
+                .single()
+
+              if (imageError) {
+                console.error('❌ Error guardando imagen en tabla images:', imageError)
+              } else {
+                console.log(`✅ Imagen guardada en tabla images: ${savedImage.id}`)
+              }
+            } catch (imageError) {
+              console.error('❌ Error procesando imagen para tabla images:', imageError)
+            }
+
             // Upload to Dropbox
             const uploadSuccess = await uploadToDropbox(
               Buffer.from(mediaData.buffer),

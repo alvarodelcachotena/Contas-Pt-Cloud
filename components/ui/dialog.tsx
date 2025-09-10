@@ -125,6 +125,15 @@ const DialogFooter: React.FC<DialogFooterProps> = ({ className, children, ...pro
   </div>
 )
 
+interface DialogTriggerProps {
+  asChild?: boolean
+  children: React.ReactNode
+}
+
+const DialogTrigger: React.FC<DialogTriggerProps> = ({ children }) => {
+  return <>{children}</>
+}
+
 export {
   Dialog,
   DialogContent,
@@ -132,4 +141,5 @@ export {
   DialogFooter,
   DialogHeader,
   DialogTitle,
+  DialogTrigger,
 }

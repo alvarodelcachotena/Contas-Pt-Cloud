@@ -28,7 +28,7 @@ interface WebhookStats {
 export async function GET(request: NextRequest) {
   try {
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_KEY!,
       {
         auth: {
@@ -85,7 +85,7 @@ export async function GET(request: NextRequest) {
         if (log.activity_type) {
           stats.eventsByType[log.activity_type] = (stats.eventsByType[log.activity_type] || 0) + 1
         }
-        
+
         if (!stats.lastActivity || log.created_at > stats.lastActivity) {
           stats.lastActivity = log.created_at
         }
@@ -139,7 +139,7 @@ export async function POST(request: NextRequest) {
     }
 
     const supabase = createClient(
-      process.env.NEXT_PUBLIC_SUPABASE_URL!,
+      process.env.SUPABASE_URL!,
       process.env.SUPABASE_SERVICE_KEY!,
       {
         auth: {

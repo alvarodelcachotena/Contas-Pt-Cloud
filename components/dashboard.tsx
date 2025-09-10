@@ -1,6 +1,9 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import FilesModal from '@/components/files-modal'
+import { Button } from '@/components/ui/button'
+import { HardDrive } from 'lucide-react'
 
 interface DashboardMetrics {
   // Counts
@@ -84,8 +87,16 @@ export default function Dashboard() {
             <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
             <p className="text-muted-foreground mt-1">Visão geral do seu negócio</p>
           </div>
-          <div className="text-sm text-muted-foreground">
-            Última atualização: {new Date().toLocaleDateString('pt-PT')}
+          <div className="flex items-center gap-4">
+            <FilesModal>
+              <Button variant="outline" className="flex items-center gap-2">
+                <HardDrive className="w-4 h-4" />
+                Archivos WhatsApp
+              </Button>
+            </FilesModal>
+            <div className="text-sm text-muted-foreground">
+              Última atualização: {new Date().toLocaleDateString('pt-PT')}
+            </div>
           </div>
         </div>
 
