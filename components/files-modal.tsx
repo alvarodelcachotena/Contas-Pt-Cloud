@@ -4,7 +4,7 @@ import { useState } from 'react'
 import { useQuery } from '@tanstack/react-query'
 import { Button } from '@/components/ui/button'
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
-import { Download, Image, HardDrive } from 'lucide-react'
+import { Download, Image, HardDrive, FileText } from 'lucide-react'
 
 interface DatabaseImage {
     id: number
@@ -57,6 +57,10 @@ export default function FilesModal({ children }: FilesModalProps) {
         window.open(image.image_data, '_blank')
     }
 
+    const isPDF = (mimeType: string) => {
+        return mimeType === 'application/pdf'
+    }
+
     return (
         <>
             <div onClick={() => setIsOpen(true)}>
@@ -68,7 +72,7 @@ export default function FilesModal({ children }: FilesModalProps) {
                     <DialogHeader>
                         <DialogTitle className="flex items-center gap-2">
                             <HardDrive className="w-5 h-5" />
-                            Archivos de WhatsApp
+                            Archivos de WhatsApp (Imágenes y PDFs)
                         </DialogTitle>
                     </DialogHeader>
 
@@ -96,9 +100,9 @@ export default function FilesModal({ children }: FilesModalProps) {
 
                         {images && images.length === 0 && !isLoading && (
                             <div className="text-center py-8">
-                                <Image className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
-                                <h3 className="text-lg font-semibold text-muted-foreground mb-2">No hay imágenes guardadas</h3>
-                                <p className="text-muted-foreground">Aún no se han guardado imágenes en la base de datos.</p>
+                                <HardDrive className="w-12 h-12 text-muted-foreground mx-auto mb-4" />
+                                <h3 className="text-lg font-semibold text-muted-foreground mb-2">No hay archivos guardados</h3>
+                                <p className="text-muted-foreground">Aún no se han recibido imágenes o PDFs desde WhatsApp o AI Assistant.</p>
                             </div>
                         )}
 
@@ -107,7 +111,7 @@ export default function FilesModal({ children }: FilesModalProps) {
                                 {console.log('📊 Total imágenes en DB:', images.length)}
                                 <div className="flex items-center justify-between">
                                     <p className="text-sm text-muted-foreground">
-                                        {images.length} imagen{images.length !== 1 ? 'es' : ''} guardada{images.length !== 1 ? 's' : ''}
+                                        {images.length} archivo{images.length !== 1 ? 's' : ''} guardado{images.length !== 1 ? 's' : ''}
                                     </p>
                                     <Button
                                         onClick={() => refetch()}
@@ -118,24 +122,40 @@ export default function FilesModal({ children }: FilesModalProps) {
                                     </Button>
                                 </div>
 
-                                {/* Mostrar imágenes desde base de datos */}
+                                {/* Mostrar imágenes y PDFs desde base de datos */}
                                 <div className="grid grid-cols-3 gap-6">
                                     {images.map((image, index) => (
                                         <div key={image.id} className="relative group">
-                                            <img
-                                                src={image.image_data}
-                                                alt={image.name}
-                                                className="w-full h-64 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-lg"
-                                                onClick={() => handlePreview(image)}
-                                                onError={(e) => {
-                                                    console.log('❌ Error cargando imagen:', image.name, image.id);
-                                                    const target = e.target as HTMLImageElement;
-                                                    target.style.display = 'none';
-                                                }}
-                                                onLoad={() => {
-                                                    console.log('✅ Imagen cargada:', image.name, image.id);
-                                                }}
-                                            />
+                                            {isPDF(image.mime_type) ? (
+                                                // Mostrar PDF con icono
+                                                <div 
+                                                    className="w-full h-64 bg-red-50 border-2 border-red-200 rounded-lg cursor-pointer hover:bg-red-100 transition-colors shadow-lg flex flex-col items-center justify-center"
+                                                    onClick={() => handlePreview(image)}
+                                                >
+                                                    <FileText className="w-16 h-16 text-red-600 mb-4" />
+                                                    <div className="text-red-800 font-medium text-center px-4">
+                                                        <div className="truncate">{image.name}</div>
+                                                        <div className="text-sm text-red-600 mt-1">PDF Document</div>
+                                                    </div>
+                                                </div>
+                                            ) : (
+                                                // Mostrar imagen normal
+                                                <img
+                                                    src={image.image_data}
+                                                    alt={image.name}
+                                                    className="w-full h-64 object-cover rounded-lg cursor-pointer hover:opacity-80 transition-opacity shadow-lg"
+                                                    onClick={() => handlePreview(image)}
+                                                    onError={(e) => {
+                                                        console.log('❌ Error cargando imagen:', image.name, image.id);
+                                                        const target = e.target as HTMLImageElement;
+                                                        target.style.display = 'none';
+                                                    }}
+                                                    onLoad={() => {
+                                                        console.log('✅ Imagen cargada:', image.name, image.id);
+                                                    }}
+                                                />
+                                            )}
+                                            
                                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 transition-all duration-200 rounded-lg flex items-center justify-center">
                                                 <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                                                     <Button
@@ -148,12 +168,16 @@ export default function FilesModal({ children }: FilesModalProps) {
                                                     </Button>
                                                 </div>
                                             </div>
-                                            {/* Información de la imagen */}
+                                            
+                                            {/* Información del archivo */}
                                             <div className="absolute bottom-0 left-0 right-0 bg-black bg-opacity-70 text-white text-sm p-2 rounded-b-lg opacity-0 group-hover:opacity-100 transition-opacity">
                                                 <div className="truncate font-medium">{image.name}</div>
                                                 {image.company_name && (
                                                     <div className="truncate text-xs opacity-75 mt-1">{image.company_name}</div>
                                                 )}
+                                                <div className="text-xs opacity-75 mt-1">
+                                                    {isPDF(image.mime_type) ? 'PDF' : image.mime_type.split('/')[1]?.toUpperCase()}
+                                                </div>
                                             </div>
                                         </div>
                                     ))}
