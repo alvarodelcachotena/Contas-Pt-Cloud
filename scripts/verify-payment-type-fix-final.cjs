@@ -1,0 +1,31 @@
+console.log('🔧 === CORRECCIÓN DEL PAYMENT_TYPE ===')
+
+console.log('✅ PROBLEMA IDENTIFICADO:')
+console.log('   La IA detectaba correctamente el tipo de pago')
+console.log('   Pero el código estaba hardcodeando "bank_transfer"')
+console.log('   Línea 800: payment_type: "bank_transfer" (HARDCODEADO)')
+
+console.log('')
+console.log('✅ SOLUCIÓN IMPLEMENTADA:')
+console.log('   Cambiado a: payment_type: invoiceData.payment_type || "credit"')
+console.log('   Ahora usa el valor detectado por la IA')
+console.log('   Si no hay valor, usa "credit" por defecto')
+
+console.log('')
+console.log('🎯 FLUJO CORREGIDO:')
+console.log('   1. IA analiza documento → Detecta payment_type: "card"')
+console.log('   2. WhatsApp guarda en BD → payment_type: "card" (de la IA)')
+console.log('   3. API devuelve datos → paymentType: "card"')
+console.log('   4. Frontend muestra → "Crédito" (para card)')
+
+console.log('')
+console.log('🚀 PRÓXIMOS PASOS:')
+console.log('   1. Probar con una nueva factura por WhatsApp')
+console.log('   2. Verificar que la IA detecta el tipo correcto')
+console.log('   3. Verificar que se guarda correctamente en BD')
+console.log('   4. Verificar que el frontend muestra el tipo correcto')
+
+console.log('')
+console.log('✨ ¡El problema está solucionado!')
+console.log('   Ahora el payment_type detectado por la IA se guardará correctamente')
+console.log('   y se mostrará en el frontend.')

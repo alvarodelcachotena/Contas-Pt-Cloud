@@ -254,9 +254,18 @@ RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS 
             const invoiceData = result.extracted_data as InvoiceData
 
             // Validar payment_type
+            console.log(`🔍 Validando payment_type:`, {
+                original_value: invoiceData.payment_type,
+                type: typeof invoiceData.payment_type,
+                is_valid: invoiceData.payment_type && ['credit', 'bank_transfer', 'card', 'cash'].includes(invoiceData.payment_type)
+            })
+
             if (invoiceData.payment_type && !['credit', 'bank_transfer', 'card', 'cash'].includes(invoiceData.payment_type)) {
+                console.log(`⚠️ Payment type inválido, estableciendo como credit por defecto`)
                 invoiceData.payment_type = 'credit' // Por defecto crédito
                 result.processing_notes.push('Tipo de pago inválido, se estableció como crédito por defecto')
+            } else {
+                console.log(`✅ Payment type válido: ${invoiceData.payment_type}`)
             }
 
             // Asegurar que los campos obligatorios existan
@@ -378,6 +387,13 @@ RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS 
                 result.processing_notes.push('Deducibilidad no especificada, se asumió deducible')
             }
         }
+
+        // Log final del resultado validado
+        console.log(`🔍 Resultado final después de validación:`, {
+            document_type: result.document_type,
+            payment_type: result.document_type === 'invoice' ? (result.extracted_data as InvoiceData).payment_type : 'N/A',
+            extracted_data_keys: Object.keys(result.extracted_data)
+        })
     }
 
     private isValidDate(dateString: string): boolean {

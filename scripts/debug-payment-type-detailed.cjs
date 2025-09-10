@@ -1,0 +1,37 @@
+console.log('🔧 === DEBUGGING PAYMENT_TYPE - PASO A PASO ===')
+
+console.log('✅ PROBLEMA CONFIRMADO:')
+console.log('   - IA detecta correctamente: "Crédito (Tarjeta)"')
+console.log('   - WhatsApp muestra correctamente: "💳 Tipo de pago: Crédito (Tarjeta)"')
+console.log('   - Pero en BD se guarda como: "bank_transfer"')
+console.log('   - Frontend muestra: "Transferência"')
+
+console.log('')
+console.log('🔍 LOGS AGREGADOS:')
+console.log('   1. Línea 765-770: Log detallado de payment_type en processInvoice')
+console.log('   2. Línea 782-786: Log antes de crear factura')
+console.log('   - Mostrará si payment_type existe y su valor')
+console.log('   - Mostrará todas las claves disponibles en invoiceData')
+
+console.log('')
+console.log('🎯 HIPÓTESIS:')
+console.log('   - La IA detecta payment_type correctamente')
+console.log('   - Pero no se está pasando correctamente a processInvoice')
+console.log('   - O se está perdiendo en el mapeo de datos')
+
+console.log('')
+console.log('🚀 PRÓXIMO PASO:')
+console.log('   1. Enviar una nueva factura por WhatsApp')
+console.log('   2. Revisar los logs del servidor')
+console.log('   3. Verificar qué muestra el log de "Payment type específico"')
+console.log('   4. Identificar dónde se pierde el payment_type')
+
+console.log('')
+console.log('📋 LOGS A REVISAR:')
+console.log('   - "📊 Datos recibidos:" (JSON completo)')
+console.log('   - "🔍 Payment type específico:" (análisis detallado)')
+console.log('   - "🔍 Datos de la factura antes de crear:" (antes de BD)')
+
+console.log('')
+console.log('✨ ¡Listo para identificar el problema!')
+console.log('   Envía una nueva factura y revisa los logs del servidor.')

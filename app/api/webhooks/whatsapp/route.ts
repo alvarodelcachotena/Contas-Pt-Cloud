@@ -354,6 +354,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             // IMPORTANT: Invoices are expenses (money YOU paid), not invoices TO clients
             if (analysisResult.document_type === 'invoice') {
               console.log(`💰 Procesando INVOICE como GASTO (dinero que pagaste)`)
+              console.log(`🔍 Datos de extracted_data antes de processInvoice:`, JSON.stringify(analysisResult.extracted_data, null, 2))
               await processInvoice(analysisResult.extracted_data, document.id, supabase, tenantId)
             } else if (analysisResult.document_type === 'expense') {
               console.log(`💰 Procesando EXPENSE como GASTO`)
@@ -762,6 +763,12 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
   try {
     console.log(`📄 Procesando factura: ${invoiceData.invoice_number || 'Sin número'}`)
     console.log(`📊 Datos recibidos:`, JSON.stringify(invoiceData, null, 2))
+    console.log(`🔍 Payment type específico:`, {
+      payment_type: invoiceData.payment_type,
+      payment_type_type: typeof invoiceData.payment_type,
+      has_payment_type: 'payment_type' in invoiceData,
+      all_keys: Object.keys(invoiceData)
+    })
 
     // Generate invoice number with client name and date
     const clientName = invoiceData.vendor_name || invoiceData.client_name || 'Cliente Desconocido'
@@ -779,6 +786,12 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
     console.log(`🏢 Proveedor ID: ${supplierId || 'null'}`)
 
     // Create invoice record
+    console.log(`🔍 Datos de la factura antes de crear:`, {
+      vendor_name: invoiceData.vendor_name,
+      payment_type: invoiceData.payment_type,
+      payment_type_type: typeof invoiceData.payment_type
+    })
+
     const { data: invoice, error: invoiceError } = await supabase
       .from('invoices')
       .insert({
@@ -797,7 +810,7 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
         status: 'pending',
         description: invoiceData.description || `Factura procesada desde WhatsApp`,
         payment_terms: invoiceData.payment_terms || null,
-        payment_type: 'bank_transfer', // Default payment type for WhatsApp invoices
+        payment_type: invoiceData.payment_type || 'card', // Use AI detected payment type (card = crédito)
         supplier_id: supplierId // Link to supplier if created
       })
       .select()
