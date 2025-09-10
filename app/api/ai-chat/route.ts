@@ -59,6 +59,13 @@ async function getBusinessData(tenantId: number = 1) {
     const profit = totalRevenue - totalExpenses
     const profitMargin = totalRevenue > 0 ? (profit / totalRevenue) * 100 : 0
 
+    // Calcular estadísticas de tipos de pago
+    const paymentTypeStats = invoicesData.reduce((stats: any, inv: any) => {
+      const paymentType = inv.payment_type || 'unknown'
+      stats[paymentType] = (stats[paymentType] || 0) + 1
+      return stats
+    }, {})
+
     const businessData = {
       stats: {
         total_invoices: invoicesData.length,
@@ -67,13 +74,15 @@ async function getBusinessData(tenantId: number = 1) {
         total_revenue: totalRevenue,
         total_expenses_amount: totalExpenses,
         profit: profit,
-        profitMargin: profitMargin.toFixed(2)
+        profitMargin: profitMargin.toFixed(2),
+        payment_type_stats: paymentTypeStats
       },
       recentInvoices: invoicesData.slice(0, 5).map((inv: any) => ({
         number: inv.number || 'N/A',
         client_name: inv.client_name || 'N/A',
         total_amount: inv.total_amount || 0,
         status: inv.status || 'N/A',
+        payment_type: inv.payment_type || 'N/A',
         issue_date: inv.issue_date || 'N/A'
       })),
       recentExpenses: expensesData.slice(0, 5).map((exp: any) => ({
@@ -896,9 +905,18 @@ export async function POST(request: NextRequest) {
 • Lucro: €${businessData.stats?.profit || 0}
 • Margem de Lucro: ${businessData.stats?.profitMargin || '0.00'}%
 
+💳 ESTATÍSTICAS DE MÉTODOS DE PAGAMENTO:
+${Object.entries(businessData.stats?.payment_type_stats || {}).map(([type, count]) => {
+        const typeName = type === 'card' ? 'Crédito (Cartão)' :
+          type === 'bank_transfer' ? 'Transferência Bancária' :
+            type === 'cash' ? 'Dinheiro' :
+              type === 'credit' ? 'Crédito' : type
+        return `• ${typeName}: ${count} faturas`
+      }).join('\n') || 'Nenhuma informação de método de pagamento disponível'}
+
 📄 FATURAS RECENTES (últimas 5):
 ${businessData.recentInvoices?.map((inv: any) =>
-        `• ${inv.number} (${inv.client_name}): €${inv.total_amount} - ${inv.status} - ${inv.issue_date}`
+        `• ${inv.number} (${inv.client_name}): €${inv.total_amount} - ${inv.status} - Método de Pagamento: ${inv.payment_type} - ${inv.issue_date}`
       ).join('\n') || 'Nenhuma fatura encontrada'}
 
 💰 DESPESAS RECENTES (últimas 5):

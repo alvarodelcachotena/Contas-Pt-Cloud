@@ -807,7 +807,7 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
         vat_amount: invoiceData.vat_amount || 0,
         vat_rate: invoiceData.vat_rate || 0,
         total_amount: invoiceData.amount || invoiceData.total || 0,
-        status: 'pending',
+        status: 'paid', // Las facturas procesadas desde WhatsApp ya están pagadas
         description: invoiceData.description || `Factura procesada desde WhatsApp`,
         payment_terms: invoiceData.payment_terms || null,
         payment_type: invoiceData.payment_type || 'card', // Use AI detected payment type (card = crédito)
