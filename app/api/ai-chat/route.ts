@@ -754,6 +754,21 @@ export async function POST(request: NextRequest) {
     console.log('📋 Body da requisição:', { message })
     console.log('📤 Mensagem extraída:', message)
 
+    // Detectar idioma del mensaje
+    const detectLanguage = (message: string): string => {
+      const spanishWords = ['cuantas', 'facturas', 'despesas', 'tengo', 'con', 'credito', 'transferencia', 'cuando', 'hable', 'español', 'contestar', 'idioma', 'cuántas', 'cuántos', 'cuánto', 'cuánta']
+      const englishWords = ['how', 'many', 'invoices', 'expenses', 'have', 'with', 'credit', 'transfer', 'when', 'speak', 'english', 'answer', 'language', 'what', 'where', 'when', 'why']
+
+      const messageLower = message.toLowerCase()
+      const spanishCount = spanishWords.filter(word => messageLower.includes(word)).length
+      const englishCount = englishWords.filter(word => messageLower.includes(word)).length
+
+      return spanishCount > englishCount ? 'spanish' : 'english'
+    }
+
+    const detectedLanguage = detectLanguage(message)
+    console.log(`🌍 Idioma detectado: ${detectedLanguage}`)
+
     if (!message || typeof message !== 'string' || message.trim().length === 0) {
       console.log('❌ Mensagem inválida:', { message, type: typeof message })
       return NextResponse.json(
@@ -888,8 +903,10 @@ export async function POST(request: NextRequest) {
       - Processamento de faturas
       - Gestão financeira para empresas portuguesas
       
-      Responda sempre em português e seja específico sobre as regras portuguesas.
-      Mantenha as respostas claras e práticas.
+      ${detectedLanguage === 'spanish' ?
+        'IMPORTANTE: Responde SIEMPRE en español cuando el usuario te hable en español. Mantén las respuestas claras y prácticas sobre las reglas portuguesas.' :
+        'IMPORTANTE: Answer ALWAYS in English when the user speaks to you in English. Keep responses clear and practical about Portuguese rules.'
+      }
     `
 
     // Adicionar dados da BD ao prompt se disponível

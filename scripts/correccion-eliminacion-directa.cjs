@@ -1,0 +1,30 @@
+console.log('🔧 === CORRECCIÓN DE ERRORES DE ELIMINACIÓN ===')
+
+console.log('')
+console.log('✅ PROBLEMAS IDENTIFICADOS:')
+console.log('   1. Error de Next.js: "params should be awaited"')
+console.log('   2. Usuario quiere eliminación directa sin confirmación')
+
+console.log('')
+console.log('✅ CORRECCIONES IMPLEMENTADAS:')
+console.log('   1. Cambiado params: { id: string } por params: Promise<{ id: string }>')
+console.log('   2. Agregado await params en ambos endpoints')
+console.log('   3. Eliminada confirmación en componentes')
+console.log('   4. Eliminación directa al hacer clic en papelera')
+
+console.log('')
+console.log('📁 ARCHIVOS CORREGIDOS:')
+console.log('   - app/api/invoices/[id]/route.ts')
+console.log('   - app/api/expenses/[id]/route.ts')
+console.log('   - components/invoices-table.tsx')
+console.log('   - components/expenses-table.tsx')
+
+console.log('')
+console.log('🎯 RESULTADO:')
+console.log('   - ✅ Sin errores de Next.js')
+console.log('   - ✅ Eliminación directa sin confirmación')
+console.log('   - ✅ Mensaje de éxito después de eliminar')
+
+console.log('')
+console.log('✨ ¡Problema resuelto!')
+console.log('   Ahora puedes hacer clic en la papelera y se eliminará directamente.')

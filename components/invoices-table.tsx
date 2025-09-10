@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { FormModal } from '@/components/ui/modal'
-import { Search, Plus, FileText, Eye, AlertCircle, Download } from 'lucide-react'
+import { Search, Plus, FileText, Eye, AlertCircle, Download, Trash2 } from 'lucide-react'
 import DeleteAllButton from './delete-all-button'
 
 interface Invoice {
@@ -82,7 +82,7 @@ export default function InvoicesTable() {
 
   const queryClient = useQueryClient()
 
-  const { data: invoices, isLoading } = useQuery<Invoice[]>({
+  const { data: invoices, isLoading, refetch: refetchInvoices } = useQuery<Invoice[]>({
     queryKey: ['/api/invoices'],
     queryFn: async () => {
       const response = await fetch('/api/invoices', {
@@ -323,7 +323,23 @@ export default function InvoicesTable() {
       console.log('✅ Faturas exportadas com sucesso')
     } catch (error) {
       console.error('❌ Erro ao exportar:', error)
-      setError('Erro ao exportar faturas')
+    }
+  }
+
+  const handleDeleteInvoice = async (invoiceId: number, invoiceNumber: string) => {
+    try {
+      const response = await fetch(`/api/invoices/${invoiceId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        await refetchInvoices()
+      }
+    } catch (error) {
+      console.error('Error deleting invoice:', error)
     }
   }
 
@@ -493,6 +509,14 @@ export default function InvoicesTable() {
                         onClick={() => console.log(`Gerar PDF da fatura ${invoice.number}`)}
                       >
                         PDF
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteInvoice(invoice.id, invoice.number)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>

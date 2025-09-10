@@ -15,7 +15,7 @@ import {
 import { Badge } from '@/components/ui/badge'
 import { Label } from '@/components/ui/label'
 import { FormModal } from '@/components/ui/modal'
-import { Search, Plus, FileText, AlertCircle, Download, Eye } from 'lucide-react'
+import { Search, Plus, FileText, AlertCircle, Download, Eye, Trash2 } from 'lucide-react'
 import DeleteAllButton from './delete-all-button'
 
 interface Expense {
@@ -48,7 +48,7 @@ export default function ExpensesTable() {
 
   const queryClient = useQueryClient()
 
-  const { data: expenses, isLoading, error: queryError } = useQuery<Expense[]>({
+  const { data: expenses, isLoading, error: queryError, refetch: refetchExpenses } = useQuery<Expense[]>({
     queryKey: ['/api/expenses'],
     queryFn: async () => {
       console.log('🔍 Fetching expenses from API...')
@@ -218,7 +218,23 @@ export default function ExpensesTable() {
       console.log('✅ Despesas exportadas com sucesso')
     } catch (error) {
       console.error('❌ Erro ao exportar:', error)
-      setError('Erro ao exportar despesas')
+    }
+  }
+
+  const handleDeleteExpense = async (expenseId: number, vendor: string) => {
+    try {
+      const response = await fetch(`/api/expenses/${expenseId}`, {
+        method: 'DELETE',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      })
+
+      if (response.ok) {
+        await refetchExpenses()
+      }
+    } catch (error) {
+      console.error('Error deleting expense:', error)
     }
   }
 
@@ -357,6 +373,14 @@ export default function ExpensesTable() {
                         onClick={() => console.log(`Ver detalhes da despesa: ${expense.vendor}`)}
                       >
                         <Eye className="w-4 h-4" />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteExpense(expense.id, expense.vendor)}
+                        className="text-red-600 hover:text-red-800"
+                      >
+                        <Trash2 className="w-4 h-4" />
                       </Button>
                     </div>
                   </TableCell>

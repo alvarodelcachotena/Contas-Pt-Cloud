@@ -1,0 +1,32 @@
+console.log('🔧 === CORRECCIÓN DE ACTUALIZACIÓN INMEDIATA ===')
+
+console.log('')
+console.log('✅ PROBLEMA IDENTIFICADO:')
+console.log('   - queryClient.invalidateQueries() no actualizaba la tabla inmediatamente')
+console.log('   - Necesitabas recargar la página para ver los cambios')
+
+console.log('')
+console.log('✅ SOLUCIÓN IMPLEMENTADA:')
+console.log('   1. Agregado refetch() directamente en useQuery')
+console.log('   2. Cambiado invalidateQueries() por await refetch()')
+console.log('   3. Actualización inmediata después de eliminar')
+
+console.log('')
+console.log('📁 ARCHIVOS MODIFICADOS:')
+console.log('   - components/invoices-table.tsx')
+console.log('   - components/expenses-table.tsx')
+
+console.log('')
+console.log('🎯 RESULTADO:')
+console.log('   - ✅ Eliminación inmediata visible')
+console.log('   - ✅ No necesitas recargar la página')
+console.log('   - ✅ Actualización automática de la tabla')
+console.log('   - ✅ Experiencia fluida')
+
+console.log('')
+console.log('✨ ¡Problema resuelto!')
+console.log('   Ahora al hacer clic en la papelera:')
+console.log('   1. Se elimina de la base de datos')
+console.log('   2. Se actualiza la tabla inmediatamente')
+console.log('   3. No necesitas recargar la página')
+console.log('   4. La fila desaparece al instante')

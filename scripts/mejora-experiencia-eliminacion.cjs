@@ -1,0 +1,28 @@
+console.log('🔧 === MEJORA DE EXPERIENCIA DE ELIMINACIÓN ===')
+
+console.log('')
+console.log('✅ CAMBIOS IMPLEMENTADOS:')
+console.log('   1. Eliminado alert "Factura eliminada correctamente"')
+console.log('   2. Eliminado alert "Despesa eliminada correctamente"')
+console.log('   3. Eliminados alerts de error')
+console.log('   4. Solo logs en consola para debugging')
+
+console.log('')
+console.log('🎯 RESULTADO:')
+console.log('   - ✅ Eliminación silenciosa sin alerts molestos')
+console.log('   - ✅ Actualización automática de la tabla')
+console.log('   - ✅ No necesitas recargar la página')
+console.log('   - ✅ Experiencia más fluida')
+
+console.log('')
+console.log('📁 ARCHIVOS MODIFICADOS:')
+console.log('   - components/invoices-table.tsx')
+console.log('   - components/expenses-table.tsx')
+
+console.log('')
+console.log('✨ ¡Experiencia mejorada!')
+console.log('   Ahora al hacer clic en la papelera:')
+console.log('   1. Se elimina inmediatamente')
+console.log('   2. La tabla se actualiza automáticamente')
+console.log('   3. No hay alerts molestos')
+console.log('   4. No necesitas recargar la página')
