@@ -412,7 +412,23 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             const dropboxStatus = uploadSuccess ? '☁️ Subido a Dropbox' : '⚠️ Error subiendo a Dropbox'
             const documentTypeText = analysisResult.document_type === 'invoice' ? 'Factura (gasto que pagaste)' : 'Gasto'
             const locationText = analysisResult.document_type === 'invoice' ? 'Faturas Y Despesas' : 'Despesas'
-            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${documentTypeText}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}\n💰 Guardado en ${locationText} (no se creó cliente)\n\n${dropboxStatus}\nEl documento aparecerá en la sección correspondiente.`
+
+            // Detectar tipo de pago para mostrar en el mensaje
+            let paymentTypeText = ''
+            if (analysisResult.extracted_data && 'payment_type' in analysisResult.extracted_data) {
+              const paymentType = analysisResult.extracted_data.payment_type
+              if (paymentType === 'bank_transfer') {
+                paymentTypeText = '\n💳 Tipo de pago: Transferência Bancária'
+              } else if (paymentType === 'card') {
+                paymentTypeText = '\n💳 Tipo de pago: Crédito (Tarjeta)'
+              } else if (paymentType === 'cash') {
+                paymentTypeText = '\n💳 Tipo de pago: Dinheiro'
+              } else {
+                paymentTypeText = '\n💳 Tipo de pago: Crédito'
+              }
+            }
+
+            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${documentTypeText}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}${paymentTypeText}\n💰 Guardado en ${locationText} (no se creó cliente)\n\n${dropboxStatus}\nEl documento aparecerá en la sección correspondiente.`
             await sendWhatsAppMessage(message.from, successMessage)
 
           } catch (aiError) {
@@ -822,7 +838,7 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
         console.log(`✅ Despesa creada automáticamente: ${expense.id}`)
       }
     } catch (expenseException) {
-      console.log(`⚠️ Exception creating expense: ${expenseException.message}`)
+      console.log(`⚠️ Exception creating expense: ${expenseException instanceof Error ? expenseException.message : 'Unknown error'}`)
     }
 
     console.log(`✅ Factura creada: ${invoice.id}`)

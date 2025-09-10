@@ -44,6 +44,7 @@ export async function GET(request: NextRequest) {
       status: invoice.status,
       description: invoice.description,
       paymentTerms: invoice.payment_terms,
+      paymentType: invoice.payment_type,
       createdAt: invoice.created_at
     })) || []
 

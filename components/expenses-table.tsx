@@ -336,11 +336,7 @@ export default function ExpensesTable() {
                   <TableCell className="font-medium">{expense.vendor}</TableCell>
                   <TableCell>€{parseFloat((expense.amount + (expense.vatAmount || 0)).toString()).toFixed(2)}</TableCell>
                   <TableCell>
-                    {expense.vatAmount ? (
-                      <span>€{parseFloat(expense.vatAmount.toString()).toFixed(2)} ({expense.vatRate}%)</span>
-                    ) : (
-                      <span className="text-gray-400">-</span>
-                    )}
+                    <span>€{parseFloat((expense.vatAmount || 0).toString()).toFixed(2)} ({expense.vatRate || 0}%)</span>
                   </TableCell>
                   <TableCell>
                     <Badge variant="secondary">{expense.category}</Badge>

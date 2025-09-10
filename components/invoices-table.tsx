@@ -459,7 +459,7 @@ export default function InvoicesTable() {
                   <TableCell>{invoice.clientTaxId || '-'}</TableCell>
                   <TableCell>€{parseFloat(invoice.vatAmount.toString()).toFixed(2)} ({invoice.vatRate}%)</TableCell>
                   <TableCell className="font-medium">
-                    €{parseFloat(invoice.totalAmount.toString()).toFixed(2)}
+                    €{parseFloat((parseFloat(invoice.amount.toString()) + parseFloat((invoice.vatAmount || 0).toString())).toString()).toFixed(2)}
                   </TableCell>
                   <TableCell>
                     <Badge variant={
@@ -467,7 +467,7 @@ export default function InvoicesTable() {
                         invoice.paymentType === 'card' ? 'secondary' : 'outline'
                     }>
                       {invoice.paymentType === 'bank_transfer' ? 'Transferência' :
-                        invoice.paymentType === 'card' ? 'Cartão' : 'Crédito'}
+                        invoice.paymentType === 'card' ? 'Crédito' : 'Crédito'}
                     </Badge>
                   </TableCell>
                   <TableCell>
