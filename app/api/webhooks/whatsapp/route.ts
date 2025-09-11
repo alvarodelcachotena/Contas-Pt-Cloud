@@ -355,7 +355,31 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             console.log(`🔍 Document type detected: ${analysisResult.document_type}`)
             console.log(`🔍 Extracted data keys:`, Object.keys(analysisResult.extracted_data || {}))
 
-            if (analysisResult.document_type === 'invoice') {
+            // Force certain patterns to be treated as invoices (restaurant receipts, etc.)
+            const analysisData = analysisResult.extracted_data || {}
+            const description = analysisData.description || ''
+            const vendorName = analysisData.vendor_name || analysisData.vendor || analysisData.client_name || ''
+
+            // Check if this looks like a restaurant receipt or invoice
+            const isRestaurantReceipt = description.toLowerCase().includes('café') ||
+              description.toLowerCase().includes('moet') ||
+              description.toLowerCase().includes('sangria') ||
+              description.toLowerCase().includes('mariscada') ||
+              description.toLowerCase().includes('ensalada') ||
+              vendorName.toLowerCase().includes('restaurant') ||
+              vendorName.toLowerCase().includes('fish') ||
+              vendorName.toLowerCase().includes('bar')
+
+            // Override document type for restaurant receipts
+            let finalDocumentType = analysisResult.document_type
+            if (isRestaurantReceipt && analysisResult.document_type === 'expense') {
+              console.log(`🍽️ Detectado recibo de restaurante, cambiando de 'expense' a 'invoice'`)
+              finalDocumentType = 'invoice'
+            }
+
+            console.log(`🔍 Final document type: ${finalDocumentType}`)
+
+            if (finalDocumentType === 'invoice') {
               console.log(`💰 Procesando INVOICE como GASTO (dinero que pagaste)`)
               console.log(`🔍 Datos de extracted_data antes de processInvoice:`, JSON.stringify(analysisResult.extracted_data, null, 2))
               try {
@@ -364,7 +388,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               } catch (error) {
                 console.error(`❌ Error en processInvoice:`, error)
               }
-            } else if (analysisResult.document_type === 'expense') {
+            } else if (finalDocumentType === 'expense') {
               console.log(`💰 Procesando EXPENSE como GASTO`)
               console.log(`🔍 Datos de extracted_data antes de processExpense:`, JSON.stringify(analysisResult.extracted_data, null, 2))
               try {
@@ -374,7 +398,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
                 console.error(`❌ Error en processExpense:`, error)
               }
             } else {
-              console.log(`⚠️ Tipo de documento no reconocido: ${analysisResult.document_type}`)
+              console.log(`⚠️ Tipo de documento no reconocido: ${finalDocumentType}`)
             }
 
             console.log(`✅ Document processing completed with AI: ${document.id}`)

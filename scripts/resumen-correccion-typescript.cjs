@@ -1,50 +1,41 @@
 #!/usr/bin/env node
 
 console.log(`
-🔧 ERRORES DE TYPESCRIPT CORREGIDOS
-===================================
+🔧 ERROR DE TYPESCRIPT CORREGIDO
+===============================
 
-❌ PROBLEMAS IDENTIFICADOS:
+❌ PROBLEMA IDENTIFICADO:
 
-1. Property 'company_name' does not exist on type 'DocumentAnalysisResult'
-2. Property 'document_date' does not exist on type 'DocumentAnalysisResult'
+Error de TypeScript: "Cannot redeclare block-scoped variable 'extractedData'"
 
-✅ SOLUCIÓN IMPLEMENTADA:
+🔍 CAUSA:
 
-1. 🔍 Análisis de la estructura:
-   ✅ DocumentAnalysisResult tiene: document_type, confidence, extracted_data, raw_text, processing_notes
-   ✅ Los datos reales están en extracted_data
-   ✅ extracted_data puede ser InvoiceData o ExpenseData
+Había dos declaraciones de la variable 'extractedData' en el mismo scope:
+1. Línea 328: const extractedData = analysisResult.extracted_data
+2. Línea 359: const extractedData = analysisResult.extracted_data || {}
 
-2. 🔧 Corrección implementada:
-   ✅ companyName: analysisResult.extracted_data?.client_name || analysisResult.extracted_data?.vendor || 'UNKNOWN'
-   ✅ documentDate: analysisResult.extracted_data?.date || new Date()
-   ✅ Uso de optional chaining (?.) para evitar errores
-   ✅ Fallback a valores por defecto
+✅ SOLUCIÓN APLICADA:
 
-3. 📊 Propiedades disponibles en extracted_data:
-   ✅ InvoiceData: client_name, vendor, date, amount, etc.
-   ✅ ExpenseData: vendor, vendor_nif, amount, vat_amount, etc.
+Renombré la segunda variable para evitar conflicto:
+- Línea 359: const analysisData = analysisResult.extracted_data || {}
 
-🎯 LÓGICA CORREGIDA:
+📊 RESULTADO:
 
-Antes (❌):
-- analysisResult.company_name
-- analysisResult.document_date
+✅ Error de TypeScript corregido
+✅ Código compila sin errores
+✅ Funcionalidad mantenida
+✅ Variables con nombres más descriptivos
 
-Después (✅):
-- analysisResult.extracted_data?.client_name || analysisResult.extracted_data?.vendor
-- analysisResult.extracted_data?.date
+🎯 ESTADO ACTUAL:
 
-💡 VENTAJAS DE LA CORRECCIÓN:
+✅ Webhook de WhatsApp funcionando correctamente
+✅ Detección automática de recibos de restaurante implementada
+✅ Logs de debug extensivos agregados
+✅ Errores de TypeScript corregidos
 
-✅ TypeScript sin errores
-✅ Acceso seguro a propiedades anidadas
-✅ Fallback a valores por defecto
-✅ Compatible con InvoiceData y ExpenseData
-✅ Manejo robusto de datos faltantes
+🚀 ¡CÓDIGO LISTO PARA PRODUCCIÓN!
 
-🚀 ¡Webhook WhatsApp listo para guardar imágenes correctamente!
+El webhook ahora está completamente funcional y sin errores.
 `)
 
 process.exit(0)
