@@ -65,13 +65,32 @@ export interface WhatsAppWebhookPayload {
                     display_phone_number: string
                     phone_number_id: string
                 }
-                contacts: Array<{
+                contacts?: Array<{
                     profile: {
                         name: string
                     }
                     wa_id: string
                 }>
-                messages: WhatsAppMessage[]
+                messages?: WhatsAppMessage[]
+                statuses?: Array<{
+                    id: string
+                    status: string
+                    timestamp: string
+                    recipient_id: string
+                    conversation?: {
+                        id: string
+                        expiration_timestamp?: string
+                        origin?: {
+                            type: string
+                        }
+                    }
+                    pricing?: {
+                        billable: boolean
+                        pricing_model: string
+                        category: string
+                        type: string
+                    }
+                }>
             }
             field: string
         }>

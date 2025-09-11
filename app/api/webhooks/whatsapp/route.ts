@@ -153,6 +153,27 @@ export async function POST(request: NextRequest) {
     const body: WhatsAppWebhookPayload = await request.json()
     console.log('📥 WhatsApp webhook payload:', JSON.stringify(body, null, 2))
 
+    // Log detallado de la estructura
+    if (body.entry && body.entry[0] && body.entry[0].changes) {
+      console.log('🔍 Estructura detallada del webhook:')
+      body.entry[0].changes.forEach((change, index) => {
+        console.log(`   Cambio ${index + 1}:`)
+        console.log(`     - Field: ${change.field}`)
+        console.log(`     - Messages: ${change.value?.messages ? change.value.messages.length : 'NO HAY'}`)
+        console.log(`     - Statuses: ${change.value?.statuses ? change.value.statuses.length : 'NO HAY'}`)
+        if (change.value?.messages) {
+          change.value.messages.forEach((msg, msgIndex) => {
+            console.log(`       Mensaje ${msgIndex + 1}: ID=${msg.id}, Tipo=${msg.type}`)
+          })
+        }
+        if (change.value?.statuses) {
+          change.value.statuses.forEach((status: any, statusIndex: number) => {
+            console.log(`       Status ${statusIndex + 1}: ${status.status} para mensaje ${status.id}`)
+          })
+        }
+      })
+    }
+
     // Process webhook data
     if (body.entry && body.entry[0]?.changes) {
       console.log(`📋 Procesando ${body.entry[0].changes.length} cambios`);
