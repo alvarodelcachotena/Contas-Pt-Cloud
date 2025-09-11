@@ -385,6 +385,14 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             console.log(`   - Description: "${description}"`)
             console.log(`   - Vendor Name: "${vendorName}"`)
             console.log(`   - Document Type original: ${analysisResult.document_type}`)
+            console.log(`   - Palabras clave encontradas:`)
+
+            const keywords = ['expresso', 'rouge', 'cote', 'rhone', 'rillettes', 'eperlans', 'onglet', 'fromage', 'couverts']
+            keywords.forEach(keyword => {
+              if (description.toLowerCase().includes(keyword)) {
+                console.log(`     ✅ "${keyword}" encontrado`)
+              }
+            })
 
             // Check if this looks like a restaurant receipt or invoice
             const isRestaurantReceipt = description.toLowerCase().includes('café') ||
@@ -397,6 +405,21 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               description.toLowerCase().includes('bebida') ||
               description.toLowerCase().includes('comida') ||
               description.toLowerCase().includes('plato') ||
+              description.toLowerCase().includes('expresso') ||
+              description.toLowerCase().includes('rouge') ||
+              description.toLowerCase().includes('cote') ||
+              description.toLowerCase().includes('rhone') ||
+              description.toLowerCase().includes('rillettes') ||
+              description.toLowerCase().includes('eperlans') ||
+              description.toLowerCase().includes('onglet') ||
+              description.toLowerCase().includes('fromage') ||
+              description.toLowerCase().includes('couverts') ||
+              description.toLowerCase().includes('vino') ||
+              description.toLowerCase().includes('wine') ||
+              description.toLowerCase().includes('carne') ||
+              description.toLowerCase().includes('pescado') ||
+              description.toLowerCase().includes('queso') ||
+              description.toLowerCase().includes('cheese') ||
               vendorName.toLowerCase().includes('restaurant') ||
               vendorName.toLowerCase().includes('fish') ||
               vendorName.toLowerCase().includes('bar') ||
