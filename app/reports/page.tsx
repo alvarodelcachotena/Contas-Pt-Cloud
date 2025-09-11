@@ -30,48 +30,48 @@ export default function ReportsPage() {
   const reportTypes = [
     {
       id: 'financial',
-      name: t.reports.reportTypes.financial.name,
-      description: t.reports.reportTypes.financial.description,
+      name: t.reports?.reportTypes?.financial?.name || 'Financial Report',
+      description: t.reports?.reportTypes?.financial?.description || 'Revenue, expenses and profits',
       icon: TrendingUp,
       color: 'bg-blue-100 text-blue-600',
       data: { revenue: '€45,230', expenses: '€23,150', profit: '€22,080' }
     },
     {
       id: 'invoices',
-      name: t.reports.reportTypes.invoices.name,
-      description: t.reports.reportTypes.invoices.description,
+      name: t.reports?.reportTypes?.invoices?.name || 'Invoice Report',
+      description: t.reports?.reportTypes?.invoices?.description || 'Issued and received invoices',
       icon: FileText,
       color: 'bg-green-100 text-green-600',
       data: { issued: 124, paid: 98, pending: 26 }
     },
     {
       id: 'expenses',
-      name: t.reports.reportTypes.expenses.name,
-      description: t.reports.reportTypes.expenses.description,
+      name: t.reports?.reportTypes?.expenses?.name || 'Expense Report',
+      description: t.reports?.reportTypes?.expenses?.description || 'Expenses by category',
       icon: Receipt,
       color: 'bg-red-100 text-red-600',
       data: { total: '€23,150', categories: 8, deductible: '€18,420' }
     },
     {
       id: 'clients',
-      name: t.reports.reportTypes.clients.name,
-      description: t.reports.reportTypes.clients.description,
+      name: t.reports?.reportTypes?.clients?.name || 'Client Report',
+      description: t.reports?.reportTypes?.clients?.description || 'Client analysis and revenue',
       icon: Users,
       color: 'bg-purple-100 text-purple-600',
       data: { active: 45, new: 12, revenue: '€35,840' }
     },
     {
       id: 'vat',
-      name: t.reports.reportTypes.vat.name,
-      description: t.reports.reportTypes.vat.description,
+      name: t.reports?.reportTypes?.vat?.name || 'VAT Report',
+      description: t.reports?.reportTypes?.vat?.description || 'VAT declarations and balances',
       icon: BarChart3,
       color: 'bg-yellow-100 text-yellow-600',
       data: { toPay: '€3,240', toReceive: '€1,850', balance: '€1,390' }
     },
     {
       id: 'assets',
-      name: t.reports.reportTypes.assets.name,
-      description: t.reports.reportTypes.assets.description,
+      name: t.reports?.reportTypes?.assets?.name || 'Assets Report',
+      description: t.reports?.reportTypes?.assets?.description || 'Asset valuation and depreciation',
       icon: Building2,
       color: 'bg-indigo-100 text-indigo-600',
       data: { total: '€125,000', depreciation: '€8,500', net: '€116,500' }
@@ -81,24 +81,24 @@ export default function ReportsPage() {
   const recentReports = [
     {
       id: 1,
-      name: t.reports.recentReports.monthlyJune,
-      type: t.reports.recentReports.financial,
+      name: t.reports?.recentReports?.monthlyJune || 'Monthly Report June',
+      type: t.reports?.recentReports?.financial || 'Financial',
       generated: '2025-06-30T18:30:00',
       size: '2.1 MB',
       format: 'PDF'
     },
     {
       id: 2,
-      name: t.reports.recentReports.expensesQ2,
-      type: t.reports.recentReports.expenses,
+      name: t.reports?.recentReports?.expensesQ2 || 'Expenses Q2',
+      type: t.reports?.recentReports?.expenses || 'Expenses',
       generated: '2025-06-28T14:15:00',
       size: '1.8 MB',
       format: 'Excel'
     },
     {
       id: 3,
-      name: t.reports.recentReports.vatQ2,
-      type: t.reports.recentReports.vat,
+      name: t.reports?.recentReports?.vatQ2 || 'VAT Q2',
+      type: t.reports?.recentReports?.vat || 'VAT',
       generated: '2025-06-25T10:00:00',
       size: '890 KB',
       format: 'PDF'
@@ -119,8 +119,8 @@ export default function ReportsPage() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">{t.reports.title}</h1>
-                <p className="text-gray-600 mt-1">{t.reports.subtitle}</p>
+                <h1 className="text-3xl font-bold text-foreground">{t.reports?.title || 'Reports'}</h1>
+                <p className="text-gray-600 mt-1">{t.reports?.subtitle || 'Generate and manage business reports'}</p>
               </div>
               <div className="flex items-center space-x-2">
                 <div className="flex items-center space-x-2 bg-white rounded-lg border px-3 py-2">
@@ -130,15 +130,15 @@ export default function ReportsPage() {
                     onChange={(e) => setDateRange(e.target.value)}
                     className="border-none outline-none bg-transparent"
                   >
-                    <option value="week">{t.reports.filters.thisWeek}</option>
-                    <option value="month">{t.reports.filters.thisMonth}</option>
-                    <option value="quarter">{t.reports.filters.quarter}</option>
-                    <option value="year">{t.reports.filters.year}</option>
+                    <option value="week">{t.reports?.filters?.thisWeek || 'This Week'}</option>
+                    <option value="month">{t.reports?.filters?.thisMonth || 'This Month'}</option>
+                    <option value="quarter">{t.reports?.filters?.quarter || 'Quarter'}</option>
+                    <option value="year">{t.reports?.filters?.year || 'Year'}</option>
                   </select>
                 </div>
                 <Button className="flex items-center space-x-2">
                   <Download className="w-4 h-4" />
-                  <span>{t.reports.exportAll}</span>
+                  <span>{t.reports?.exportAll || 'Export All'}</span>
                 </Button>
               </div>
             </div>
@@ -148,7 +148,7 @@ export default function ReportsPage() {
               <div className="bg-white rounded-lg border shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">{t.reports.metrics.revenue}</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.reports?.quickStats?.revenue || 'Revenue'}</h3>
                     <p className="text-2xl font-bold text-green-600 mt-2">€45,230</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -161,7 +161,7 @@ export default function ReportsPage() {
               <div className="bg-white rounded-lg border shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">{t.reports.metrics.expenses}</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.reports?.quickStats?.expenses || 'Expenses'}</h3>
                     <p className="text-2xl font-bold text-red-600 mt-2">€23,150</p>
                   </div>
                   <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -174,7 +174,7 @@ export default function ReportsPage() {
               <div className="bg-white rounded-lg border shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">{t.reports.metrics.profit}</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.reports?.quickStats?.profit || 'Profit'}</h3>
                     <p className="text-2xl font-bold text-blue-600 mt-2">€22,080</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -187,7 +187,7 @@ export default function ReportsPage() {
               <div className="bg-white rounded-lg border shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">{t.reports.metrics.margin}</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.reports?.quickStats?.margin || 'Margin'}</h3>
                     <p className="text-2xl font-bold text-purple-600 mt-2">48.8%</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -200,7 +200,7 @@ export default function ReportsPage() {
 
             {/* Report Types */}
             <div className="bg-white rounded-lg border shadow-sm p-6">
-              <h3 className="text-lg font-semibold text-foreground mb-6">{t.reports.reportTypes.title}</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-6">{t.reports?.reportTypes?.title || 'Report Types'}</h3>
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
                 {reportTypes.map((report) => (
                   <div key={report.id} className="border rounded-lg p-6 hover:shadow-md transition-shadow">
@@ -214,7 +214,7 @@ export default function ReportsPage() {
                         className="flex items-center space-x-2"
                       >
                         <Download className="w-4 h-4" />
-                        <span>{t.reports.generate}</span>
+                        <span>{t.reports?.generate || 'Generate'}</span>
                       </Button>
                     </div>
                     <h4 className="font-semibold text-slate-900 mb-2">{report.name}</h4>
@@ -236,12 +236,12 @@ export default function ReportsPage() {
             <div className="bg-white rounded-lg border shadow-sm">
               <div className="p-6 border-b">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground">{t.reports.recentReports.title}</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{t.reports?.recentReports?.title || 'Recent Reports'}</h3>
                   <div className="flex items-center space-x-2">
                     <div className="relative">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <Input
-                        placeholder={t.reports.recentReports.searchPlaceholder}
+                        placeholder={t.reports?.recentReports?.searchPlaceholder || 'Search reports...'}
                         className="pl-10 w-64"
                       />
                     </div>
@@ -252,12 +252,12 @@ export default function ReportsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.name}</th>
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.type}</th>
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.date}</th>
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.size}</th>
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.format}</th>
-                      <th className="text-right p-4 font-medium text-gray-600">{t.reports.recentReports.actions}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports?.recentReports?.table?.name || 'Name'}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports?.recentReports?.table?.type || 'Type'}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports?.recentReports?.table?.date || 'Date'}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports?.recentReports?.table?.size || 'Size'}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports?.recentReports?.table?.format || 'Format'}</th>
+                      <th className="text-right p-4 font-medium text-gray-600">{t.reports?.recentReports?.table?.actions || 'Actions'}</th>
                     </tr>
                   </thead>
                   <tbody>

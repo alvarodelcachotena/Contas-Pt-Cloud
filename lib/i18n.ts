@@ -632,68 +632,6 @@ export interface Translations {
             close: string
         }
     }
-    title: string
-    subtitle: string
-    connectDrive: string
-    loading: string
-    metrics: {
-        connectedDrives: string
-        totalFiles: string
-        processedToday: string
-        pending: string
-    }
-    status: {
-        connected: string
-        error: string
-        pending: string
-        unknown: string
-    }
-    actions: {
-        test: string
-        folder: string
-        manage: string
-        disconnect: string
-        close: string
-        cancel: string
-    }
-    connectedDrives: {
-        title: string
-    }
-    dropboxManager: {
-        title: string
-    }
-    emptyState: {
-        title: string
-        description: string
-    }
-    modal: {
-        connectTitle: string
-        selectProvider: string
-    }
-    providers: {
-        dropbox: string
-        googleDrive: string
-        oneDrive: string
-    }
-    messages: {
-        dropboxConnected: string
-        googleDriveConnected: string
-        oneDriveConnected: string
-        connectionSuccessful: string
-        disconnectSuccess: string
-    }
-    errors: {
-        authFailed: string
-        tokenFailed: string
-        userFailed: string
-        saveFailed: string
-        callbackFailed: string
-        configMissing: string
-        tokenExchangeFailed: string
-        connectionError: string
-        loadingError: string
-        disconnectError: string
-    }
 
     // Admin
     admin: {
@@ -897,6 +835,78 @@ export interface Translations {
             dropbox: string
             googleDrive: string
             oneDrive: string
+        }
+    }
+
+    // Reports
+    reports: {
+        title: string
+        subtitle: string
+        exportAll: string
+        generate: string
+        filters: {
+            thisWeek: string
+            thisMonth: string
+            quarter: string
+            year: string
+        }
+        quickStats: {
+            revenue: string
+            expenses: string
+            profit: string
+            margin: string
+        }
+        reportTypes: {
+            title: string
+            financial: {
+                name: string
+                description: string
+                generate: string
+            }
+            invoices: {
+                name: string
+                description: string
+                generate: string
+            }
+            expenses: {
+                name: string
+                description: string
+                generate: string
+            }
+            clients: {
+                name: string
+                description: string
+                generate: string
+            }
+            vat: {
+                name: string
+                description: string
+                generate: string
+            }
+            assets: {
+                name: string
+                description: string
+                generate: string
+            }
+        }
+        recentReports: {
+            title: string
+            searchPlaceholder: string
+            name: string
+            monthlyJune: string
+            expensesQ2: string
+            vatQ2: string
+            financial: string
+            expenses: string
+            vat: string
+            table: {
+                name: string
+                type: string
+                date: string
+                size: string
+                format: string
+                actions: string
+            }
         }
     }
 }
@@ -1484,6 +1494,7 @@ export const translations: Record<Language, Translations> = {
             title: 'Relatórios',
             subtitle: 'Análises e relatórios financeiros',
             exportAll: 'Exportar Tudo',
+            generate: 'Gerar',
             filters: {
                 thisWeek: 'Esta Semana',
                 thisMonth: 'Este Mês',
@@ -1533,11 +1544,20 @@ export const translations: Record<Language, Translations> = {
                 title: 'Relatórios Recentes',
                 searchPlaceholder: 'Pesquisar relatórios...',
                 name: 'Nome',
-                type: 'Tipo',
-                date: 'Data',
-                size: 'Tamanho',
-                format: 'Formato',
-                actions: 'Ações'
+                monthlyJune: 'Relatório Mensal Junho',
+                expensesQ2: 'Despesas Q2',
+                vatQ2: 'IVA Q2',
+                financial: 'Financeiro',
+                expenses: 'Despesas',
+                vat: 'IVA',
+                table: {
+                    name: 'Nome',
+                    type: 'Tipo',
+                    date: 'Data',
+                    size: 'Tamanho',
+                    format: 'Formato',
+                    actions: 'Ações'
+                }
             }
         },
 
@@ -1618,9 +1638,6 @@ export const translations: Record<Language, Translations> = {
                 close: 'Cerrar',
                 cancel: 'Cancelar'
             },
-            connectedDrives: {
-                title: 'Drives Conectados'
-            },
             dropboxManager: {
                 title: 'Gestión de Dropbox'
             },
@@ -1629,6 +1646,8 @@ export const translations: Record<Language, Translations> = {
                 description: 'Conecte a sua primeira conta de armazenamento na nuvem'
             },
             modal: {
+                title: 'Conectar Armazenamento na Nuvem',
+                description: 'Selecione o fornecedor que deseja conectar:',
                 connectTitle: 'Conectar Armazenamento na Nuvem',
                 selectProvider: 'Selecione o fornecedor que deseja conectar:'
             },
@@ -1638,13 +1657,22 @@ export const translations: Record<Language, Translations> = {
                 oneDrive: 'OneDrive'
             },
             messages: {
+                dropboxSuccess: 'Dropbox conectado com sucesso',
+                googleDriveSuccess: 'Google Drive conectado com sucesso',
+                oneDriveSuccess: 'OneDrive conectado com sucesso',
+                disconnectSuccess: 'Fornecedor desconectado com sucesso',
                 dropboxConnected: 'Dropbox conectado com sucesso',
                 googleDriveConnected: 'Google Drive conectado com sucesso',
                 oneDriveConnected: 'OneDrive conectado com sucesso',
-                connectionSuccessful: 'Conexão bem-sucedida',
-                disconnectSuccess: 'Fornecedor desconectado com sucesso'
+                connectionSuccessful: 'Conexão bem-sucedida'
             },
             errors: {
+                dropboxError: 'Erro na autenticação do Dropbox',
+                googleDriveError: 'Erro na autenticação do Google Drive',
+                oneDriveError: 'Erro na autenticação do OneDrive',
+                authError: 'Erro na autenticação',
+                loadingError: 'Erro ao carregar configurações de cloud drives',
+                disconnectError: 'Erro ao desconectar o fornecedor',
                 authFailed: 'Erro na autenticação',
                 tokenFailed: 'Erro ao obter token de acesso',
                 userFailed: 'Erro ao obter dados do usuário',
@@ -1652,9 +1680,7 @@ export const translations: Record<Language, Translations> = {
                 callbackFailed: 'Erro no processo de autenticação',
                 configMissing: 'Configuração de Dropbox não encontrada. Verifique as variáveis de ambiente DROPBOX_CLIENT_ID e DROPBOX_CLIENT_SECRET.',
                 tokenExchangeFailed: 'Erro ao trocar código por token de acesso',
-                connectionError: 'Erro na conexão',
-                loadingError: 'Erro ao carregar configurações de cloud drives',
-                disconnectError: 'Erro ao desconectar o fornecedor'
+                connectionError: 'Erro na conexão'
             }
         },
 
@@ -1688,6 +1714,7 @@ export const translations: Record<Language, Translations> = {
                 address: 'Endereço',
                 invoiceNumber: 'Nº Fatura',
                 date: 'Data',
+                amount: 'Valor',
                 netAmount: 'Valor sem IVA',
                 vat: 'IVA',
                 total: 'Total',
@@ -1701,7 +1728,8 @@ export const translations: Record<Language, Translations> = {
                 rateLimit: '⏳ Limite de uso da API atingido. Tente novamente mais tarde.',
                 timeout: '⏱️ A resposta demorou muito. Tente uma pergunta mais simples.',
                 server: '🔧 Erro interno do servidor. Verifique se o servidor está a funcionar.',
-                connection: '🌐 Erro de conexão. Verifique se o servidor está a executar na porta 5000.'
+                connection: '🌐 Erro de conexão. Verifique se o servidor está a executar na porta 5000.',
+                networkError: 'Erro de rede. Verifique a sua conexão.'
             },
             fileErrors: {
                 unsupportedType: 'Tipo de arquivo não suportado. Por favor, selecione um PDF ou imagem (PNG, JPG, GIF, BMP, WebP, TIFF).',
@@ -1786,78 +1814,6 @@ export const translations: Record<Language, Translations> = {
                     status: 'Estado',
                     actions: 'Ações'
                 }
-            }
-        },
-
-        // Cloud Drives
-        cloudDrives: {
-            title: 'Armazenamento na Nuvem',
-            subtitle: 'Gestão de drives conectados',
-            connectDrive: 'Conectar Drive',
-            loading: 'A carregar configurações...',
-            messages: {
-                dropboxSuccess: 'Dropbox conectado com sucesso',
-                googleDriveSuccess: 'Google Drive conectado com sucesso',
-                oneDriveSuccess: 'OneDrive conectado com sucesso',
-                disconnectSuccess: 'Drive desconectado com sucesso',
-                dropboxConnected: 'Dropbox conectado',
-                googleDriveConnected: 'Google Drive conectado',
-                oneDriveConnected: 'OneDrive conectado',
-                connectionSuccessful: 'Conexão bem-sucedida'
-            },
-            errors: {
-                dropboxError: 'Erro na autenticação do Dropbox',
-                googleDriveError: 'Erro na autenticação do Google Drive',
-                oneDriveError: 'Erro na autenticação do OneDrive',
-                authError: 'Erro na autenticação',
-                loadingError: 'Erro ao carregar configurações',
-                disconnectError: 'Erro ao desconectar drive',
-                authFailed: 'Falha na autenticação',
-                tokenFailed: 'Falha no token',
-                userFailed: 'Falha no utilizador',
-                saveFailed: 'Falha ao salvar',
-                callbackFailed: 'Falha no callback',
-                configMissing: 'Configuração em falta',
-                tokenExchangeFailed: 'Falha na troca de token',
-                connectionError: 'Erro de conexão'
-            },
-            metrics: {
-                connectedDrives: 'Drives Conectados',
-                totalFiles: 'Arquivos Totais',
-                processedToday: 'Processados Hoje',
-                pending: 'Pendentes'
-            },
-            status: {
-                connected: 'Conectado',
-                error: 'Erro',
-                pending: 'Pendente',
-                unknown: 'Desconhecido'
-            },
-            actions: {
-                test: 'Testar',
-                folder: 'Pasta',
-                manage: 'Gestionar',
-                disconnect: 'Desconectar',
-                close: 'Cerrar',
-                cancel: 'Cancelar'
-            },
-            dropboxManager: {
-                title: 'Gestión de Dropbox'
-            },
-            emptyState: {
-                title: 'Não há drives conectados',
-                description: 'Conecte a sua primeira conta de armazenamento na nuvem'
-            },
-            modal: {
-                title: 'Conectar Armazenamento na Nuvem',
-                description: 'Selecione o fornecedor que deseja conectar:',
-                connectTitle: 'Conectar Armazenamento na Nuvem',
-                selectProvider: 'Selecione o fornecedor que deseja conectar:'
-            },
-            providers: {
-                dropbox: 'Dropbox',
-                googleDrive: 'Google Drive',
-                oneDrive: 'OneDrive'
             }
         }
     },
@@ -2444,6 +2400,13 @@ export const translations: Record<Language, Translations> = {
             title: 'Reports',
             subtitle: 'Financial analysis and reports',
             exportAll: 'Export All',
+            generate: 'Generate',
+            filters: {
+                thisWeek: 'This Week',
+                thisMonth: 'This Month',
+                quarter: 'Quarter',
+                year: 'Year'
+            },
             quickStats: {
                 revenue: 'Revenue',
                 expenses: 'Expenses',
@@ -2487,11 +2450,20 @@ export const translations: Record<Language, Translations> = {
                 title: 'Recent Reports',
                 searchPlaceholder: 'Search reports...',
                 name: 'Name',
-                type: 'Type',
-                date: 'Date',
-                size: 'Size',
-                format: 'Format',
-                actions: 'Actions'
+                monthlyJune: 'Monthly Report June',
+                expensesQ2: 'Expenses Q2',
+                vatQ2: 'VAT Q2',
+                financial: 'Financial',
+                expenses: 'Expenses',
+                vat: 'VAT',
+                table: {
+                    name: 'Name',
+                    type: 'Type',
+                    date: 'Date',
+                    size: 'Size',
+                    format: 'Format',
+                    actions: 'Actions'
+                }
             }
         },
 
@@ -2572,9 +2544,6 @@ export const translations: Record<Language, Translations> = {
                 close: 'Close',
                 cancel: 'Cancel'
             },
-            connectedDrives: {
-                title: 'Connected Drives'
-            },
             dropboxManager: {
                 title: 'Dropbox Management'
             },
@@ -2583,6 +2552,8 @@ export const translations: Record<Language, Translations> = {
                 description: 'Connect your first cloud storage account'
             },
             modal: {
+                title: 'Connect Cloud Storage',
+                description: 'Select the provider you want to connect:',
                 connectTitle: 'Connect Cloud Storage',
                 selectProvider: 'Select the provider you want to connect:'
             },
@@ -2592,13 +2563,22 @@ export const translations: Record<Language, Translations> = {
                 oneDrive: 'OneDrive'
             },
             messages: {
+                dropboxSuccess: 'Dropbox connected successfully',
+                googleDriveSuccess: 'Google Drive connected successfully',
+                oneDriveSuccess: 'OneDrive connected successfully',
+                disconnectSuccess: 'Provider disconnected successfully',
                 dropboxConnected: 'Dropbox connected successfully',
                 googleDriveConnected: 'Google Drive connected successfully',
                 oneDriveConnected: 'OneDrive connected successfully',
-                connectionSuccessful: 'Connection successful',
-                disconnectSuccess: 'Provider disconnected successfully'
+                connectionSuccessful: 'Connection successful'
             },
             errors: {
+                dropboxError: 'Dropbox authentication error',
+                googleDriveError: 'Google Drive authentication error',
+                oneDriveError: 'OneDrive authentication error',
+                authError: 'Authentication error',
+                loadingError: 'Error loading cloud drives configurations',
+                disconnectError: 'Error disconnecting provider',
                 authFailed: 'Authentication error',
                 tokenFailed: 'Error getting access token',
                 userFailed: 'Error getting user data',
@@ -2606,9 +2586,7 @@ export const translations: Record<Language, Translations> = {
                 callbackFailed: 'Authentication process error',
                 configMissing: 'Dropbox configuration not found. Check DROPBOX_CLIENT_ID and DROPBOX_CLIENT_SECRET environment variables.',
                 tokenExchangeFailed: 'Error exchanging code for access token',
-                connectionError: 'Connection error',
-                loadingError: 'Error loading cloud drives configurations',
-                disconnectError: 'Error disconnecting provider'
+                connectionError: 'Connection error'
             }
         },
 
@@ -2642,6 +2620,7 @@ export const translations: Record<Language, Translations> = {
                 address: 'Address',
                 invoiceNumber: 'Invoice No.',
                 date: 'Date',
+                amount: 'Amount',
                 netAmount: 'Net Amount',
                 vat: 'VAT',
                 total: 'Total',
@@ -2655,7 +2634,8 @@ export const translations: Record<Language, Translations> = {
                 rateLimit: '⏳ API usage limit reached. Try again later.',
                 timeout: '⏱️ Response took too long. Try a simpler question.',
                 server: '🔧 Internal server error. Check if server is running.',
-                connection: '🌐 Connection error. Check if server is running on port 5000.'
+                connection: '🌐 Connection error. Check if server is running on port 5000.',
+                networkError: 'Network error. Check your connection.'
             },
             fileErrors: {
                 unsupportedType: 'Unsupported file type. Please select a PDF or image (PNG, JPG, GIF, BMP, WebP, TIFF).',
@@ -2740,78 +2720,6 @@ export const translations: Record<Language, Translations> = {
                     status: 'Status',
                     actions: 'Actions'
                 }
-            }
-        },
-
-        // Cloud Drives
-        cloudDrives: {
-            title: 'Cloud Storage',
-            subtitle: 'Connected drives management',
-            connectDrive: 'Connect Drive',
-            loading: 'Loading settings...',
-            messages: {
-                dropboxSuccess: 'Dropbox connected successfully',
-                googleDriveSuccess: 'Google Drive connected successfully',
-                oneDriveSuccess: 'OneDrive connected successfully',
-                disconnectSuccess: 'Drive disconnected successfully',
-                dropboxConnected: 'Dropbox connected',
-                googleDriveConnected: 'Google Drive connected',
-                oneDriveConnected: 'OneDrive connected',
-                connectionSuccessful: 'Connection successful'
-            },
-            errors: {
-                dropboxError: 'Dropbox authentication error',
-                googleDriveError: 'Google Drive authentication error',
-                oneDriveError: 'OneDrive authentication error',
-                authError: 'Authentication error',
-                loadingError: 'Error loading settings',
-                disconnectError: 'Error disconnecting drive',
-                authFailed: 'Authentication failed',
-                tokenFailed: 'Token failed',
-                userFailed: 'User failed',
-                saveFailed: 'Save failed',
-                callbackFailed: 'Callback failed',
-                configMissing: 'Configuration missing',
-                tokenExchangeFailed: 'Token exchange failed',
-                connectionError: 'Connection error'
-            },
-            metrics: {
-                connectedDrives: 'Connected Drives',
-                totalFiles: 'Total Files',
-                processedToday: 'Processed Today',
-                pending: 'Pending'
-            },
-            status: {
-                connected: 'Connected',
-                error: 'Error',
-                pending: 'Pending',
-                unknown: 'Unknown'
-            },
-            actions: {
-                test: 'Test',
-                folder: 'Folder',
-                manage: 'Manage',
-                disconnect: 'Disconnect',
-                close: 'Close',
-                cancel: 'Cancel'
-            },
-            dropboxManager: {
-                title: 'Dropbox Manager'
-            },
-            emptyState: {
-                title: 'No drives connected',
-                description: 'Connect your first cloud storage account'
-            },
-            modal: {
-                title: 'Connect Cloud Storage',
-                description: 'Select the provider you want to connect:',
-                connectTitle: 'Connect Cloud Storage',
-                selectProvider: 'Select the provider you want to connect:'
-            },
-            providers: {
-                dropbox: 'Dropbox',
-                googleDrive: 'Google Drive',
-                oneDrive: 'OneDrive'
             }
         }
     },
@@ -3398,6 +3306,13 @@ export const translations: Record<Language, Translations> = {
             title: 'Rapports',
             subtitle: 'Analyses et rapports financiers',
             exportAll: 'Tout Exporter',
+            generate: 'Générer',
+            filters: {
+                thisWeek: 'Cette Semaine',
+                thisMonth: 'Ce Mois',
+                quarter: 'Trimestre',
+                year: 'Année'
+            },
             quickStats: {
                 revenue: 'Revenus',
                 expenses: 'Dépenses',
@@ -3441,11 +3356,20 @@ export const translations: Record<Language, Translations> = {
                 title: 'Rapports Récents',
                 searchPlaceholder: 'Rechercher des rapports...',
                 name: 'Nom',
-                type: 'Type',
-                date: 'Date',
-                size: 'Taille',
-                format: 'Format',
-                actions: 'Actions'
+                monthlyJune: 'Rapport Mensuel Juin',
+                expensesQ2: 'Dépenses Q2',
+                vatQ2: 'TVA Q2',
+                financial: 'Financier',
+                expenses: 'Dépenses',
+                vat: 'TVA',
+                table: {
+                    name: 'Nom',
+                    type: 'Type',
+                    date: 'Date',
+                    size: 'Taille',
+                    format: 'Format',
+                    actions: 'Actions'
+                }
             }
         },
 
@@ -3526,9 +3450,6 @@ export const translations: Record<Language, Translations> = {
                 close: 'Fermer',
                 cancel: 'Annuler'
             },
-            connectedDrives: {
-                title: 'Disques Connectés'
-            },
             dropboxManager: {
                 title: 'Gestion Dropbox'
             },
@@ -3537,6 +3458,8 @@ export const translations: Record<Language, Translations> = {
                 description: 'Connectez votre premier compte de stockage cloud'
             },
             modal: {
+                title: 'Connecter Stockage Cloud',
+                description: 'Sélectionnez le fournisseur que vous souhaitez connecter :',
                 connectTitle: 'Connecter Stockage Cloud',
                 selectProvider: 'Sélectionnez le fournisseur que vous souhaitez connecter :'
             },
@@ -3546,13 +3469,22 @@ export const translations: Record<Language, Translations> = {
                 oneDrive: 'OneDrive'
             },
             messages: {
+                dropboxSuccess: 'Dropbox connecté avec succès',
+                googleDriveSuccess: 'Google Drive connecté avec succès',
+                oneDriveSuccess: 'OneDrive connecté avec succès',
+                disconnectSuccess: 'Fournisseur déconnecté avec succès',
                 dropboxConnected: 'Dropbox connecté avec succès',
                 googleDriveConnected: 'Google Drive connecté avec succès',
                 oneDriveConnected: 'OneDrive connecté avec succès',
-                connectionSuccessful: 'Connexion réussie',
-                disconnectSuccess: 'Fournisseur déconnecté avec succès'
+                connectionSuccessful: 'Connexion réussie'
             },
             errors: {
+                dropboxError: 'Erreur d\'authentification Dropbox',
+                googleDriveError: 'Erreur d\'authentification Google Drive',
+                oneDriveError: 'Erreur d\'authentification OneDrive',
+                authError: 'Erreur d\'authentification',
+                loadingError: 'Erreur lors du chargement des configurations de disques cloud',
+                disconnectError: 'Erreur lors de la déconnexion du fournisseur',
                 authFailed: 'Erreur d\'authentification',
                 tokenFailed: 'Erreur lors de l\'obtention du token d\'accès',
                 userFailed: 'Erreur lors de l\'obtention des données utilisateur',
@@ -3560,9 +3492,7 @@ export const translations: Record<Language, Translations> = {
                 callbackFailed: 'Erreur dans le processus d\'authentification',
                 configMissing: 'Configuration Dropbox non trouvée. Vérifiez les variables d\'environnement DROPBOX_CLIENT_ID et DROPBOX_CLIENT_SECRET.',
                 tokenExchangeFailed: 'Erreur lors de l\'échange du code contre le token d\'accès',
-                connectionError: 'Erreur de connexion',
-                loadingError: 'Erreur lors du chargement des configurations de disques cloud',
-                disconnectError: 'Erreur lors de la déconnexion du fournisseur'
+                connectionError: 'Erreur de connexion'
             }
         },
 
@@ -3596,6 +3526,7 @@ export const translations: Record<Language, Translations> = {
                 address: 'Adresse',
                 invoiceNumber: 'N° Facture',
                 date: 'Date',
+                amount: 'Montant',
                 netAmount: 'Montant Net',
                 vat: 'TVA',
                 total: 'Total',
@@ -3609,7 +3540,8 @@ export const translations: Record<Language, Translations> = {
                 rateLimit: '⏳ Limite d\'utilisation de l\'API atteinte. Réessayez plus tard.',
                 timeout: '⏱️ La réponse a pris trop de temps. Essayez une question plus simple.',
                 server: '🔧 Erreur interne du serveur. Vérifiez si le serveur fonctionne.',
-                connection: '🌐 Erreur de connexion. Vérifiez si le serveur fonctionne sur le port 5000.'
+                connection: '🌐 Erreur de connexion. Vérifiez si le serveur fonctionne sur le port 5000.',
+                networkError: 'Erreur réseau. Vérifiez votre connexion.'
             },
             fileErrors: {
                 unsupportedType: 'Type de fichier non supporté. Veuillez sélectionner un PDF ou une image (PNG, JPG, GIF, BMP, WebP, TIFF).',
@@ -3694,78 +3626,6 @@ export const translations: Record<Language, Translations> = {
                     status: 'Statut',
                     actions: 'Actions'
                 }
-            }
-        },
-
-        // Cloud Drives
-        cloudDrives: {
-            title: 'Stockage Cloud',
-            subtitle: 'Gestion des lecteurs connectés',
-            connectDrive: 'Connecter Lecteur',
-            loading: 'Chargement des paramètres...',
-            messages: {
-                dropboxSuccess: 'Dropbox connecté avec succès',
-                googleDriveSuccess: 'Google Drive connecté avec succès',
-                oneDriveSuccess: 'OneDrive connecté avec succès',
-                disconnectSuccess: 'Lecteur déconnecté avec succès',
-                dropboxConnected: 'Dropbox connecté',
-                googleDriveConnected: 'Google Drive connecté',
-                oneDriveConnected: 'OneDrive connecté',
-                connectionSuccessful: 'Connexion réussie'
-            },
-            errors: {
-                dropboxError: 'Erreur d\'authentification Dropbox',
-                googleDriveError: 'Erreur d\'authentification Google Drive',
-                oneDriveError: 'Erreur d\'authentification OneDrive',
-                authError: 'Erreur d\'authentification',
-                loadingError: 'Erreur de chargement des paramètres',
-                disconnectError: 'Erreur de déconnexion du lecteur',
-                authFailed: 'Échec de l\'authentification',
-                tokenFailed: 'Échec du token',
-                userFailed: 'Échec de l\'utilisateur',
-                saveFailed: 'Échec de la sauvegarde',
-                callbackFailed: 'Échec du callback',
-                configMissing: 'Configuration manquante',
-                tokenExchangeFailed: 'Échec de l\'échange de token',
-                connectionError: 'Erreur de connexion'
-            },
-            metrics: {
-                connectedDrives: 'Lecteurs Connectés',
-                totalFiles: 'Fichiers Totaux',
-                processedToday: 'Traités Aujourd\'hui',
-                pending: 'En Attente'
-            },
-            status: {
-                connected: 'Connecté',
-                error: 'Erreur',
-                pending: 'En Attente',
-                unknown: 'Inconnu'
-            },
-            actions: {
-                test: 'Tester',
-                folder: 'Dossier',
-                manage: 'Gérer',
-                disconnect: 'Déconnecter',
-                close: 'Fermer',
-                cancel: 'Annuler'
-            },
-            dropboxManager: {
-                title: 'Gestionnaire Dropbox'
-            },
-            emptyState: {
-                title: 'Aucun lecteur connecté',
-                description: 'Connectez votre premier compte de stockage cloud'
-            },
-            modal: {
-                title: 'Connecter Stockage Cloud',
-                description: 'Sélectionnez le fournisseur que vous souhaitez connecter:',
-                connectTitle: 'Connecter Stockage Cloud',
-                selectProvider: 'Sélectionnez le fournisseur que vous souhaitez connecter:'
-            },
-            providers: {
-                dropbox: 'Dropbox',
-                googleDrive: 'Google Drive',
-                oneDrive: 'OneDrive'
             }
         }
     }
