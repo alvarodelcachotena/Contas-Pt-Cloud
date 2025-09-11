@@ -1,6 +1,7 @@
 'use client'
 
 import { useAuth } from "@/hooks/useAuth"
+import { useLanguage } from "@/hooks/useLanguage"
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useQuery, useQueryClient } from '@tanstack/react-query'
@@ -35,6 +36,7 @@ interface Payment {
 
 export default function PaymentsPage() {
   const { isAuthenticated, isLoading } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -87,7 +89,7 @@ export default function PaymentsPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
+          <p className="text-muted-foreground">{t.payments.loading}</p>
         </div>
       </div>
     )
@@ -113,18 +115,18 @@ export default function PaymentsPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'Completado'
+        return t.payments.status.completed
       case 'pending':
-        return 'Pendente'
+        return t.payments.status.pending
       case 'failed':
-        return 'Falhado'
+        return t.payments.status.failed
       default:
         return status
     }
   }
 
   const getTypeLabel = (type: string) => {
-    return type === 'income' ? 'Recebimento' : 'Pagamento'
+    return type === 'income' ? t.payments.types.income : t.payments.types.expense
   }
 
   const getTypeColor = (type: string) => {
@@ -173,19 +175,19 @@ export default function PaymentsPage() {
 
     // Validation without alerts
     if (!formData.description.trim()) {
-      setError('Descrição é obrigatória')
+      setError(t.payments.errors.descriptionRequired)
       return
     }
     if (!formData.amount.trim() || isNaN(Number(formData.amount))) {
-      setError('Valor deve ser um número válido')
+      setError(t.payments.errors.amountRequired)
       return
     }
     if (!['1', '2'].includes(formData.type)) {
-      setError('Tipo de pagamento inválido')
+      setError(t.payments.errors.typeInvalid)
       return
     }
     if (!['1', '2', '3', '4'].includes(formData.method)) {
-      setError('Método de pagamento inválido')
+      setError(t.payments.errors.methodInvalid)
       return
     }
 
@@ -215,7 +217,7 @@ export default function PaymentsPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro ao registar pagamento')
+        throw new Error(errorData.error || t.payments.errors.createError)
       }
 
       // Pagamento registado com sucesso
@@ -226,7 +228,7 @@ export default function PaymentsPage() {
 
     } catch (error) {
       console.error('Erro:', error)
-      setError(error instanceof Error ? error.message : 'Erro ao registar pagamento')
+      setError(error instanceof Error ? error.message : t.payments.errors.createError)
     } finally {
       setIsSubmitting(false)
     }
@@ -235,7 +237,7 @@ export default function PaymentsPage() {
   const handleExport = async () => {
     try {
       if (!payments || payments.length === 0) {
-        setError('Não há pagamentos para exportar')
+        setError(t.payments.errors.exportError)
         return
       }
 
@@ -304,8 +306,8 @@ export default function PaymentsPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Pagamentos</h1>
-                <p className="text-gray-600 mt-1">Gestão de pagamentos e recebimentos</p>
+                <h1 className="text-3xl font-bold text-foreground">{t.payments.title}</h1>
+                <p className="text-gray-600 mt-1">{t.payments.subtitle}</p>
               </div>
               <div className="flex items-center space-x-2">
                 <DeleteAllButton
@@ -322,7 +324,7 @@ export default function PaymentsPage() {
                   onClick={handleOpenModal}
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Registar Pagamento</span>
+                  <span>{t.payments.registerPayment}</span>
                 </Button>
               </div>
             </div>
@@ -331,7 +333,7 @@ export default function PaymentsPage() {
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                  placeholder="Procurar pagamentos..."
+                  placeholder={t.payments.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -343,7 +345,7 @@ export default function PaymentsPage() {
                 onClick={handleExport}
               >
                 <Download className="w-4 h-4" />
-                <span>Exportar</span>
+                <span>{t.payments.export}</span>
               </Button>
             </div>
 
@@ -351,7 +353,7 @@ export default function PaymentsPage() {
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Recebimentos do Mês</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.payments.metrics.monthlyIncome}</h3>
                     <p className="text-3xl font-bold text-green-600 mt-2">€{totalIncome.toFixed(2)}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -363,7 +365,7 @@ export default function PaymentsPage() {
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Pagamentos Pendentes</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.payments.metrics.pendingPayments}</h3>
                     <p className="text-3xl font-bold text-yellow-600 mt-2">€{pendingPayments.toFixed(2)}</p>
                   </div>
                   <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -375,7 +377,7 @@ export default function PaymentsPage() {
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Taxa de Recebimento</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.payments.metrics.collectionRate}</h3>
                     <p className="text-3xl font-bold text-blue-600 mt-2">{collectionRate}%</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -401,20 +403,20 @@ export default function PaymentsPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Referência</TableHead>
-                      <TableHead>Estado</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead>{t.payments.table.description}</TableHead>
+                      <TableHead>{t.payments.table.amount}</TableHead>
+                      <TableHead>{t.payments.table.type}</TableHead>
+                      <TableHead>{t.payments.table.date}</TableHead>
+                      <TableHead>{t.payments.table.reference}</TableHead>
+                      <TableHead>{t.payments.table.status}</TableHead>
+                      <TableHead>{t.payments.table.actions}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredPayments.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                          Nenhum pagamento registado
+                          {t.payments.noPayments}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -456,8 +458,8 @@ export default function PaymentsPage() {
             )}
 
             <div className="text-sm text-gray-500">
-              Total: {filteredPayments.length} pagamento(s) •
-              Valor Total: €{filteredPayments.reduce((sum, payment) => sum + payment.amount, 0).toFixed(2)}
+              {t.payments.totalPayments}: {filteredPayments.length} pagamento(s) •
+              {t.payments.totalValue}: €{filteredPayments.reduce((sum, payment) => sum + payment.amount, 0).toFixed(2)}
             </div>
           </div>
         </main>
@@ -469,8 +471,8 @@ export default function PaymentsPage() {
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
         onCancel={handleCloseModal}
-        title="Registar Pagamento"
-        submitLabel="Registar"
+        title={t.payments.modal.title}
+        submitLabel={t.payments.modal.submitLabel}
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
@@ -489,7 +491,7 @@ export default function PaymentsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="type" className="block mb-1">
-                Tipo de Pagamento *
+                {t.payments.modal.paymentType} *
               </Label>
               <select
                 id="type"
@@ -499,14 +501,14 @@ export default function PaymentsPage() {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               >
-                <option value="1">Recebimento</option>
-                <option value="2">Pagamento</option>
+                <option value="1">{t.payments.types.income}</option>
+                <option value="2">{t.payments.types.expense}</option>
               </select>
             </div>
 
             <div>
               <Label htmlFor="method" className="block mb-1">
-                Método de Pagamento *
+                {t.payments.modal.method} *
               </Label>
               <select
                 id="method"
@@ -516,17 +518,17 @@ export default function PaymentsPage() {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               >
-                <option value="1">Transferência</option>
-                <option value="2">Dinheiro</option>
-                <option value="3">Cartão</option>
-                <option value="4">Cheque</option>
+                <option value="1">{t.payments.methods.transfer}</option>
+                <option value="2">{t.payments.methods.cash}</option>
+                <option value="3">{t.payments.methods.card}</option>
+                <option value="4">{t.payments.methods.check}</option>
               </select>
             </div>
           </div>
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Descrição *
+              {t.payments.modal.description} *
             </label>
             <Input
               id="description"
@@ -542,7 +544,7 @@ export default function PaymentsPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Valor (€) *
+                {t.payments.modal.amount} *
               </label>
               <Input
                 id="amount"
@@ -559,7 +561,7 @@ export default function PaymentsPage() {
 
             <div>
               <label htmlFor="reference" className="block text-sm font-medium text-gray-700 mb-1">
-                Referência
+                {t.payments.modal.reference}
               </label>
               <Input
                 id="reference"
@@ -574,7 +576,7 @@ export default function PaymentsPage() {
 
           <div>
             <label htmlFor="notes" className="block text-sm font-medium text-gray-700 mb-1">
-              Notas
+              {t.payments.modal.notes}
             </label>
             <Input
               id="notes"
@@ -589,12 +591,12 @@ export default function PaymentsPage() {
           {/* Preview */}
           {formData.amount && !isNaN(Number(formData.amount)) && (
             <div className="bg-muted p-3 rounded-lg">
-              <h4 className="text-sm font-medium text-muted-foreground mb-2">Resumo</h4>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">{t.payments.modal.summary}</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Tipo:</span>
                   <span className={formData.type === '1' ? 'text-green-600' : 'text-red-600'}>
-                    {formData.type === '1' ? 'Recebimento' : 'Pagamento'}
+                    {formData.type === '1' ? t.payments.types.income : t.payments.types.expense}
                   </span>
                 </div>
                 <div className="flex justify-between">

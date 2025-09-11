@@ -1,6 +1,6 @@
 'use client'
 
-import { useState } from "react"
+import { useLanguage } from '@/hooks/useLanguage';
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
@@ -17,6 +17,7 @@ import {
 import { formatDate, formatNumber } from "@/lib/formatters"
 
 export default function SAFTPage() {
+  const { t } = useLanguage();
   const [selectedPeriod, setSelectedPeriod] = useState('2025')
 
   const saftReports = [
@@ -61,11 +62,11 @@ export default function SAFTPage() {
 
   const getStatusText = (status: string) => {
     switch (status) {
-      case 'completed': return 'Concluído'
-      case 'processing': return 'Processando'
-      case 'pending': return 'Pendente'
-      case 'error': return 'Erro'
-      default: return 'Desconhecido'
+      case 'completed': return t.saft.status.completed
+      case 'processing': return t.saft.status.processing
+      case 'pending': return t.saft.status.pending
+      case 'error': return t.saft.status.error
+      default: return t.saft.status.unknown
     }
   }
 
@@ -78,8 +79,8 @@ export default function SAFTPage() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">SAF-T</h1>
-                <p className="text-muted-foreground mt-1">Standard Audit File for Tax - Ficheiro normalizado de auditoria fiscal</p>
+                <h1 className="text-3xl font-bold text-foreground">{t.saft.title}</h1>
+                <p className="text-muted-foreground mt-1">{t.saft.subtitle}</p>
               </div>
               <div className="flex items-center space-x-3">
                 <select
@@ -93,7 +94,7 @@ export default function SAFTPage() {
                 </select>
                 <Button className="flex items-center space-x-2">
                   <Download className="w-4 h-4" />
-                  <span>Gerar SAFT</span>
+                  <span>{t.saft.generateSaft}</span>
                 </Button>
               </div>
             </div>
@@ -104,7 +105,7 @@ export default function SAFTPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Relatórios Gerados</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">{t.saft.metrics.reportsGenerated}</h3>
                       <p className="text-3xl font-bold text-foreground mt-2">{saftReports.length}</p>
                     </div>
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -118,7 +119,7 @@ export default function SAFTPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Registos Totais</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">{t.saft.metrics.totalRecords}</h3>
                       <p className="text-3xl font-bold text-green-600 mt-2">
                         {saftReports.reduce((sum, report) => sum + report.records, 0)}
                       </p>
@@ -134,7 +135,7 @@ export default function SAFTPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Último Relatório</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">{t.saft.metrics.lastReport}</h3>
                       <p className="text-3xl font-bold text-blue-600 mt-2">2025</p>
                     </div>
                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -148,10 +149,10 @@ export default function SAFTPage() {
                 <CardContent className="pt-6">
                   <div className="flex items-center justify-between">
                     <div>
-                      <h3 className="text-sm font-medium text-muted-foreground">Estado Atual</h3>
+                      <h3 className="text-sm font-medium text-muted-foreground">{t.saft.metrics.currentStatus}</h3>
                       <div className="mt-2">
                         <Badge variant="success">
-                          Atualizado
+                          {t.saft.status.updated}
                         </Badge>
                       </div>
                     </div>
@@ -170,14 +171,12 @@ export default function SAFTPage() {
                   <span className="text-white text-xs font-bold">i</span>
                 </div>
                 <div>
-                  <h3 className="font-medium text-blue-900 mb-2">Sobre SAF-T (PT)</h3>
+                  <h3 className="font-medium text-blue-900 mb-2">{t.saft.about.title}</h3>
                   <p className="text-blue-700 text-sm leading-relaxed">
-                    O SAF-T (PT) é um ficheiro normalizado de auditoria fiscal exigido pela Autoridade Tributária portuguesa.
-                    Contém toda a informação contabilística e fiscal da empresa num formato XML estruturado,
-                    facilitando as auditorias e verificações fiscais.
+                    {t.saft.about.description}
                   </p>
                   <div className="mt-3 text-blue-700 text-sm">
-                    <strong>Periodicidade:</strong> Anual • <strong>Formato:</strong> XML • <strong>Codificação:</strong> UTF-8
+                    <strong>{t.saft.about.periodicity}:</strong> {t.saft.about.annual} • <strong>{t.saft.about.format}:</strong> {t.saft.about.xml} • <strong>{t.saft.about.encoding}:</strong> {t.saft.about.utf8}
                   </div>
                 </div>
               </div>
@@ -186,20 +185,20 @@ export default function SAFTPage() {
             {/* SAF-T Reports List */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Relatórios SAF-T</CardTitle>
+                <CardTitle className="text-lg">{t.saft.reports.title}</CardTitle>
               </CardHeader>
               <CardContent className="p-0">
                 <div className="overflow-x-auto">
                   <table className="w-full">
                     <thead>
                       <tr className="border-b">
-                        <th className="text-left p-4 font-medium text-gray-600">Período</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Tipo</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Data Geração</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Registos</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Tamanho</th>
-                        <th className="text-left p-4 font-medium text-gray-600">Estado</th>
-                        <th className="text-right p-4 font-medium text-gray-600">Ações</th>
+                        <th className="text-left p-4 font-medium text-gray-600">{t.saft.reports.period}</th>
+                        <th className="text-left p-4 font-medium text-gray-600">{t.saft.reports.type}</th>
+                        <th className="text-left p-4 font-medium text-gray-600">{t.saft.reports.generationDate}</th>
+                        <th className="text-left p-4 font-medium text-gray-600">{t.saft.reports.records}</th>
+                        <th className="text-left p-4 font-medium text-gray-600">{t.saft.reports.size}</th>
+                        <th className="text-left p-4 font-medium text-gray-600">{t.saft.reports.status}</th>
+                        <th className="text-right p-4 font-medium text-gray-600">{t.saft.reports.actions}</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -235,44 +234,44 @@ export default function SAFTPage() {
             {/* Requirements Checklist */}
             <Card>
               <CardHeader>
-                <CardTitle className="text-lg">Requisitos SAF-T</CardTitle>
+                <CardTitle className="text-lg">{t.saft.requirements.title}</CardTitle>
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">Dados de identificação da empresa</span>
+                      <span className="text-sm">{t.saft.requirements.companyData}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">Tabela de contas (Plano Oficial de Contabilidade)</span>
+                      <span className="text-sm">{t.saft.requirements.chartOfAccounts}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">Clientes e fornecedores</span>
+                      <span className="text-sm">{t.saft.requirements.clientsSuppliers}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">Produtos e serviços</span>
+                      <span className="text-sm">{t.saft.requirements.productsServices}</span>
                     </div>
                   </div>
                   <div className="space-y-3">
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">Documentos de venda (faturas, recibos)</span>
+                      <span className="text-sm">{t.saft.requirements.salesDocuments}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">Documentos de compra</span>
+                      <span className="text-sm">{t.saft.requirements.purchaseDocuments}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">Movimentos contabilísticos</span>
+                      <span className="text-sm">{t.saft.requirements.accountingMovements}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">Validação XML (Schema XSD)</span>
+                      <span className="text-sm">{t.saft.requirements.xmlValidation}</span>
                     </div>
                   </div>
                 </div>

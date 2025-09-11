@@ -1,6 +1,7 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
+import { useLanguage } from '@/hooks/useLanguage'
 import FilesModal from '@/components/files-modal'
 import { Button } from '@/components/ui/button'
 import { HardDrive } from 'lucide-react'
@@ -29,6 +30,7 @@ interface DashboardMetrics {
 }
 
 export default function Dashboard() {
+  const { t } = useLanguage()
   const { data: metrics, isLoading, error } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
     queryFn: async () => {
@@ -66,13 +68,13 @@ export default function Dashboard() {
     return (
       <div className="p-6">
         <div className="bg-red-50 border border-red-200 rounded-lg p-4">
-          <h3 className="text-lg font-semibold text-red-800 mb-2">Erro ao carregar dashboard</h3>
+          <h3 className="text-lg font-semibold text-red-800 mb-2">{t.dashboard.errorLoading}</h3>
           <p className="text-red-600">{error.message}</p>
           <button
             onClick={() => window.location.reload()}
             className="mt-3 px-4 py-2 bg-red-600 text-white rounded hover:bg-red-700"
           >
-            Tentar novamente
+            {t.dashboard.tryAgain}
           </button>
         </div>
       </div>
@@ -84,18 +86,18 @@ export default function Dashboard() {
       <div className="max-w-7xl mx-auto space-y-8">
         <div className="flex items-center justify-between">
           <div>
-            <h1 className="text-3xl font-bold text-foreground">Dashboard</h1>
-            <p className="text-muted-foreground mt-1">Visão geral do seu negócio</p>
+            <h1 className="text-3xl font-bold text-foreground">{t.dashboard.title}</h1>
+            <p className="text-muted-foreground mt-1">{t.dashboard.subtitle}</p>
           </div>
           <div className="flex items-center gap-4">
             <FilesModal>
               <Button variant="outline" className="flex items-center gap-2">
                 <HardDrive className="w-4 h-4" />
-                Archivos WhatsApp
+                {t.dashboard.whatsappFiles}
               </Button>
             </FilesModal>
             <div className="text-sm text-muted-foreground">
-              Última atualização: {new Date().toLocaleDateString('pt-PT')}
+              {t.dashboard.lastUpdate}: {new Date().toLocaleDateString('pt-PT')}
             </div>
           </div>
         </div>
@@ -105,12 +107,12 @@ export default function Dashboard() {
           <div className="metric-card">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Faturas</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">{t.dashboard.metrics.invoices.title}</h3>
                 <p className="text-3xl font-bold text-foreground mt-2">
                   {metrics?.totalInvoices || 0}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Total de faturas
+                  {t.dashboard.metrics.invoices.subtitle}
                 </p>
               </div>
               <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -124,12 +126,12 @@ export default function Dashboard() {
           <div className="metric-card">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Despesas</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">{t.dashboard.metrics.expenses.title}</h3>
                 <p className="text-3xl font-bold text-foreground mt-2">
                   {metrics?.totalExpenses || 0}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Total de despesas
+                  {t.dashboard.metrics.expenses.subtitle}
                 </p>
               </div>
               <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -143,17 +145,17 @@ export default function Dashboard() {
           <div className="metric-card">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Documentos</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">{t.dashboard.metrics.documents.title}</h3>
                 <p className="text-3xl font-bold text-foreground mt-2">
                   {metrics?.totalDocuments || 0}
                 </p>
                 <div className="flex items-center gap-2 mt-1">
                   <span className="text-xs text-green-600">
-                    ✓ {metrics?.processedDocuments || 0} processados
+                    ✓ {metrics?.processedDocuments || 0} {t.dashboard.metrics.documents.processed}
                   </span>
                   {metrics?.pendingDocuments && metrics.pendingDocuments > 0 && (
                     <span className="text-xs text-orange-600">
-                      ⏳ {metrics.pendingDocuments} pendentes
+                      ⏳ {metrics.pendingDocuments} {t.dashboard.metrics.documents.pending}
                     </span>
                   )}
                 </div>
@@ -169,12 +171,12 @@ export default function Dashboard() {
           <div className="metric-card">
             <div className="flex items-center justify-between">
               <div>
-                <h3 className="text-sm font-medium text-muted-foreground">Clientes</h3>
+                <h3 className="text-sm font-medium text-muted-foreground">{t.dashboard.metrics.clients.title}</h3>
                 <p className="text-3xl font-bold text-foreground mt-2">
                   {metrics?.totalClients || 0}
                 </p>
                 <p className="text-xs text-muted-foreground mt-1">
-                  Total de clientes
+                  {t.dashboard.metrics.clients.subtitle}
                 </p>
               </div>
               <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -190,7 +192,7 @@ export default function Dashboard() {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Receita Total</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.dashboard.metrics.totalRevenue.title}</h3>
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
                 <svg className="w-4 h-4 text-green-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M7 11l5-5m0 0l5 5m-5-5v12" />
@@ -201,14 +203,14 @@ export default function Dashboard() {
               €{metrics?.totalRevenue?.toFixed(2) || '0.00'}
             </p>
             <div className="mt-2 space-y-1">
-              <p className="text-sm text-muted-foreground">Este mês: €{metrics?.currentMonthRevenue?.toFixed(2) || '0.00'}</p>
-              <p className="text-xs text-muted-foreground">Todas as faturas pagas</p>
+              <p className="text-sm text-muted-foreground">{t.dashboard.metrics.totalRevenue.thisMonth}: €{metrics?.currentMonthRevenue?.toFixed(2) || '0.00'}</p>
+              <p className="text-xs text-muted-foreground">{t.dashboard.metrics.totalRevenue.subtitle}</p>
             </div>
           </div>
 
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Despesas Total</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.dashboard.metrics.totalExpenses.title}</h3>
               <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
                 <svg className="w-4 h-4 text-red-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 13l-5 5m0 0l-5-5m5 5V6" />
@@ -219,14 +221,14 @@ export default function Dashboard() {
               €{metrics?.totalExpenseAmount?.toFixed(2) || '0.00'}
             </p>
             <div className="mt-2 space-y-1">
-              <p className="text-sm text-muted-foreground">Este mês: €{metrics?.currentMonthExpenseAmount?.toFixed(2) || '0.00'}</p>
-              <p className="text-xs text-muted-foreground">Todas as despesas</p>
+              <p className="text-sm text-muted-foreground">{t.dashboard.metrics.totalExpenses.thisMonth}: €{metrics?.currentMonthExpenseAmount?.toFixed(2) || '0.00'}</p>
+              <p className="text-xs text-muted-foreground">{t.dashboard.metrics.totalExpenses.subtitle}</p>
             </div>
           </div>
 
           <div className="metric-card">
             <div className="flex items-center justify-between mb-4">
-              <h3 className="text-lg font-semibold text-foreground">Lucro Líquido</h3>
+              <h3 className="text-lg font-semibold text-foreground">{t.dashboard.metrics.netProfit.title}</h3>
               <div className={`w-8 h-8 rounded-full flex items-center justify-center ${(metrics?.netProfit || 0) >= 0 ? 'bg-green-100' : 'bg-red-100'
                 }`}>
                 <svg className={`w-4 h-4 ${(metrics?.netProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'
@@ -241,10 +243,10 @@ export default function Dashboard() {
             </p>
             <div className="mt-2 space-y-1">
               <p className="text-sm text-muted-foreground">
-                Este mês: €{metrics?.currentMonthNetProfit?.toFixed(2) || '0.00'}
+                {t.dashboard.metrics.netProfit.thisMonth}: €{metrics?.currentMonthNetProfit?.toFixed(2) || '0.00'}
               </p>
               <p className="text-xs text-muted-foreground">
-                Receita - Despesas
+                {t.dashboard.metrics.netProfit.subtitle}
               </p>
             </div>
           </div>
@@ -254,10 +256,10 @@ export default function Dashboard() {
         {metrics?.totalDocuments && metrics.totalDocuments > 0 && (
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <div className="metric-card">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Status de Processamento</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">{t.dashboard.metrics.processingStatus.title}</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Taxa de Sucesso</span>
+                  <span className="text-sm text-muted-foreground">{t.dashboard.metrics.processingStatus.successRate}</span>
                   <span className="text-lg font-semibold text-green-600">
                     {metrics.processingSuccessRate}%
                   </span>
@@ -269,29 +271,29 @@ export default function Dashboard() {
                   ></div>
                 </div>
                 <div className="flex justify-between text-xs text-muted-foreground">
-                  <span>{metrics?.processedDocuments || 0} processados</span>
-                  <span>{metrics?.pendingDocuments || 0} pendentes</span>
+                  <span>{metrics?.processedDocuments || 0} {t.dashboard.metrics.processingStatus.processed}</span>
+                  <span>{metrics?.pendingDocuments || 0} {t.dashboard.metrics.processingStatus.pending}</span>
                 </div>
               </div>
             </div>
 
             <div className="metric-card">
-              <h3 className="text-lg font-semibold text-foreground mb-4">Resumo Mensal</h3>
+              <h3 className="text-lg font-semibold text-foreground mb-4">{t.dashboard.metrics.monthlySummary.title}</h3>
               <div className="space-y-3">
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Receita do Mês</span>
+                  <span className="text-sm text-muted-foreground">{t.dashboard.metrics.monthlySummary.monthlyRevenue}</span>
                   <span className="text-lg font-semibold text-green-600">
                     €{metrics?.currentMonthRevenue?.toFixed(2) || '0.00'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Despesas do Mês</span>
+                  <span className="text-sm text-muted-foreground">{t.dashboard.metrics.monthlySummary.monthlyExpenses}</span>
                   <span className="text-lg font-semibold text-red-600">
                     €{metrics?.currentMonthExpenseAmount?.toFixed(2) || '0.00'}
                   </span>
                 </div>
                 <div className="flex items-center justify-between">
-                  <span className="text-sm text-muted-foreground">Lucro do Mês</span>
+                  <span className="text-sm text-muted-foreground">{t.dashboard.metrics.monthlySummary.monthlyProfit}</span>
                   <span className={`text-lg font-semibold ${(metrics?.currentMonthNetProfit || 0) >= 0 ? 'text-green-600' : 'text-red-600'
                     }`}>
                     €{metrics?.currentMonthNetProfit?.toFixed(2) || '0.00'}

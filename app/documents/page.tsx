@@ -21,6 +21,7 @@ import { Label } from "@/components/ui/label"
 import { FormModal } from "@/components/ui/modal"
 import { Search, Plus, Download, FileText, AlertCircle, Eye, Trash2, Upload, CheckCircle, Clock, XCircle } from "lucide-react"
 import DeleteAllButton from "@/components/delete-all-button"
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface Document {
     id: number
@@ -37,6 +38,7 @@ interface Document {
 
 export default function DocumentsPage() {
     const { isAuthenticated, isLoading } = useAuth()
+    const { t } = useLanguage()
     const router = useRouter()
     const [isModalOpen, setIsModalOpen] = useState(false)
     const [isSubmitting, setIsSubmitting] = useState(false)
@@ -117,13 +119,13 @@ export default function DocumentsPage() {
     const getStatusLabel = (status: string) => {
         switch (status) {
             case 'completed':
-                return 'Completado'
+                return t.documents.status.completed
             case 'processing':
-                return 'Processando'
+                return t.documents.status.processing
             case 'pending':
-                return 'Pendente'
+                return t.documents.status.pending
             case 'failed':
-                return 'Falhou'
+                return t.documents.status.failed
             default:
                 return status
         }
@@ -190,19 +192,19 @@ export default function DocumentsPage() {
 
         // Validation without alerts
         if (!formData.filename.trim()) {
-            setError('Nome do arquivo é obrigatório')
+            setError(t.documents.validation.filenameRequired)
             return
         }
         if (!formData.fileType.trim()) {
-            setError('Tipo de arquivo é obrigatório')
+            setError(t.documents.validation.fileTypeRequired)
             return
         }
         if (!formData.documentType.trim()) {
-            setError('Tipo de documento é obrigatório')
+            setError(t.documents.validation.documentTypeRequired)
             return
         }
         if (!formData.fileSize.trim() || isNaN(Number(formData.fileSize))) {
-            setError('Tamanho do arquivo deve ser um número válido')
+            setError(t.documents.validation.fileSizeValid)
             return
         }
 
@@ -228,7 +230,7 @@ export default function DocumentsPage() {
 
             if (!response.ok) {
                 const errorData = await response.json()
-                throw new Error(errorData.error || 'Erro ao criar documento')
+                throw new Error(errorData.error || t.documents.validation.createError)
             }
 
             // Documento criado com sucesso
@@ -239,14 +241,14 @@ export default function DocumentsPage() {
 
         } catch (error) {
             console.error('Erro:', error)
-            setError(error instanceof Error ? error.message : 'Erro ao criar documento')
+            setError(error instanceof Error ? error.message : t.documents.validation.createError)
         } finally {
             setIsSubmitting(false)
         }
     }
 
     const handleDelete = async (documentId: number) => {
-        if (!confirm('Tem certeza que deseja excluir este documento?')) return
+        if (!confirm(t.documents.validation.deleteConfirm)) return
 
         try {
             const response = await fetch(`/api/documents?id=${documentId}`, {
@@ -262,14 +264,14 @@ export default function DocumentsPage() {
 
         } catch (error) {
             console.error('Erro ao excluir:', error)
-            setError('Erro ao excluir documento')
+            setError(t.documents.validation.deleteError)
         }
     }
 
     const handleExport = async () => {
         try {
             if (!documents || documents.length === 0) {
-                setError('Não há documentos para exportar')
+                setError(t.documents.validation.noDocumentsToExport)
                 return
             }
 
@@ -299,7 +301,7 @@ export default function DocumentsPage() {
             console.log('✅ Documentos exportados com sucesso')
         } catch (error) {
             console.error('❌ Erro ao exportar:', error)
-            setError('Erro ao exportar documentos')
+            setError(t.documents.validation.exportError)
         }
     }
 
@@ -338,8 +340,8 @@ export default function DocumentsPage() {
 
                         <div className="flex items-center justify-between">
                             <div>
-                                <h1 className="text-3xl font-bold text-foreground">Documentos</h1>
-                                <p className="text-gray-600 mt-1">Gestão de documentos e arquivos</p>
+                                <h1 className="text-3xl font-bold text-foreground">{t.documents.title}</h1>
+                                <p className="text-gray-600 mt-1">{t.documents.subtitle}</p>
                             </div>
                             <div className="flex items-center space-x-2">
                                 <DeleteAllButton
@@ -356,7 +358,7 @@ export default function DocumentsPage() {
                                     onClick={handleOpenModal}
                                 >
                                     <Upload className="w-4 h-4" />
-                                    <span>Novo Documento</span>
+                                    <span>{t.documents.newDocument}</span>
                                 </Button>
                             </div>
                         </div>
@@ -365,7 +367,7 @@ export default function DocumentsPage() {
                             <div className="relative flex-1 max-w-sm">
                                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                                 <Input
-                                    placeholder="Procurar documentos..."
+                                    placeholder={t.documents.searchPlaceholder}
                                     value={searchTerm}
                                     onChange={(e) => setSearchTerm(e.target.value)}
                                     className="pl-10"
@@ -377,7 +379,7 @@ export default function DocumentsPage() {
                                 onClick={handleExport}
                             >
                                 <Download className="w-4 h-4" />
-                                <span>Exportar</span>
+                                <span>{t.documents.export}</span>
                             </Button>
                         </div>
 
@@ -385,7 +387,7 @@ export default function DocumentsPage() {
                             <div className="metric-card">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-sm font-medium text-muted-foreground">Total Documentos</h3>
+                                        <h3 className="text-sm font-medium text-muted-foreground">{t.documents.metrics.totalDocuments}</h3>
                                         <p className="text-3xl font-bold text-blue-600 mt-2">{totalDocuments}</p>
                                     </div>
                                     <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -397,7 +399,7 @@ export default function DocumentsPage() {
                             <div className="metric-card">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-sm font-medium text-muted-foreground">Pendentes</h3>
+                                        <h3 className="text-sm font-medium text-muted-foreground">{t.documents.metrics.pending}</h3>
                                         <p className="text-3xl font-bold text-yellow-600 mt-2">{pendingDocuments}</p>
                                     </div>
                                     <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -409,7 +411,7 @@ export default function DocumentsPage() {
                             <div className="metric-card">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-sm font-medium text-muted-foreground">Completados</h3>
+                                        <h3 className="text-sm font-medium text-muted-foreground">{t.documents.metrics.completed}</h3>
                                         <p className="text-3xl font-bold text-green-600 mt-2">{completedDocuments}</p>
                                     </div>
                                     <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -421,7 +423,7 @@ export default function DocumentsPage() {
                             <div className="metric-card">
                                 <div className="flex items-center justify-between">
                                     <div>
-                                        <h3 className="text-sm font-medium text-muted-foreground">Falharam</h3>
+                                        <h3 className="text-sm font-medium text-muted-foreground">{t.documents.metrics.failed}</h3>
                                         <p className="text-3xl font-bold text-red-600 mt-2">{failedDocuments}</p>
                                     </div>
                                     <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -447,21 +449,21 @@ export default function DocumentsPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
-                                            <TableHead>Status</TableHead>
-                                            <TableHead>Nome do Arquivo</TableHead>
-                                            <TableHead>Tipo</TableHead>
-                                            <TableHead>Tamanho</TableHead>
-                                            <TableHead>Tipo de Documento</TableHead>
-                                            <TableHead>Data de Upload</TableHead>
-                                            <TableHead>Confiança</TableHead>
-                                            <TableHead>Ações</TableHead>
+                                            <TableHead>{t.documents.table.status}</TableHead>
+                                            <TableHead>{t.documents.table.filename}</TableHead>
+                                            <TableHead>{t.documents.table.type}</TableHead>
+                                            <TableHead>{t.documents.table.size}</TableHead>
+                                            <TableHead>{t.documents.table.documentType}</TableHead>
+                                            <TableHead>{t.documents.table.uploadDate}</TableHead>
+                                            <TableHead>{t.documents.table.confidence}</TableHead>
+                                            <TableHead>{t.documents.table.actions}</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {filteredDocuments.length === 0 ? (
                                             <TableRow>
                                                 <TableCell colSpan={8} className="text-center py-8 text-gray-500">
-                                                    Nenhum documento encontrado
+                                                    {t.documents.noDocumentsFound}
                                                 </TableCell>
                                             </TableRow>
                                         ) : (
@@ -515,8 +517,8 @@ export default function DocumentsPage() {
                         )}
 
                         <div className="text-sm text-gray-500">
-                            Total: {filteredDocuments.length} documento(s) •
-                            Processamento: {completedDocuments}/{totalDocuments} ({totalDocuments > 0 ? Math.round((completedDocuments / totalDocuments) * 100) : 0}%)
+                            {t.documents.totalDocuments}: {filteredDocuments.length} documento(s) •
+                            {t.documents.processingProgress}: {completedDocuments}/{totalDocuments} ({totalDocuments > 0 ? Math.round((completedDocuments / totalDocuments) * 100) : 0}%)
                         </div>
                     </div>
                 </main>
@@ -528,7 +530,7 @@ export default function DocumentsPage() {
                 onClose={handleCloseModal}
                 onSubmit={handleSubmit}
                 onCancel={handleCloseModal}
-                title="Novo Documento"
+                title={t.documents.newDocument}
                 submitLabel="Criar Documento"
                 isSubmitting={isSubmitting}
             >
@@ -547,7 +549,7 @@ export default function DocumentsPage() {
 
                     <div>
                         <label htmlFor="filename" className="block text-sm font-medium text-gray-700 mb-1">
-                            Nome do Arquivo *
+                            {t.documents.form.filenameRequired}
                         </label>
                         <Input
                             id="filename"
@@ -555,7 +557,7 @@ export default function DocumentsPage() {
                             type="text"
                             value={formData.filename}
                             onChange={handleInputChange}
-                            placeholder="exemplo.pdf"
+                            placeholder={t.documents.form.filenamePlaceholder}
                             required
                         />
                     </div>
@@ -563,7 +565,7 @@ export default function DocumentsPage() {
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                         <div>
                             <label htmlFor="fileType" className="block text-sm font-medium text-gray-700 mb-1">
-                                Tipo de Arquivo *
+                                {t.documents.form.fileTypeRequired}
                             </label>
                             <select
                                 id="fileType"
@@ -573,20 +575,20 @@ export default function DocumentsPage() {
                                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                                 required
                             >
-                                <option value="">Selecione...</option>
-                                <option value="pdf">PDF</option>
-                                <option value="doc">DOC</option>
-                                <option value="docx">DOCX</option>
-                                <option value="jpg">JPG</option>
-                                <option value="png">PNG</option>
-                                <option value="txt">TXT</option>
-                                <option value="xml">XML</option>
+                                <option value="">{t.documents.form.selectPlaceholder}</option>
+                                <option value="pdf">{t.documents.fileTypes.pdf}</option>
+                                <option value="doc">{t.documents.fileTypes.doc}</option>
+                                <option value="docx">{t.documents.fileTypes.docx}</option>
+                                <option value="jpg">{t.documents.fileTypes.jpg}</option>
+                                <option value="png">{t.documents.fileTypes.png}</option>
+                                <option value="txt">{t.documents.fileTypes.txt}</option>
+                                <option value="xml">{t.documents.fileTypes.xml}</option>
                             </select>
                         </div>
 
                         <div>
                             <label htmlFor="fileSize" className="block text-sm font-medium text-gray-700 mb-1">
-                                Tamanho (bytes) *
+                                {t.documents.form.fileSizeRequired}
                             </label>
                             <Input
                                 id="fileSize"
@@ -595,7 +597,7 @@ export default function DocumentsPage() {
                                 min="0"
                                 value={formData.fileSize}
                                 onChange={handleInputChange}
-                                placeholder="1024"
+                                placeholder={t.documents.form.fileSizePlaceholder}
                                 required
                             />
                         </div>
@@ -603,7 +605,7 @@ export default function DocumentsPage() {
 
                     <div>
                         <label htmlFor="documentType" className="block text-sm font-medium text-gray-700 mb-1">
-                            Tipo de Documento *
+                            {t.documents.form.documentTypeRequired}
                         </label>
                         <select
                             id="documentType"
@@ -613,35 +615,35 @@ export default function DocumentsPage() {
                             className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                             required
                         >
-                            <option value="">Selecione...</option>
-                            <option value="invoice">Fatura</option>
-                            <option value="receipt">Recibo</option>
-                            <option value="contract">Contrato</option>
-                            <option value="report">Relatório</option>
-                            <option value="other">Outro</option>
+                            <option value="">{t.documents.form.selectPlaceholder}</option>
+                            <option value="invoice">{t.documents.documentTypes.invoice}</option>
+                            <option value="receipt">{t.documents.documentTypes.receipt}</option>
+                            <option value="contract">{t.documents.documentTypes.contract}</option>
+                            <option value="report">{t.documents.documentTypes.report}</option>
+                            <option value="other">{t.documents.documentTypes.other}</option>
                         </select>
                     </div>
 
                     {/* Preview */}
                     {formData.filename && formData.fileType && (
                         <div className="bg-muted p-3 rounded-lg">
-                            <h4 className="text-sm font-medium text-muted-foreground mb-2">Resumo</h4>
+                            <h4 className="text-sm font-medium text-muted-foreground mb-2">{t.documents.form.summary}</h4>
                             <div className="space-y-1 text-sm">
                                 <div className="flex justify-between">
-                                    <span>Arquivo:</span>
+                                    <span>{t.documents.form.file}:</span>
                                     <span className="font-medium">{formData.filename}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Tipo:</span>
+                                    <span>{t.documents.form.type}:</span>
                                     <span className="font-medium">{formData.fileType.toUpperCase()}</span>
                                 </div>
                                 <div className="flex justify-between">
-                                    <span>Documento:</span>
+                                    <span>{t.documents.form.document}:</span>
                                     <span className="font-medium">{formData.documentType}</span>
                                 </div>
                                 {formData.fileSize && (
                                     <div className="flex justify-between">
-                                        <span>Tamanho:</span>
+                                        <span>{t.documents.form.size}:</span>
                                         <span className="font-medium">{formatFileSize(Number(formData.fileSize))}</span>
                                     </div>
                                 )}

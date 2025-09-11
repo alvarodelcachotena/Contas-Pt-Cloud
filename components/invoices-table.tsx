@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useLanguage } from '@/hooks/useLanguage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -64,6 +65,7 @@ interface Supplier {
 }
 
 export default function InvoicesTable() {
+  const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -226,19 +228,19 @@ export default function InvoicesTable() {
 
     // Validation without alerts
     if (!formData.clientName.trim()) {
-      setError('Nome do cliente é obrigatório')
+      setError(t.invoices.errors.clientNameRequired)
       return
     }
     if (!formData.clientTaxId.trim()) {
-      setError('NIF do cliente é obrigatório')
+      setError(t.invoices.errors.taxIdRequired)
       return
     }
     if (!formData.amount.trim() || isNaN(Number(formData.amount))) {
-      setError('Valor deve ser um número válido')
+      setError(t.invoices.errors.amountRequired)
       return
     }
     if (!['6', '13', '23'].includes(formData.vatRate)) {
-      setError('Taxa de IVA inválida. Use 6, 13 ou 23')
+      setError(t.invoices.errors.vatRateInvalid)
       return
     }
 
@@ -275,7 +277,7 @@ export default function InvoicesTable() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro ao criar fatura')
+        throw new Error(errorData.error || t.invoices.errors.createError)
       }
 
       // Fatura criada com sucesso
@@ -286,7 +288,7 @@ export default function InvoicesTable() {
 
     } catch (error) {
       console.error('Erro:', error)
-      setError(error instanceof Error ? error.message : 'Erro ao criar fatura')
+      setError(error instanceof Error ? error.message : t.invoices.errors.createError)
     } finally {
       setIsSubmitting(false)
     }
@@ -295,7 +297,7 @@ export default function InvoicesTable() {
   const handleExport = async () => {
     try {
       if (!invoices || invoices.length === 0) {
-        setError('Não há faturas para exportar')
+        setError(t.invoices.errors.exportError)
         return
       }
 
@@ -365,13 +367,13 @@ export default function InvoicesTable() {
   const getStatusLabel = (status: string) => {
     switch (status.toLowerCase()) {
       case 'paid':
-        return 'Pago'
+        return t.invoices.status.paid
       case 'sent':
-        return 'Enviado'
+        return t.invoices.status.sent
       case 'draft':
-        return 'Rascunho'
+        return t.invoices.status.draft
       case 'overdue':
-        return 'Vencido'
+        return t.invoices.status.overdue
       default:
         return status
     }
@@ -396,8 +398,8 @@ export default function InvoicesTable() {
     <div className="p-6 space-y-6">
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Faturas</h1>
-          <p className="text-muted-foreground mt-1">Gestão e emissão de faturas</p>
+          <h1 className="text-3xl font-bold text-foreground">{t.invoices.title}</h1>
+          <p className="text-muted-foreground mt-1">{t.invoices.subtitle}</p>
         </div>
         <div className="flex items-center space-x-2">
           <DeleteAllButton
@@ -414,7 +416,7 @@ export default function InvoicesTable() {
             onClick={handleOpenModal}
           >
             <Plus className="w-4 h-4" />
-            <span>Nova Fatura</span>
+            <span>{t.invoices.newInvoice}</span>
           </Button>
         </div>
       </div>
@@ -423,7 +425,7 @@ export default function InvoicesTable() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
-            placeholder="Procurar faturas..."
+            placeholder={t.invoices.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -435,7 +437,7 @@ export default function InvoicesTable() {
           onClick={handleExport}
         >
           <FileText className="w-4 h-4" />
-          <span>Exportar</span>
+          <span>{t.invoices.export}</span>
         </Button>
       </div>
 
@@ -455,21 +457,21 @@ export default function InvoicesTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Nombre del archivo</TableHead>
-              <TableHead>NIF</TableHead>
-              <TableHead>IVA</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>Tipo Pagamento</TableHead>
-              <TableHead>Data Emissão</TableHead>
-              <TableHead>Estado</TableHead>
-              <TableHead>Ações</TableHead>
+              <TableHead>{t.invoices.table.fileName}</TableHead>
+              <TableHead>{t.invoices.table.nif}</TableHead>
+              <TableHead>{t.invoices.table.vat}</TableHead>
+              <TableHead>{t.invoices.table.total}</TableHead>
+              <TableHead>{t.invoices.table.paymentType}</TableHead>
+              <TableHead>{t.invoices.table.issueDate}</TableHead>
+              <TableHead>{t.invoices.table.status}</TableHead>
+              <TableHead>{t.invoices.table.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredInvoices.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={10} className="text-center py-8 text-gray-500">
-                  Nenhuma fatura encontrada
+                  {t.invoices.noInvoices}
                 </TableCell>
               </TableRow>
             ) : (
@@ -486,8 +488,8 @@ export default function InvoicesTable() {
                       invoice.paymentType === 'bank_transfer' ? 'default' :
                         invoice.paymentType === 'card' ? 'secondary' : 'outline'
                     }>
-                      {invoice.paymentType === 'bank_transfer' ? 'Transferência' :
-                        invoice.paymentType === 'card' ? 'Crédito' : 'Crédito'}
+                      {invoice.paymentType === 'bank_transfer' ? t.invoices.paymentTypes.bankTransfer :
+                        invoice.paymentType === 'card' ? t.invoices.paymentTypes.card : t.invoices.paymentTypes.supplierCredit}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -532,8 +534,8 @@ export default function InvoicesTable() {
       </div>
 
       <div className="text-sm text-gray-500">
-        Total: {filteredInvoices.length} fatura(s) •
-        Valor Total: €{filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount.toString()), 0).toFixed(2)}
+        {t.invoices.totalInvoices}: {filteredInvoices.length} fatura(s) •
+        {t.invoices.totalValue}: €{filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.totalAmount.toString()), 0).toFixed(2)}
       </div>
 
       {/* Modal de Nova Fatura */}
@@ -542,8 +544,8 @@ export default function InvoicesTable() {
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
         onCancel={handleCloseModal}
-        title="Nova Fatura"
-        submitLabel="Criar Fatura"
+        title={t.invoices.modal.title}
+        submitLabel={t.invoices.modal.submitLabel}
         isSubmitting={isSubmitting}
         size="lg"
       >
@@ -562,7 +564,7 @@ export default function InvoicesTable() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="clientName" className="block mb-1">
-                Nome do Cliente *
+                {t.invoices.modal.clientName} *
               </Label>
               <Input
                 id="clientName"
@@ -574,13 +576,13 @@ export default function InvoicesTable() {
                 required
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Digite o nome para auto-completar os dados
+                {t.invoices.modal.autoCompleteHint}
               </p>
             </div>
 
             <div>
               <label htmlFor="clientEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                Email do Cliente
+                {t.invoices.modal.clientEmail}
               </label>
               <Input
                 id="clientEmail"
@@ -591,7 +593,7 @@ export default function InvoicesTable() {
                 placeholder="email@exemplo.pt"
               />
               <p className="text-xs text-muted-foreground mt-1">
-                Digite o email para auto-completar os dados
+                {t.invoices.modal.autoCompleteHint}
               </p>
             </div>
           </div>
@@ -602,7 +604,7 @@ export default function InvoicesTable() {
               <div className="flex items-center">
                 <div className="w-2 h-2 bg-green-400 rounded-full mr-2"></div>
                 <p className="text-sm text-green-800">
-                  <span className="font-medium">Cliente encontrado:</span> {clientFound.name}
+                  <span className="font-medium">{t.invoices.modal.clientFound}:</span> {clientFound.name}
                   <span className="ml-2 text-green-600">(NIF: {clientFound.taxId})</span>
                 </p>
               </div>
@@ -612,7 +614,7 @@ export default function InvoicesTable() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="clientTaxId" className="block mb-1">
-                NIF do Cliente *
+                {t.invoices.modal.clientTaxId} *
               </Label>
               <Input
                 id="clientTaxId"
@@ -629,7 +631,7 @@ export default function InvoicesTable() {
 
             <div>
               <Label htmlFor="amount" className="block mb-1">
-                Valor Base (€) *
+                {t.invoices.modal.baseAmount} *
               </Label>
               <Input
                 id="amount"
@@ -647,7 +649,7 @@ export default function InvoicesTable() {
 
           <div>
             <Label htmlFor="vatRate" className="block mb-1">
-              Taxa de IVA (%) *
+              {t.invoices.modal.vatRate} *
             </Label>
             <select
               id="vatRate"
@@ -665,7 +667,7 @@ export default function InvoicesTable() {
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Descrição da Fatura
+              {t.invoices.modal.description}
             </label>
             <Input
               id="description"
@@ -681,7 +683,7 @@ export default function InvoicesTable() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="paymentType" className="block mb-1">
-                Tipo de Pagamento *
+                {t.invoices.modal.paymentType} *
               </Label>
               <select
                 id="paymentType"
@@ -691,15 +693,15 @@ export default function InvoicesTable() {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               >
-                <option value="bank_transfer">Transferência Bancária</option>
-                <option value="card">Cartão</option>
-                <option value="supplier_credit">Crédito de Fornecedor</option>
+                <option value="bank_transfer">{t.invoices.paymentTypes.bankTransfer}</option>
+                <option value="card">{t.invoices.paymentTypes.card}</option>
+                <option value="supplier_credit">{t.invoices.paymentTypes.supplierCredit}</option>
               </select>
             </div>
 
             <div>
               <Label htmlFor="supplierId" className="block mb-1">
-                Fornecedor
+                {t.invoices.modal.supplier}
               </Label>
               <select
                 id="supplierId"
@@ -721,7 +723,7 @@ export default function InvoicesTable() {
           {/* Preview do Cálculo */}
           {formData.amount && !isNaN(Number(formData.amount)) && (
             <div className="bg-muted p-3 rounded-lg">
-              <h4 className="text-sm font-medium text-muted-foreground mb-2">Resumo da Fatura</h4>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">{t.invoices.modal.summary}</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
                   <span>Valor Base:</span>

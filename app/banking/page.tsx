@@ -20,6 +20,7 @@ import { Badge } from "@/components/ui/badge"
 import { Label } from "@/components/ui/label"
 import { FormModal } from "@/components/ui/modal"
 import { Search, Plus, Download, CreditCard, AlertCircle, Eye, TrendingUp, TrendingDown } from "lucide-react"
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface BankingTransaction {
   id: number
@@ -36,6 +37,7 @@ interface BankingTransaction {
 
 export default function BankingPage() {
   const { isAuthenticated, isLoading } = useAuth()
+  const { t } = useLanguage()
   const router = useRouter()
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -116,11 +118,11 @@ export default function BankingPage() {
   const getTransactionTypeLabel = (type: string) => {
     switch (type) {
       case 'credit':
-        return 'Crédito'
+        return t.banking.transactionTypes.credit
       case 'debit':
-        return 'Débito'
+        return t.banking.transactionTypes.debit
       case 'transfer':
-        return 'Transferência'
+        return t.banking.transactionTypes.transfer
       default:
         return type
     }
@@ -181,15 +183,15 @@ export default function BankingPage() {
 
     // Validation without alerts
     if (!formData.description.trim()) {
-      setError('Descrição é obrigatória')
+      setError(t.banking.validation.descriptionRequired)
       return
     }
     if (!formData.amount.trim() || isNaN(Number(formData.amount))) {
-      setError('Valor deve ser um número válido')
+      setError(t.banking.validation.amountValid)
       return
     }
     if (!formData.category.trim()) {
-      setError('Categoria é obrigatória')
+      setError(t.banking.validation.categoryRequired)
       return
     }
 
@@ -216,7 +218,7 @@ export default function BankingPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro ao criar transação bancária')
+        throw new Error(errorData.error || t.banking.validation.createError)
       }
 
       // Transação criada com sucesso
@@ -227,7 +229,7 @@ export default function BankingPage() {
 
     } catch (error) {
       console.error('Erro:', error)
-      setError(error instanceof Error ? error.message : 'Erro ao criar transação bancária')
+      setError(error instanceof Error ? error.message : t.banking.validation.createError)
     } finally {
       setIsSubmitting(false)
     }
@@ -236,7 +238,7 @@ export default function BankingPage() {
   const handleExport = async () => {
     try {
       if (!transactions || transactions.length === 0) {
-        setError('Não há transações para exportar')
+        setError(t.banking.validation.noTransactionsToExport)
         return
       }
 
@@ -267,7 +269,7 @@ export default function BankingPage() {
       console.log('✅ Transações bancárias exportadas com sucesso')
     } catch (error) {
       console.error('❌ Erro ao exportar:', error)
-      setError('Erro ao exportar transações bancárias')
+      setError(t.banking.validation.exportError)
     }
   }
 
@@ -306,15 +308,15 @@ export default function BankingPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Bancário</h1>
-                <p className="text-gray-600 mt-1">Gestão de transações bancárias</p>
+                <h1 className="text-3xl font-bold text-foreground">{t.banking.title}</h1>
+                <p className="text-gray-600 mt-1">{t.banking.subtitle}</p>
               </div>
               <Button
                 className="flex items-center space-x-2"
                 onClick={handleOpenModal}
               >
                 <Plus className="w-4 h-4" />
-                <span>Nova Transação</span>
+                <span>{t.banking.newTransaction}</span>
               </Button>
             </div>
 
@@ -322,7 +324,7 @@ export default function BankingPage() {
               <div className="relative flex-1 max-w-sm">
                 <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
                 <Input
-                  placeholder="Procurar transações..."
+                  placeholder={t.banking.searchPlaceholder}
                   value={searchTerm}
                   onChange={(e) => setSearchTerm(e.target.value)}
                   className="pl-10"
@@ -334,7 +336,7 @@ export default function BankingPage() {
                 onClick={handleExport}
               >
                 <Download className="w-4 h-4" />
-                <span>Exportar</span>
+                <span>{t.banking.export}</span>
               </Button>
             </div>
 
@@ -342,7 +344,7 @@ export default function BankingPage() {
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Saldo Atual</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.banking.metrics.currentBalance}</h3>
                     <p className="text-3xl font-bold text-blue-600 mt-2">€{currentBalance.toFixed(2)}</p>
                   </div>
                   <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
@@ -354,7 +356,7 @@ export default function BankingPage() {
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Total Créditos</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.banking.metrics.totalCredits}</h3>
                     <p className="text-3xl font-bold text-green-600 mt-2">€{totalCredits.toFixed(2)}</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -366,7 +368,7 @@ export default function BankingPage() {
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Total Débitos</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.banking.metrics.totalDebits}</h3>
                     <p className="text-3xl font-bold text-red-600 mt-2">€{totalDebits.toFixed(2)}</p>
                   </div>
                   <div className="w-12 h-12 bg-red-100 rounded-lg flex items-center justify-center">
@@ -378,7 +380,7 @@ export default function BankingPage() {
               <div className="metric-card">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Transações</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.banking.metrics.transactions}</h3>
                     <p className="text-3xl font-bold text-purple-600 mt-2">{transactionCount}</p>
                   </div>
                   <div className="w-12 h-12 bg-purple-100 rounded-lg flex items-center justify-center">
@@ -404,20 +406,20 @@ export default function BankingPage() {
                 <Table>
                   <TableHeader>
                     <TableRow>
-                      <TableHead>Tipo</TableHead>
-                      <TableHead>Descrição</TableHead>
-                      <TableHead>Valor</TableHead>
-                      <TableHead>Data</TableHead>
-                      <TableHead>Saldo</TableHead>
-                      <TableHead>Categoria</TableHead>
-                      <TableHead>Ações</TableHead>
+                      <TableHead>{t.banking.table.type}</TableHead>
+                      <TableHead>{t.banking.table.description}</TableHead>
+                      <TableHead>{t.banking.table.amount}</TableHead>
+                      <TableHead>{t.banking.table.date}</TableHead>
+                      <TableHead>{t.banking.table.balance}</TableHead>
+                      <TableHead>{t.banking.table.category}</TableHead>
+                      <TableHead>{t.banking.table.actions}</TableHead>
                     </TableRow>
                   </TableHeader>
                   <TableBody>
                     {filteredTransactions.length === 0 ? (
                       <TableRow>
                         <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                          Nenhuma transação encontrada
+                          {t.banking.noTransactionsFound}
                         </TableCell>
                       </TableRow>
                     ) : (
@@ -460,8 +462,8 @@ export default function BankingPage() {
             )}
 
             <div className="text-sm text-gray-500">
-              Total: {filteredTransactions.length} transação(ões) •
-              Saldo Final: €{filteredTransactions.length > 0 ? filteredTransactions[filteredTransactions.length - 1].balance.toFixed(2) : '0.00'}
+              {t.banking.totalTransactions}: {filteredTransactions.length} transação(ões) •
+              {t.banking.finalBalance}: €{filteredTransactions.length > 0 ? filteredTransactions[filteredTransactions.length - 1].balance.toFixed(2) : '0.00'}
             </div>
           </div>
         </main>
@@ -473,7 +475,7 @@ export default function BankingPage() {
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
         onCancel={handleCloseModal}
-        title="Nova Transação Bancária"
+        title={t.banking.newTransaction}
         submitLabel="Criar Transação"
         isSubmitting={isSubmitting}
       >
@@ -493,7 +495,7 @@ export default function BankingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="transactionType" className="block mb-1">
-                Tipo de Transação *
+                {t.banking.form.transactionTypeRequired}
               </Label>
               <select
                 id="transactionType"
@@ -503,15 +505,15 @@ export default function BankingPage() {
                 className="flex h-10 w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
                 required
               >
-                <option value="credit">Crédito (Entrada)</option>
-                <option value="debit">Débito (Saída)</option>
-                <option value="transfer">Transferência</option>
+                <option value="credit">{t.banking.transactionTypes.credit} (Entrada)</option>
+                <option value="debit">{t.banking.transactionTypes.debit} (Saída)</option>
+                <option value="transfer">{t.banking.transactionTypes.transfer}</option>
               </select>
             </div>
 
             <div>
               <label htmlFor="amount" className="block text-sm font-medium text-gray-700 mb-1">
-                Valor (€) *
+                {t.banking.form.amountRequired}
               </label>
               <Input
                 id="amount"
@@ -521,7 +523,7 @@ export default function BankingPage() {
                 min="0"
                 value={formData.amount}
                 onChange={handleInputChange}
-                placeholder="0.00"
+                placeholder={t.banking.form.amountPlaceholder}
                 required
               />
             </div>
@@ -529,7 +531,7 @@ export default function BankingPage() {
 
           <div>
             <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-              Descrição *
+              {t.banking.form.descriptionRequired}
             </label>
             <Input
               id="description"
@@ -537,7 +539,7 @@ export default function BankingPage() {
               type="text"
               value={formData.description}
               onChange={handleInputChange}
-              placeholder="Descrição da transação"
+              placeholder={t.banking.form.descriptionPlaceholder}
               required
             />
           </div>
@@ -545,7 +547,7 @@ export default function BankingPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                Categoria *
+                {t.banking.form.categoryRequired}
               </label>
               <Input
                 id="category"
@@ -553,14 +555,14 @@ export default function BankingPage() {
                 type="text"
                 value={formData.category}
                 onChange={handleInputChange}
-                placeholder="Ex: Receitas, Despesas, Serviços"
+                placeholder={t.banking.form.categoryPlaceholder}
                 required
               />
             </div>
 
             <div>
               <label htmlFor="reference" className="block text-sm font-medium text-gray-700 mb-1">
-                Referência
+                {t.banking.form.reference}
               </label>
               <Input
                 id="reference"
@@ -568,7 +570,7 @@ export default function BankingPage() {
                 type="text"
                 value={formData.reference}
                 onChange={handleInputChange}
-                placeholder="Referência (opcional)"
+                placeholder={t.banking.form.referencePlaceholder}
               />
             </div>
           </div>
@@ -576,22 +578,22 @@ export default function BankingPage() {
           {/* Preview */}
           {formData.amount && !isNaN(Number(formData.amount)) && (
             <div className="bg-muted p-3 rounded-lg">
-              <h4 className="text-sm font-medium text-muted-foreground mb-2">Resumo</h4>
+              <h4 className="text-sm font-medium text-muted-foreground mb-2">{t.banking.form.summary}</h4>
               <div className="space-y-1 text-sm">
                 <div className="flex justify-between">
-                  <span>Tipo:</span>
+                  <span>{t.banking.form.type}:</span>
                   <span className={formData.transactionType === 'credit' ? 'text-green-600' : 'text-red-600'}>
                     {getTransactionTypeLabel(formData.transactionType)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Valor:</span>
+                  <span>{t.banking.form.value}:</span>
                   <span className={`font-medium ${formData.transactionType === 'credit' ? 'text-green-600' : 'text-red-600'}`}>
                     {formData.transactionType === 'credit' ? '+' : '-'}€{Number(formData.amount).toFixed(2)}
                   </span>
                 </div>
                 <div className="flex justify-between">
-                  <span>Novo Saldo:</span>
+                  <span>{t.banking.form.newBalance}:</span>
                   <span className="font-medium text-blue-600">
                     €{(currentBalance + (formData.transactionType === 'credit' ? Number(formData.amount) : -Number(formData.amount))).toFixed(2)}
                   </span>

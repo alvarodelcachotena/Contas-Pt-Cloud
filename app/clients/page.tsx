@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useLanguage } from '@/hooks/useLanguage'
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
 import { Button } from '@/components/ui/button'
@@ -25,6 +26,7 @@ interface Client {
 }
 
 export default function ClientsPage() {
+  const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -98,7 +100,7 @@ export default function ClientsPage() {
     e.preventDefault()
 
     if (!formData.name.trim()) {
-      setError('Nome é obrigatório')
+      setError(t.clients.errors.nameRequired)
       return
     }
 
@@ -114,7 +116,7 @@ export default function ClientsPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro ao criar cliente')
+        throw new Error(errorData.error || t.clients.errors.createError)
       }
 
       // Cliente creado con éxito
@@ -125,7 +127,7 @@ export default function ClientsPage() {
 
     } catch (error) {
       console.error('Erro:', error)
-      setError(error instanceof Error ? error.message : 'Erro ao criar cliente')
+      setError(error instanceof Error ? error.message : t.clients.errors.createError)
     } finally {
       setIsSubmitting(false)
     }
@@ -140,8 +142,8 @@ export default function ClientsPage() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Clientes</h1>
-                <p className="text-muted-foreground">Gerir informações dos clientes</p>
+                <h1 className="text-2xl font-bold text-foreground">{t.clients.title}</h1>
+                <p className="text-muted-foreground">{t.clients.subtitle}</p>
               </div>
               <div className="flex items-center space-x-2">
                 <DeleteAllButton
@@ -155,7 +157,7 @@ export default function ClientsPage() {
                 />
                 <Button onClick={handleOpenModal} className="flex items-center space-x-2">
                   <Plus className="w-4 h-4" />
-                  <span>Novo Cliente</span>
+                  <span>{t.clients.newClient}</span>
                 </Button>
               </div>
             </div>
@@ -167,14 +169,14 @@ export default function ClientsPage() {
                   <span>Lista de Clientes</span>
                 </CardTitle>
                 <CardDescription>
-                  {filteredClients.length} cliente{filteredClients.length !== 1 ? 's' : ''} encontrado{filteredClients.length !== 1 ? 's' : ''}
+                  {filteredClients.length} {t.clients.clientsFound}
                 </CardDescription>
               </CardHeader>
               <CardContent>
                 <div className="flex items-center space-x-2 mb-4">
                   <Search className="w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Pesquisar clientes..."
+                    placeholder={t.clients.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="max-w-sm"
@@ -193,19 +195,19 @@ export default function ClientsPage() {
                       <thead className="bg-muted">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Cliente
+                            {t.clients.table.client}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Contacto
+                            {t.clients.table.contact}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            NIF
+                            {t.clients.table.nif}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Localização
+                            {t.clients.table.location}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Criado
+                            {t.clients.table.created}
                           </th>
                         </tr>
                       </thead>
@@ -281,7 +283,7 @@ export default function ClientsPage() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onCancel={handleCloseModal}
-        title="Novo Cliente"
+        title={t.clients.modal.title}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
       >
@@ -299,7 +301,7 @@ export default function ClientsPage() {
           )}
 
           <div>
-            <Label htmlFor="name">Nome *</Label>
+            <Label htmlFor="name">{t.clients.modal.name} *</Label>
             <Input
               id="name"
               name="name"
@@ -311,7 +313,7 @@ export default function ClientsPage() {
           </div>
 
           <div>
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="email">{t.clients.modal.email}</Label>
             <Input
               id="email"
               name="email"
@@ -323,7 +325,7 @@ export default function ClientsPage() {
           </div>
 
           <div>
-            <Label htmlFor="phone">Telefone</Label>
+            <Label htmlFor="phone">{t.clients.modal.phone}</Label>
             <Input
               id="phone"
               name="phone"
@@ -334,7 +336,7 @@ export default function ClientsPage() {
           </div>
 
           <div>
-            <Label htmlFor="taxId">NIF</Label>
+            <Label htmlFor="taxId">{t.clients.modal.taxId}</Label>
             <Input
               id="taxId"
               name="taxId"
@@ -345,7 +347,7 @@ export default function ClientsPage() {
           </div>
 
           <div>
-            <Label htmlFor="address">Morada</Label>
+            <Label htmlFor="address">{t.clients.modal.address}</Label>
             <Input
               id="address"
               name="address"
@@ -357,7 +359,7 @@ export default function ClientsPage() {
 
           <div className="grid grid-cols-2 gap-4">
             <div>
-              <Label htmlFor="postalCode">Código Postal</Label>
+              <Label htmlFor="postalCode">{t.clients.modal.postalCode}</Label>
               <Input
                 id="postalCode"
                 name="postalCode"
@@ -368,7 +370,7 @@ export default function ClientsPage() {
             </div>
 
             <div>
-              <Label htmlFor="city">Cidade</Label>
+              <Label htmlFor="city">{t.clients.modal.city}</Label>
               <Input
                 id="city"
                 name="city"

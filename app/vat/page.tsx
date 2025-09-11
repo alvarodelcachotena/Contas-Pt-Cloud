@@ -9,6 +9,7 @@ import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Search, Plus, Calculator, TrendingUp, TrendingDown, FileText } from 'lucide-react'
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface VATEntry {
   id: number
@@ -23,6 +24,7 @@ interface VATEntry {
 }
 
 export default function VATPage() {
+  const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
 
   const { data: vatData, isLoading } = useQuery({
@@ -84,12 +86,12 @@ export default function VATPage() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">IVA</h1>
-                <p className="text-muted-foreground">Gestão de declarações e pagamentos de IVA</p>
+                <h1 className="text-2xl font-bold text-foreground">{t.vat.title}</h1>
+                <p className="text-muted-foreground">{t.vat.subtitle}</p>
               </div>
               <Button className="flex items-center space-x-2">
                 <Plus className="w-4 h-4" />
-                <span>Nova Declaração</span>
+                <span>{t.vat.newDeclaration}</span>
               </Button>
             </div>
 
@@ -97,14 +99,14 @@ export default function VATPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    IVA a Pagar
+                    {t.vat.metrics.vatToPay}
                   </CardTitle>
                   <Calculator className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-red-600">€2.350,00</div>
                   <p className="text-xs text-muted-foreground">
-                    Período atual
+                    {t.vat.metrics.currentPeriod}
                   </p>
                 </CardContent>
               </Card>
@@ -112,14 +114,14 @@ export default function VATPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    IVA Cobrado
+                    {t.vat.metrics.vatCollected}
                   </CardTitle>
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">€5.750,00</div>
                   <p className="text-xs text-muted-foreground">
-                    Este mês
+                    {t.vat.metrics.thisMonth}
                   </p>
                 </CardContent>
               </Card>
@@ -127,14 +129,14 @@ export default function VATPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    IVA Pago
+                    {t.vat.metrics.vatPaid}
                   </CardTitle>
                   <TrendingDown className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-orange-600">€3.400,00</div>
                   <p className="text-xs text-muted-foreground">
-                    Este mês
+                    {t.vat.metrics.thisMonth}
                   </p>
                 </CardContent>
               </Card>
@@ -142,14 +144,14 @@ export default function VATPage() {
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                   <CardTitle className="text-sm font-medium">
-                    Declarações
+                    {t.vat.metrics.declarations}
                   </CardTitle>
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">12</div>
                   <p className="text-xs text-muted-foreground">
-                    Este ano
+                    {t.vat.metrics.thisYear}
                   </p>
                 </CardContent>
               </Card>
@@ -159,7 +161,7 @@ export default function VATPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Calculator className="w-5 h-5" />
-                  <span>Declarações de IVA</span>
+                  <span>{t.vat.declarations.title}</span>
                 </CardTitle>
                 <CardDescription>
                   {filteredEntries.length} declaração{filteredEntries.length !== 1 ? 'ões' : ''} encontrada{filteredEntries.length !== 1 ? 's' : ''}
@@ -169,7 +171,7 @@ export default function VATPage() {
                 <div className="flex items-center space-x-2 mb-4">
                   <Search className="w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Pesquisar declarações..."
+                    placeholder={t.vat.declarations.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="max-w-sm"
@@ -188,25 +190,25 @@ export default function VATPage() {
                       <thead className="bg-muted">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Período
+                            {t.vat.declarations.period}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Vendas
+                            {t.vat.declarations.sales}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Compras
+                            {t.vat.declarations.purchases}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            IVA Cobrado
+                            {t.vat.declarations.vatCollected}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            IVA Pago
+                            {t.vat.declarations.vatPaid}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            IVA Devido
+                            {t.vat.declarations.vatDue}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Estado
+                            {t.vat.declarations.status}
                           </th>
                         </tr>
                       </thead>
@@ -233,7 +235,7 @@ export default function VATPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <Badge variant={entry.status === 'pago' ? 'default' : 'destructive'}>
-                                {entry.status === 'pago' ? 'Pago' : 'Pendente'}
+                                {entry.status === 'pago' ? t.vat.status.paid : t.vat.status.pending}
                               </Badge>
                             </td>
                           </tr>

@@ -2,6 +2,7 @@
 
 import { useQuery, useQueryClient } from '@tanstack/react-query'
 import { useState } from 'react'
+import { useLanguage } from '@/hooks/useLanguage'
 import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import {
@@ -33,6 +34,7 @@ interface Expense {
 }
 
 export default function ExpensesTable() {
+  const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -124,19 +126,19 @@ export default function ExpensesTable() {
 
     // Validation without alerts
     if (!formData.vendor.trim()) {
-      setError('Nome do fornecedor é obrigatório')
+      setError(t.expenses.errors.vendorRequired)
       return
     }
     if (!formData.amount.trim() || isNaN(Number(formData.amount))) {
-      setError('Valor deve ser um número válido')
+      setError(t.expenses.errors.amountRequired)
       return
     }
     if (!formData.category.trim()) {
-      setError('Categoria é obrigatória')
+      setError(t.expenses.errors.categoryRequired)
       return
     }
     if (!['6', '13', '23', '0'].includes(formData.vatRate)) {
-      setError('Taxa de IVA inválida. Use 0, 6, 13 ou 23')
+      setError(t.expenses.errors.vatRateInvalid)
       return
     }
 
@@ -168,7 +170,7 @@ export default function ExpensesTable() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro ao criar despesa')
+        throw new Error(errorData.error || t.expenses.errors.createError)
       }
 
       // Despesa criada com sucesso
@@ -179,7 +181,7 @@ export default function ExpensesTable() {
 
     } catch (error) {
       console.error('Erro:', error)
-      setError(error instanceof Error ? error.message : 'Erro ao criar despesa')
+      setError(error instanceof Error ? error.message : t.expenses.errors.createError)
     } finally {
       setIsSubmitting(false)
     }
@@ -188,7 +190,7 @@ export default function ExpensesTable() {
   const handleExport = async () => {
     try {
       if (!expenses || expenses.length === 0) {
-        setError('Não há despesas para exportar')
+        setError(t.expenses.errors.exportError)
         return
       }
 
@@ -284,8 +286,8 @@ export default function ExpensesTable() {
 
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-bold text-foreground">Despesas</h1>
-          <p className="text-muted-foreground mt-1">Gestão e controlo de despesas</p>
+          <h1 className="text-3xl font-bold text-foreground">{t.expenses.title}</h1>
+          <p className="text-muted-foreground mt-1">{t.expenses.subtitle}</p>
         </div>
         <div className="flex items-center space-x-2">
           <DeleteAllButton
@@ -302,7 +304,7 @@ export default function ExpensesTable() {
             className="flex items-center space-x-2"
           >
             <Plus className="w-4 h-4" />
-            <span>Nova Despesa</span>
+            <span>{t.expenses.newExpense}</span>
           </Button>
         </div>
       </div>
@@ -311,7 +313,7 @@ export default function ExpensesTable() {
         <div className="relative flex-1 max-w-sm">
           <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400 w-4 h-4" />
           <Input
-            placeholder="Procurar despesas..."
+            placeholder={t.expenses.searchPlaceholder}
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
             className="pl-10"
@@ -323,7 +325,7 @@ export default function ExpensesTable() {
           onClick={handleExport}
         >
           <Download className="w-4 h-4" />
-          <span>Exportar</span>
+          <span>{t.expenses.export}</span>
         </Button>
       </div>
 
@@ -331,20 +333,20 @@ export default function ExpensesTable() {
         <Table>
           <TableHeader>
             <TableRow>
-              <TableHead>Fornecedor</TableHead>
-              <TableHead>Total</TableHead>
-              <TableHead>IVA</TableHead>
-              <TableHead>Categoria</TableHead>
-              <TableHead>Data</TableHead>
-              <TableHead>Dedutível</TableHead>
-              <TableHead>Ações</TableHead>
+              <TableHead>{t.expenses.table.vendor}</TableHead>
+              <TableHead>{t.expenses.table.total}</TableHead>
+              <TableHead>{t.expenses.table.vat}</TableHead>
+              <TableHead>{t.expenses.table.category}</TableHead>
+              <TableHead>{t.expenses.table.date}</TableHead>
+              <TableHead>{t.expenses.table.deductible}</TableHead>
+              <TableHead>{t.expenses.table.actions}</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {filteredExpenses.length === 0 ? (
               <TableRow>
                 <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                  Nenhuma despesa encontrada
+                  {t.expenses.noExpenses}
                 </TableCell>
               </TableRow>
             ) : (
@@ -363,7 +365,7 @@ export default function ExpensesTable() {
                   </TableCell>
                   <TableCell>
                     <Badge variant={expense.isDeductible ? 'default' : 'destructive'}>
-                      {expense.isDeductible ? 'Sim' : 'Não'}
+                      {expense.isDeductible ? t.expenses.deductible.yes : t.expenses.deductible.no}
                     </Badge>
                   </TableCell>
                   <TableCell>
@@ -393,8 +395,8 @@ export default function ExpensesTable() {
       </div>
 
       <div className="text-sm text-gray-500">
-        Total: {filteredExpenses.length} despesa(s) •
-        Valor Total: €{filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()) + parseFloat((exp.vatAmount || 0).toString()), 0).toFixed(2)}
+        {t.expenses.totalExpenses}: {filteredExpenses.length} despesa(s) •
+        {t.expenses.totalValue}: €{filteredExpenses.reduce((sum, exp) => sum + parseFloat(exp.amount.toString()) + parseFloat((exp.vatAmount || 0).toString()), 0).toFixed(2)}
       </div>
 
       {/* Modal de Nova Despesa */}
@@ -403,8 +405,8 @@ export default function ExpensesTable() {
         onClose={handleCloseModal}
         onSubmit={handleSubmit}
         onCancel={handleCloseModal}
-        title="Nova Despesa"
-        submitLabel="Criar Despesa"
+        title={t.expenses.modal.title}
+        submitLabel={t.expenses.modal.submitLabel}
         isSubmitting={isSubmitting}
       >
         <div className="space-y-4">
@@ -423,7 +425,7 @@ export default function ExpensesTable() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="vendor" className="block mb-1">
-                Nome do Fornecedor *
+                {t.expenses.modal.vendor} *
               </Label>
               <Input
                 id="vendor"
@@ -438,7 +440,7 @@ export default function ExpensesTable() {
 
             <div>
               <Label htmlFor="amount" className="block mb-1">
-                Valor (€) *
+                {t.expenses.modal.amount} *
               </Label>
               <Input
                 id="amount"
@@ -457,7 +459,7 @@ export default function ExpensesTable() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="vatRate" className="block text-sm font-medium text-gray-700 mb-1">
-                Taxa de IVA *
+                {t.expenses.modal.vatRate} *
               </label>
               <select
                 id="vatRate"
@@ -467,16 +469,16 @@ export default function ExpensesTable() {
                 className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                 required
               >
-                <option value="0">0% (Isento)</option>
-                <option value="6">6% (Reduzida)</option>
-                <option value="13">13% (Intermédia)</option>
-                <option value="23">23% (Normal)</option>
+                <option value="0">{t.expenses.vatRates.exempt}</option>
+                <option value="6">{t.expenses.vatRates.reduced}</option>
+                <option value="13">{t.expenses.vatRates.intermediate}</option>
+                <option value="23">{t.expenses.vatRates.normal}</option>
               </select>
             </div>
 
             <div>
               <label htmlFor="category" className="block text-sm font-medium text-gray-700 mb-1">
-                Categoria *
+                {t.expenses.modal.category} *
               </label>
               <Input
                 id="category"
@@ -493,7 +495,7 @@ export default function ExpensesTable() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <label htmlFor="receiptNumber" className="block text-sm font-medium text-gray-700 mb-1">
-                Número do Recibo
+                {t.expenses.modal.receiptNumber}
               </label>
               <Input
                 id="receiptNumber"
@@ -507,7 +509,7 @@ export default function ExpensesTable() {
 
             <div>
               <label htmlFor="description" className="block text-sm font-medium text-gray-700 mb-1">
-                Descrição
+                {t.expenses.modal.description}
               </label>
               <Input
                 id="description"

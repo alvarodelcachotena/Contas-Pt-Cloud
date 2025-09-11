@@ -11,6 +11,7 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { FormModal } from '@/components/ui/modal'
 import { Search, Plus, Building2, Mail, Phone, MapPin, AlertCircle, Trash2, Edit } from 'lucide-react'
 import DeleteAllButton from '@/components/delete-all-button'
+import { useLanguage } from '@/hooks/useLanguage'
 
 interface Supplier {
   id: number
@@ -30,6 +31,7 @@ interface Supplier {
 }
 
 export default function SuppliersPage() {
+  const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
   const [isModalOpen, setIsModalOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -140,7 +142,7 @@ export default function SuppliersPage() {
 
     // Validation
     if (!formData.name.trim()) {
-      setError('Nome é obrigatório')
+      setError(t.suppliers.validation.nameRequired)
       return
     }
 
@@ -150,8 +152,8 @@ export default function SuppliersPage() {
     try {
       const url = editingSupplier ? '/api/suppliers' : '/api/suppliers'
       const method = editingSupplier ? 'PUT' : 'POST'
-      
-      const requestBody = editingSupplier 
+
+      const requestBody = editingSupplier
         ? { id: editingSupplier.id, ...formData }
         : formData
 
@@ -163,7 +165,7 @@ export default function SuppliersPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro ao salvar fornecedor')
+        throw new Error(errorData.error || t.suppliers.validation.saveError)
       }
 
       // Fornecedor salvo com sucesso
@@ -174,14 +176,14 @@ export default function SuppliersPage() {
 
     } catch (error) {
       console.error('Erro:', error)
-      setError(error instanceof Error ? error.message : 'Erro ao salvar fornecedor')
+      setError(error instanceof Error ? error.message : t.suppliers.validation.saveError)
     } finally {
       setIsSubmitting(false)
     }
   }
 
   const handleDeleteSupplier = async (supplierId: number) => {
-    if (!confirm('Tem certeza de que deseja eliminar este fornecedor?')) {
+    if (!confirm(t.suppliers.validation.deleteConfirm)) {
       return
     }
 
@@ -192,7 +194,7 @@ export default function SuppliersPage() {
 
       if (!response.ok) {
         const errorData = await response.json()
-        throw new Error(errorData.error || 'Erro ao eliminar fornecedor')
+        throw new Error(errorData.error || t.suppliers.validation.deleteError)
       }
 
       // Fornecedor eliminado com sucesso
@@ -200,7 +202,7 @@ export default function SuppliersPage() {
 
     } catch (error) {
       console.error('Erro:', error)
-      setError(error instanceof Error ? error.message : 'Erro ao eliminar fornecedor')
+      setError(error instanceof Error ? error.message : t.suppliers.validation.deleteError)
     }
   }
 
@@ -248,8 +250,8 @@ export default function SuppliersPage() {
 
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Fornecedores</h1>
-                <p className="text-muted-foreground">Gerir informações dos fornecedores</p>
+                <h1 className="text-2xl font-bold text-foreground">{t.suppliers.title}</h1>
+                <p className="text-muted-foreground">{t.suppliers.subtitle}</p>
               </div>
               <div className="flex items-center space-x-2">
                 <DeleteAllButton
@@ -263,7 +265,7 @@ export default function SuppliersPage() {
                 />
                 <Button onClick={() => handleOpenModal()} className="flex items-center space-x-2">
                   <Plus className="w-4 h-4" />
-                  <span>Novo Fornecedor</span>
+                  <span>{t.suppliers.newSupplier}</span>
                 </Button>
               </div>
             </div>
@@ -272,7 +274,7 @@ export default function SuppliersPage() {
               <CardHeader>
                 <CardTitle className="flex items-center space-x-2">
                   <Building2 className="w-5 h-5" />
-                  <span>Lista de Fornecedores</span>
+                  <span>{t.suppliers.listTitle}</span>
                 </CardTitle>
                 <CardDescription>
                   {filteredSuppliers.length} fornecedor{filteredSuppliers.length !== 1 ? 'es' : ''} encontrado{filteredSuppliers.length !== 1 ? 's' : ''}
@@ -282,7 +284,7 @@ export default function SuppliersPage() {
                 <div className="flex items-center space-x-2 mb-4">
                   <Search className="w-4 h-4 text-muted-foreground" />
                   <Input
-                    placeholder="Pesquisar fornecedores..."
+                    placeholder={t.suppliers.searchPlaceholder}
                     value={searchTerm}
                     onChange={(e) => setSearchTerm(e.target.value)}
                     className="flex-1"
@@ -297,7 +299,7 @@ export default function SuppliersPage() {
                           <div className="flex-1">
                             <h3 className="font-semibold text-lg">{supplier.name}</h3>
                             {supplier.tax_id && (
-                              <p className="text-sm text-muted-foreground">NIF: {supplier.tax_id}</p>
+                              <p className="text-sm text-muted-foreground">{t.suppliers.card.taxId}: {supplier.tax_id}</p>
                             )}
                           </div>
                           <div className="flex items-center space-x-1">
@@ -346,12 +348,12 @@ export default function SuppliersPage() {
                           )}
                           {supplier.contact_person && (
                             <div className="text-sm text-muted-foreground">
-                              Contacto: {supplier.contact_person}
+                              {t.suppliers.card.contact}: {supplier.contact_person}
                             </div>
                           )}
                           {supplier.payment_terms && (
                             <div className="text-sm text-muted-foreground">
-                              Termos: {supplier.payment_terms}
+                              {t.suppliers.card.terms}: {supplier.payment_terms}
                             </div>
                           )}
                         </div>
@@ -364,18 +366,18 @@ export default function SuppliersPage() {
                   <div className="text-center py-8">
                     <Building2 className="w-12 h-12 mx-auto text-gray-400 mb-4" />
                     <h3 className="text-lg font-medium text-gray-900 mb-2">
-                      {searchTerm ? 'Nenhum fornecedor encontrado' : 'Nenhum fornecedor registado'}
+                      {searchTerm ? t.suppliers.noSuppliersFound : t.suppliers.noSuppliersRegistered}
                     </h3>
                     <p className="text-gray-500 mb-4">
-                      {searchTerm 
-                        ? 'Tente ajustar os termos de pesquisa' 
-                        : 'Comece por adicionar o seu primeiro fornecedor'
+                      {searchTerm
+                        ? t.suppliers.tryAdjustingSearch
+                        : t.suppliers.startAddingSupplier
                       }
                     </p>
                     {!searchTerm && (
                       <Button onClick={() => handleOpenModal()} className="flex items-center space-x-2">
                         <Plus className="w-4 h-4" />
-                        <span>Adicionar Fornecedor</span>
+                        <span>{t.suppliers.addSupplier}</span>
                       </Button>
                     )}
                   </div>
@@ -391,7 +393,7 @@ export default function SuppliersPage() {
         isOpen={isModalOpen}
         onClose={handleCloseModal}
         onCancel={handleCloseModal}
-        title={editingSupplier ? "Editar Fornecedor" : "Novo Fornecedor"}
+        title={editingSupplier ? t.suppliers.editSupplier : t.suppliers.newSupplier}
         onSubmit={handleSubmit}
         isSubmitting={isSubmitting}
         size="lg"
@@ -412,7 +414,7 @@ export default function SuppliersPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="name" className="block mb-1">
-                Nome da Empresa *
+                {t.suppliers.form.companyNameRequired}
               </Label>
               <Input
                 id="name"
@@ -420,14 +422,14 @@ export default function SuppliersPage() {
                 type="text"
                 value={formData.name}
                 onChange={handleInputChange}
-                placeholder="Nome da empresa"
+                placeholder={t.suppliers.form.companyNamePlaceholder}
                 required
               />
             </div>
 
             <div>
               <Label htmlFor="tax_id" className="block mb-1">
-                NIF
+                {t.suppliers.form.taxId}
               </Label>
               <Input
                 id="tax_id"
@@ -435,7 +437,7 @@ export default function SuppliersPage() {
                 type="text"
                 value={formData.tax_id}
                 onChange={handleInputChange}
-                placeholder="Número de identificação fiscal"
+                placeholder={t.suppliers.form.taxIdPlaceholder}
               />
             </div>
           </div>
@@ -443,7 +445,7 @@ export default function SuppliersPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="email" className="block mb-1">
-                Email
+                {t.suppliers.form.email}
               </Label>
               <Input
                 id="email"
@@ -451,13 +453,13 @@ export default function SuppliersPage() {
                 type="email"
                 value={formData.email}
                 onChange={handleInputChange}
-                placeholder="email@empresa.com"
+                placeholder={t.suppliers.form.emailPlaceholder}
               />
             </div>
 
             <div>
               <Label htmlFor="phone" className="block mb-1">
-                Telefone
+                {t.suppliers.form.phone}
               </Label>
               <Input
                 id="phone"
@@ -465,14 +467,14 @@ export default function SuppliersPage() {
                 type="tel"
                 value={formData.phone}
                 onChange={handleInputChange}
-                placeholder="+351 123 456 789"
+                placeholder={t.suppliers.form.phonePlaceholder}
               />
             </div>
           </div>
 
           <div>
             <Label htmlFor="address" className="block mb-1">
-              Morada
+              {t.suppliers.form.address}
             </Label>
             <Input
               id="address"
@@ -480,14 +482,14 @@ export default function SuppliersPage() {
               type="text"
               value={formData.address}
               onChange={handleInputChange}
-              placeholder="Rua, número, andar"
+              placeholder={t.suppliers.form.addressPlaceholder}
             />
           </div>
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="postal_code" className="block mb-1">
-                Código Postal
+                {t.suppliers.form.postalCode}
               </Label>
               <Input
                 id="postal_code"
@@ -495,13 +497,13 @@ export default function SuppliersPage() {
                 type="text"
                 value={formData.postal_code}
                 onChange={handleInputChange}
-                placeholder="1234-567"
+                placeholder={t.suppliers.form.postalCodePlaceholder}
               />
             </div>
 
             <div>
               <Label htmlFor="city" className="block mb-1">
-                Cidade
+                {t.suppliers.form.city}
               </Label>
               <Input
                 id="city"
@@ -509,7 +511,7 @@ export default function SuppliersPage() {
                 type="text"
                 value={formData.city}
                 onChange={handleInputChange}
-                placeholder="Lisboa"
+                placeholder={t.suppliers.form.cityPlaceholder}
               />
             </div>
           </div>
@@ -517,7 +519,7 @@ export default function SuppliersPage() {
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
             <div>
               <Label htmlFor="contact_person" className="block mb-1">
-                Pessoa de Contacto
+                {t.suppliers.form.contactPerson}
               </Label>
               <Input
                 id="contact_person"
@@ -525,13 +527,13 @@ export default function SuppliersPage() {
                 type="text"
                 value={formData.contact_person}
                 onChange={handleInputChange}
-                placeholder="Nome da pessoa de contacto"
+                placeholder={t.suppliers.form.contactPersonPlaceholder}
               />
             </div>
 
             <div>
               <Label htmlFor="payment_terms" className="block mb-1">
-                Termos de Pagamento
+                {t.suppliers.form.paymentTerms}
               </Label>
               <Input
                 id="payment_terms"
@@ -539,21 +541,21 @@ export default function SuppliersPage() {
                 type="text"
                 value={formData.payment_terms}
                 onChange={handleInputChange}
-                placeholder="Ex: 30 dias"
+                placeholder={t.suppliers.form.paymentTermsPlaceholder}
               />
             </div>
           </div>
 
           <div>
             <Label htmlFor="notes" className="block mb-1">
-              Notas
+              {t.suppliers.form.notes}
             </Label>
             <textarea
               id="notes"
               name="notes"
               value={formData.notes}
               onChange={handleInputChange}
-              placeholder="Notas adicionais sobre o fornecedor"
+              placeholder={t.suppliers.form.notesPlaceholder}
               className="flex min-h-[80px] w-full rounded-md border border-input bg-background px-3 py-2 text-sm ring-offset-background placeholder:text-muted-foreground focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 disabled:cursor-not-allowed disabled:opacity-50"
             />
           </div>
