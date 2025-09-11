@@ -352,13 +352,29 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             // Process based on document type
             // IMPORTANT: Invoices are expenses (money YOU paid), not invoices TO clients
+            console.log(`🔍 Document type detected: ${analysisResult.document_type}`)
+            console.log(`🔍 Extracted data keys:`, Object.keys(analysisResult.extracted_data || {}))
+
             if (analysisResult.document_type === 'invoice') {
               console.log(`💰 Procesando INVOICE como GASTO (dinero que pagaste)`)
               console.log(`🔍 Datos de extracted_data antes de processInvoice:`, JSON.stringify(analysisResult.extracted_data, null, 2))
-              await processInvoice(analysisResult.extracted_data, document.id, supabase, tenantId)
+              try {
+                await processInvoice(analysisResult.extracted_data, document.id, supabase, tenantId)
+                console.log(`✅ processInvoice completado exitosamente`)
+              } catch (error) {
+                console.error(`❌ Error en processInvoice:`, error)
+              }
             } else if (analysisResult.document_type === 'expense') {
               console.log(`💰 Procesando EXPENSE como GASTO`)
-              await processExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
+              console.log(`🔍 Datos de extracted_data antes de processExpense:`, JSON.stringify(analysisResult.extracted_data, null, 2))
+              try {
+                await processExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
+                console.log(`✅ processExpense completado exitosamente`)
+              } catch (error) {
+                console.error(`❌ Error en processExpense:`, error)
+              }
+            } else {
+              console.log(`⚠️ Tipo de documento no reconocido: ${analysisResult.document_type}`)
             }
 
             console.log(`✅ Document processing completed with AI: ${document.id}`)
@@ -800,8 +816,11 @@ async function createOrFindSupplier(supplierData: any, tenantId: number, supabas
 // Process invoice data and create invoice record
 async function processInvoice(invoiceData: any, documentId: number, supabase: any, tenantId: number) {
   try {
+    console.log(`🚀 INICIANDO processInvoice`)
     console.log(`📄 Procesando factura: ${invoiceData.invoice_number || 'Sin número'}`)
     console.log(`📊 Datos recibidos:`, JSON.stringify(invoiceData, null, 2))
+    console.log(`🔍 Document ID: ${documentId}`)
+    console.log(`🔍 Tenant ID: ${tenantId}`)
     console.log(`🔍 Payment type específico:`, {
       payment_type: invoiceData.payment_type,
       payment_type_type: typeof invoiceData.payment_type,
@@ -908,15 +927,22 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
 
   } catch (error) {
     console.error('❌ Error processing invoice:', error)
+    console.error('❌ Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     throw error
   }
+
+  console.log(`🎉 processInvoice FINALIZADO EXITOSAMENTE`)
 }
 
 // Process expense data and create expense record
 async function processExpense(expenseData: any, documentId: number, supabase: any, tenantId: number) {
   try {
+    console.log(`🚀 INICIANDO processExpense`)
     console.log(`💰 Procesando gasto desde WhatsApp: ${expenseData.description || expenseData.vendor_name || 'Sin descripción'}`)
     console.log(`📊 Datos del gasto:`, JSON.stringify(expenseData, null, 2))
+    console.log(`🔍 Document ID: ${documentId}`)
+    console.log(`🔍 Tenant ID: ${tenantId}`)
 
     // Extract data from WhatsApp document (could be invoice or expense format)
     const vendorName = expenseData.vendor_name || expenseData.vendor || expenseData.client_name || 'Proveedor Desconocido'
@@ -926,6 +952,23 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     const description = expenseData.description || `Gasto procesado desde WhatsApp - ${vendorName}`
     const expenseDate = expenseData.expense_date || expenseData.invoice_date || expenseData.date || new Date().toISOString().split('T')[0]
     const receiptNumber = expenseData.invoice_number || expenseData.receipt_number || `WHATSAPP-${Date.now()}`
+
+    // Validación de datos críticos
+    console.log(`🔍 VALIDACIÓN DE DATOS:`)
+    console.log(`   - vendorName: "${vendorName}"`)
+    console.log(`   - amount: ${amount}`)
+    console.log(`   - vatAmount: ${vatAmount}`)
+    console.log(`   - vatRate: ${vatRate}`)
+    console.log(`   - description: "${description}"`)
+    console.log(`   - expenseDate: "${expenseDate}"`)
+    console.log(`   - receiptNumber: "${receiptNumber}"`)
+
+    if (!vendorName || vendorName === 'Proveedor Desconocido') {
+      console.log(`⚠️ ADVERTENCIA: Nombre de proveedor no encontrado`)
+    }
+    if (amount <= 0) {
+      console.log(`⚠️ ADVERTENCIA: Importe inválido: ${amount}`)
+    }
 
     console.log(`📋 Datos extraídos:`)
     console.log(`   - Proveedor: ${vendorName}`)
@@ -938,23 +981,25 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     console.log(`🏢 Proveedor ID para gasto: ${supplierId || 'null'}`)
 
     // Create expense record
+    console.log(`💾 PREPARANDO INSERCIÓN EN BASE DE DATOS:`)
+    const expenseToInsert = {
+      tenant_id: tenantId,
+      vendor: vendorName,
+      amount: amount,
+      vat_amount: vatAmount,
+      vat_rate: vatRate,
+      category: 'General',
+      description: description,
+      receipt_number: receiptNumber,
+      expense_date: expenseDate,
+      is_deductible: true,
+      created_at: new Date().toISOString()
+    }
+    console.log(`📋 Datos a insertar:`, JSON.stringify(expenseToInsert, null, 2))
+
     const { data: expense, error: expenseError } = await supabase
       .from('expenses')
-      .insert({
-        tenant_id: tenantId,
-        vendor: vendorName,
-        amount: amount,
-        vat_amount: vatAmount,
-        vat_rate: vatRate,
-        category: 'General',
-        description: description,
-        receipt_number: receiptNumber,
-        expense_date: expenseDate,
-        is_deductible: true,
-        supplier_id: supplierId, // Link to supplier if created
-        document_id: documentId, // Link to original document
-        created_at: new Date().toISOString()
-      })
+      .insert(expenseToInsert)
       .select()
       .single()
 
@@ -977,6 +1022,10 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
 
   } catch (error) {
     console.error('❌ Error processing expense:', error)
+    console.error('❌ Error details:', error instanceof Error ? error.message : 'Unknown error')
+    console.error('❌ Error stack:', error instanceof Error ? error.stack : 'No stack trace')
     throw error
   }
+
+  console.log(`🎉 processExpense FINALIZADO EXITOSAMENTE`)
 }

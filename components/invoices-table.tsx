@@ -85,13 +85,17 @@ export default function InvoicesTable() {
   const { data: invoices, isLoading, refetch: refetchInvoices } = useQuery<Invoice[]>({
     queryKey: ['/api/invoices'],
     queryFn: async () => {
+      console.log('🔍 Fetching invoices from frontend...')
       const response = await fetch('/api/invoices', {
         headers: {
           'x-tenant-id': '1'
         }
       })
       if (!response.ok) throw new Error('Failed to fetch invoices')
-      return response.json()
+      const data = await response.json()
+      console.log('📄 Invoices fetched:', data?.length || 0, 'invoices')
+      console.log('📄 First invoice:', data?.[0])
+      return data
     }
   })
 

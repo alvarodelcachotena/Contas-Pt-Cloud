@@ -66,7 +66,8 @@ export default function ExpensesTable() {
       }
 
       const data = await response.json()
-      console.log('✅ Expenses data received:', data)
+      console.log('✅ Expenses data received:', data?.length || 0, 'expenses')
+      console.log('📄 First expense:', data?.[0])
       return data
     }
   })
