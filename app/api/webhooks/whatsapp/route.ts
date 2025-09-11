@@ -381,15 +381,29 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             const description = analysisData.description || ''
             const vendorName = analysisData.vendor_name || analysisData.vendor || analysisData.client_name || ''
 
+            console.log(`🔍 DEBUG - Detección de restaurante:`)
+            console.log(`   - Description: "${description}"`)
+            console.log(`   - Vendor Name: "${vendorName}"`)
+            console.log(`   - Document Type original: ${analysisResult.document_type}`)
+
             // Check if this looks like a restaurant receipt or invoice
             const isRestaurantReceipt = description.toLowerCase().includes('café') ||
               description.toLowerCase().includes('moet') ||
               description.toLowerCase().includes('sangria') ||
               description.toLowerCase().includes('mariscada') ||
               description.toLowerCase().includes('ensalada') ||
+              description.toLowerCase().includes('mojito') ||
+              description.toLowerCase().includes('agua') ||
+              description.toLowerCase().includes('bebida') ||
+              description.toLowerCase().includes('comida') ||
+              description.toLowerCase().includes('plato') ||
               vendorName.toLowerCase().includes('restaurant') ||
               vendorName.toLowerCase().includes('fish') ||
-              vendorName.toLowerCase().includes('bar')
+              vendorName.toLowerCase().includes('bar') ||
+              vendorName.toLowerCase().includes('café') ||
+              vendorName.toLowerCase().includes('bistro')
+
+            console.log(`   - Is Restaurant Receipt: ${isRestaurantReceipt}`)
 
             // Override document type for restaurant receipts
             let finalDocumentType = analysisResult.document_type
