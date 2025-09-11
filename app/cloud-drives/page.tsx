@@ -1,6 +1,7 @@
 'use client'
 
 import { useState, useEffect } from "react"
+import { useLanguage } from '@/hooks/useLanguage';
 import { useBrowserExtensionCleanup } from "@/components/hydration-boundary"
 
 interface CloudIntegration {
@@ -42,6 +43,7 @@ import {
 } from "lucide-react"
 
 export default function CloudDrivesPage() {
+  const { t } = useLanguage();
   // Clean up browser extension attributes to prevent hydration mismatches
   useBrowserExtensionCleanup()
 
@@ -85,13 +87,13 @@ export default function CloudDrivesPage() {
 
     if (success) {
       const messages = {
-        'dropbox_connected': 'Dropbox conectado com sucesso',
-        'googledrive_connected': 'Google Drive conectado com sucesso',
-        'onedrive_connected': 'OneDrive conectado com sucesso'
+        'dropbox_connected': t.cloudDrives.messages.dropboxConnected,
+        'googledrive_connected': t.cloudDrives.messages.googleDriveConnected,
+        'onedrive_connected': t.cloudDrives.messages.oneDriveConnected
       }
       setNotification({
         type: 'success',
-        message: messages[success as keyof typeof messages] || 'Conexão bem-sucedida'
+        message: messages[success as keyof typeof messages] || t.cloudDrives.messages.connectionSuccessful
       })
       // Limpar URL
       window.history.replaceState({}, '', '/cloud-drives')
@@ -101,17 +103,17 @@ export default function CloudDrivesPage() {
 
     if (error) {
       const messages = {
-        'auth_failed': 'Erro na autenticação',
-        'token_failed': 'Erro ao obter token de acesso',
-        'user_failed': 'Erro ao obter dados do usuário',
-        'save_failed': 'Erro ao guardar a configuração',
-        'callback_failed': 'Erro no processo de autenticação',
-        'config_missing': 'Configuração de Dropbox não encontrada. Verifique as variáveis de ambiente DROPBOX_CLIENT_ID e DROPBOX_CLIENT_SECRET.',
-        'token_exchange_failed': 'Erro ao trocar código por token de acesso'
+        'auth_failed': t.cloudDrives.errors.authFailed,
+        'token_failed': t.cloudDrives.errors.tokenFailed,
+        'user_failed': t.cloudDrives.errors.userFailed,
+        'save_failed': t.cloudDrives.errors.saveFailed,
+        'callback_failed': t.cloudDrives.errors.callbackFailed,
+        'config_missing': t.cloudDrives.errors.configMissing,
+        'token_exchange_failed': t.cloudDrives.errors.tokenExchangeFailed
       }
       setNotification({
         type: 'error',
-        message: messages[error as keyof typeof messages] || 'Erro na conexão'
+        message: messages[error as keyof typeof messages] || t.cloudDrives.errors.connectionError
       })
       // Limpar URL
       window.history.replaceState({}, '', '/cloud-drives')
@@ -149,7 +151,7 @@ export default function CloudDrivesPage() {
       console.error('Erro ao carregar integrações:', error)
       setNotification({
         type: 'error',
-        message: 'Erro ao carregar configurações de cloud drives'
+        message: t.cloudDrives.errors.loadingError
       })
       setIntegrations([])
     } finally {
@@ -187,7 +189,7 @@ export default function CloudDrivesPage() {
       if (response.ok) {
         setNotification({
           type: 'success',
-          message: 'Fornecedor desconectado com sucesso'
+          message: t.cloudDrives.messages.disconnectSuccess
         })
         loadIntegrations()
       } else {
@@ -196,7 +198,7 @@ export default function CloudDrivesPage() {
     } catch (error) {
       setNotification({
         type: 'error',
-        message: 'Erro ao desconectar o fornecedor'
+        message: t.cloudDrives.errors.disconnectError
       })
     }
   }
@@ -516,8 +518,8 @@ export default function CloudDrivesPage() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Drives na Nuvem</h1>
-                <p className="text-gray-600 mt-1">Gestão de armazenamento em nuvem e sincronização automática</p>
+                <h1 className="text-3xl font-bold text-foreground">{t.cloudDrives.title}</h1>
+                <p className="text-gray-600 mt-1">{t.cloudDrives.subtitle}</p>
               </div>
               <div className="flex items-center space-x-3">
                 <Button
@@ -525,7 +527,7 @@ export default function CloudDrivesPage() {
                   onClick={() => setShowConnectModal(true)}
                 >
                   <Plus className="w-4 h-4" />
-                  <span>Conectar Drive</span>
+                  <span>{t.cloudDrives.connectDrive}</span>
                 </Button>
               </div>
             </div>
@@ -535,7 +537,7 @@ export default function CloudDrivesPage() {
               <div className="bg-white rounded-lg border shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Drives Conectados</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.cloudDrives.metrics.connectedDrives}</h3>
                     <p className="text-3xl font-bold text-foreground mt-2">
                       {cloudDrives.filter(d => d.status === 'connected').length}
                     </p>
@@ -549,7 +551,7 @@ export default function CloudDrivesPage() {
               <div className="bg-white rounded-lg border shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Arquivos Totais</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.cloudDrives.metrics.totalFiles}</h3>
                     <p className="text-3xl font-bold text-foreground mt-2">
                       {cloudDrives.reduce((sum, drive) => sum + drive.filesCount, 0)}
                     </p>
@@ -563,7 +565,7 @@ export default function CloudDrivesPage() {
               <div className="bg-white rounded-lg border shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Processados Hoje</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.cloudDrives.metrics.processedToday}</h3>
                     <p className="text-3xl font-bold text-green-600 mt-2">24</p>
                   </div>
                   <div className="w-12 h-12 bg-green-100 rounded-lg flex items-center justify-center">
@@ -575,7 +577,7 @@ export default function CloudDrivesPage() {
               <div className="bg-white rounded-lg border shadow-sm p-6">
                 <div className="flex items-center justify-between">
                   <div>
-                    <h3 className="text-sm font-medium text-muted-foreground">Pendentes</h3>
+                    <h3 className="text-sm font-medium text-muted-foreground">{t.cloudDrives.metrics.pending}</h3>
                     <p className="text-3xl font-bold text-yellow-600 mt-2">3</p>
                   </div>
                   <div className="w-12 h-12 bg-yellow-100 rounded-lg flex items-center justify-center">
@@ -590,10 +592,10 @@ export default function CloudDrivesPage() {
               {activeDropboxIntegration ? (
                 <div>
                   <div className="flex items-center justify-between mb-4">
-                    <h3 className="text-lg font-semibold text-foreground">Gestión de Dropbox</h3>
+                    <h3 className="text-lg font-semibold text-foreground">{t.cloudDrives.dropboxManager.title}</h3>
                     <div className="flex items-center space-x-2">
                       <Badge className="bg-green-100 text-green-800">
-                        Conectado
+                        {t.cloudDrives.status.connected}
                       </Badge>
                       <Button
                         variant="outline"
@@ -602,7 +604,7 @@ export default function CloudDrivesPage() {
                         className="text-gray-600 hover:text-gray-700"
                       >
                         <X className="w-4 h-4 mr-1" />
-                        Cerrar
+                        {t.cloudDrives.actions.close}
                       </Button>
                     </div>
                   </div>
@@ -613,23 +615,23 @@ export default function CloudDrivesPage() {
                 </div>
               ) : (
                 <>
-                  <h3 className="text-lg font-semibold text-foreground mb-4">Drives Conectados</h3>
+                  <h3 className="text-lg font-semibold text-foreground mb-4">{t.cloudDrives.dropboxManager.title}</h3>
                   {loading ? (
                     <div className="text-center py-8">
                       <RefreshCw className="w-8 h-8 animate-spin mx-auto text-gray-400 mb-2" />
-                      <p className="text-gray-500">A carregar configurações...</p>
+                      <p className="text-gray-500">{t.cloudDrives.loading}</p>
                     </div>
                   ) : cloudDrives.length === 0 ? (
                     <div className="text-center py-8">
                       <Cloud className="w-12 h-12 mx-auto text-gray-400 mb-4" />
-                      <h4 className="text-lg font-medium text-gray-900 mb-2">Não há drives conectados</h4>
-                      <p className="text-gray-500 mb-4">Conecte a sua primeira conta de armazenamento na nuvem</p>
+                      <h4 className="text-lg font-medium text-gray-900 mb-2">{t.cloudDrives.emptyState.title}</h4>
+                      <p className="text-gray-500 mb-4">{t.cloudDrives.emptyState.description}</p>
                       <Button
                         onClick={() => setShowConnectModal(true)}
                         className="flex items-center space-x-2"
                       >
                         <Plus className="w-4 h-4" />
-                        <span>Conectar Drive</span>
+                        <span>{t.cloudDrives.connectDrive}</span>
                       </Button>
                     </div>
                   ) : (
@@ -656,10 +658,10 @@ export default function CloudDrivesPage() {
                                     drive.status === 'pending' ? 'bg-yellow-100 text-yellow-800' :
                                       'bg-gray-100 text-gray-800'
                               }>
-                                {drive.status === 'connected' ? 'Conectado' :
-                                  drive.status === 'error' ? 'Erro' :
-                                    drive.status === 'pending' ? 'Pendente' :
-                                      'Desconhecido'}
+                                {drive.status === 'connected' ? t.cloudDrives.status.connected :
+                                  drive.status === 'error' ? t.cloudDrives.status.error :
+                                    drive.status === 'pending' ? t.cloudDrives.status.pending :
+                                      t.cloudDrives.status.unknown}
                               </Badge>
                               <div className="text-sm text-gray-500 mt-1">{drive.filesCount} arquivos</div>
                             </div>
@@ -671,7 +673,7 @@ export default function CloudDrivesPage() {
                                 className="text-blue-600 hover:text-blue-700 hover:bg-blue-50 flex items-center space-x-1"
                               >
                                 <Play className="w-4 h-4" />
-                                <span>Testar</span>
+                                <span>{t.cloudDrives.actions.test}</span>
                               </Button>
                               <Button
                                 variant="outline"
@@ -680,7 +682,7 @@ export default function CloudDrivesPage() {
                                 className="text-green-600 hover:text-green-700 hover:bg-green-50 flex items-center space-x-1"
                               >
                                 <FolderOpen className="w-4 h-4" />
-                                <span>Pasta</span>
+                                <span>{t.cloudDrives.actions.folder}</span>
                               </Button>
                               {drive.name.toLowerCase().includes('dropbox') && (
                                 <Button
@@ -690,7 +692,7 @@ export default function CloudDrivesPage() {
                                   className="text-purple-600 hover:text-purple-700 hover:bg-purple-50 flex items-center space-x-1"
                                 >
                                   <Settings className="w-4 h-4" />
-                                  <span>Gestionar</span>
+                                  <span>{t.cloudDrives.actions.manage}</span>
                                 </Button>
                               )}
                               <Button
@@ -700,7 +702,7 @@ export default function CloudDrivesPage() {
                                 className="text-red-600 hover:text-red-700 hover:bg-red-50 flex items-center space-x-1"
                               >
                                 <X className="w-4 h-4" />
-                                <span>Desconectar</span>
+                                <span>{t.cloudDrives.actions.disconnect}</span>
                               </Button>
                             </div>
                           </div>
@@ -719,10 +721,10 @@ export default function CloudDrivesPage() {
       <Modal
         isOpen={showConnectModal}
         onClose={() => setShowConnectModal(false)}
-        title="Conectar Armazenamento na Nuvem"
+        title={t.cloudDrives.modal.connectTitle}
       >
         <div>
-          <p className="text-gray-600 mb-6">Selecione o fornecedor que deseja conectar:</p>
+          <p className="text-gray-600 mb-6">{t.cloudDrives.modal.selectProvider}</p>
 
           <div className="space-y-3">
             <Button
@@ -736,7 +738,7 @@ export default function CloudDrivesPage() {
               <div className="w-8 h-8 bg-blue-100 rounded-lg flex items-center justify-center">
                 <Cloud className="w-5 h-5 text-blue-600" />
               </div>
-              <span className="font-medium text-gray-900">Dropbox</span>
+              <span className="font-medium text-gray-900">{t.cloudDrives.providers.dropbox}</span>
             </Button>
 
             <Button
@@ -750,7 +752,7 @@ export default function CloudDrivesPage() {
               <div className="w-8 h-8 bg-red-100 rounded-lg flex items-center justify-center">
                 <Cloud className="w-5 h-5 text-red-600" />
               </div>
-              <span className="font-medium text-gray-900">Google Drive</span>
+              <span className="font-medium text-gray-900">{t.cloudDrives.providers.googleDrive}</span>
             </Button>
 
             <Button
@@ -764,7 +766,7 @@ export default function CloudDrivesPage() {
               <div className="w-8 h-8 bg-green-100 rounded-lg flex items-center justify-center">
                 <Cloud className="w-5 h-5 text-green-600" />
               </div>
-              <span className="font-medium text-gray-900">OneDrive</span>
+              <span className="font-medium text-gray-900">{t.cloudDrives.providers.oneDrive}</span>
             </Button>
           </div>
 
@@ -774,7 +776,7 @@ export default function CloudDrivesPage() {
               variant="outline"
               className="w-full"
             >
-              Cancelar
+              {t.cloudDrives.actions.cancel}
             </Button>
           </div>
         </div>

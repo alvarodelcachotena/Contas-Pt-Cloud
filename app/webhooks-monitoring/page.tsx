@@ -1,6 +1,6 @@
 'use client'
 
-import { useAuth } from "@/hooks/useAuth"
+import { useLanguage } from '@/hooks/useLanguage';
 import { useRouter } from "next/navigation"
 import { useEffect, useState } from "react"
 import { useQuery } from '@tanstack/react-query'
@@ -42,6 +42,7 @@ interface WhatsAppDocument {
 }
 
 export default function WebhooksMonitoringPage() {
+  const { t } = useLanguage();
   const { isAuthenticated, isLoading } = useAuth()
   const router = useRouter()
   const [selectedDocument, setSelectedDocument] = useState<WhatsAppDocument | null>(null)
@@ -72,7 +73,7 @@ export default function WebhooksMonitoringPage() {
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
           <div className="animate-spin w-8 h-8 border-4 border-primary border-t-transparent rounded-full mx-auto mb-4"></div>
-          <p className="text-muted-foreground">Carregando...</p>
+          <p className="text-muted-foreground">{t.webhooks.loading}</p>
         </div>
       </div>
     )
@@ -107,13 +108,13 @@ export default function WebhooksMonitoringPage() {
   const getStatusLabel = (status: string) => {
     switch (status) {
       case 'completed':
-        return 'Completado'
+        return t.webhooks.status.completed
       case 'processing':
-        return 'Processando'
+        return t.webhooks.status.processing
       case 'pending':
-        return 'Pendente'
+        return t.webhooks.status.pending
       case 'failed':
-        return 'Falhou'
+        return t.webhooks.status.failed
       default:
         return status
     }
@@ -151,12 +152,12 @@ export default function WebhooksMonitoringPage() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Monitoreo de WhatsApp</h1>
-                <p className="text-gray-600 mt-1">Documentos recibidos y procesados via WhatsApp</p>
+                <h1 className="text-3xl font-bold text-foreground">{t.webhooks.title}</h1>
+                <p className="text-gray-600 mt-1">{t.webhooks.subtitle}</p>
               </div>
               <Button onClick={() => refetch()} className="flex items-center space-x-2">
                 <RefreshCw className="w-4 h-4" />
-                <span>Actualizar</span>
+                <span>{t.webhooks.refresh}</span>
               </Button>
             </div>
 
@@ -164,56 +165,56 @@ export default function WebhooksMonitoringPage() {
             <div className="grid grid-cols-1 md:grid-cols-5 gap-6">
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Total</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t.webhooks.metrics.total}</CardTitle>
                   <MessageSquare className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold">{totalDocuments}</div>
-                  <p className="text-xs text-muted-foreground">Documentos recibidos</p>
+                  <p className="text-xs text-muted-foreground">{t.webhooks.metrics.documentsReceived}</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Pendentes</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t.webhooks.metrics.pending}</CardTitle>
                   <Clock className="h-4 w-4 text-yellow-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-yellow-600">{pendingDocuments}</div>
-                  <p className="text-xs text-muted-foreground">Aguardando processamento</p>
+                  <p className="text-xs text-muted-foreground">{t.webhooks.metrics.waitingProcessing}</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Processando</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t.webhooks.metrics.processing}</CardTitle>
                   <Clock className="h-4 w-4 text-blue-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-blue-600">{processingDocuments}</div>
-                  <p className="text-xs text-muted-foreground">Em processamento</p>
+                  <p className="text-xs text-muted-foreground">{t.webhooks.metrics.inProcessing}</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Completados</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t.webhooks.metrics.completed}</CardTitle>
                   <CheckCircle className="h-4 w-4 text-green-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-green-600">{completedDocuments}</div>
-                  <p className="text-xs text-muted-foreground">Processados com sucesso</p>
+                  <p className="text-xs text-muted-foreground">{t.webhooks.metrics.processedSuccessfully}</p>
                 </CardContent>
               </Card>
 
               <Card>
                 <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-                  <CardTitle className="text-sm font-medium">Falharam</CardTitle>
+                  <CardTitle className="text-sm font-medium">{t.webhooks.metrics.failed}</CardTitle>
                   <XCircle className="h-4 w-4 text-red-600" />
                 </CardHeader>
                 <CardContent>
                   <div className="text-2xl font-bold text-red-600">{failedDocuments}</div>
-                  <p className="text-xs text-muted-foreground">Erros no processamento</p>
+                  <p className="text-xs text-muted-foreground">{t.webhooks.metrics.processingErrors}</p>
                 </CardContent>
               </Card>
             </div>
@@ -235,26 +236,26 @@ export default function WebhooksMonitoringPage() {
             ) : (
               <Card>
                 <CardHeader>
-                  <CardTitle>Documentos WhatsApp</CardTitle>
+                  <CardTitle>{t.webhooks.documentsTable.title}</CardTitle>
                 </CardHeader>
                 <CardContent>
                   <Table>
                     <TableHeader>
                       <TableRow>
-                        <TableHead>Tipo</TableHead>
-                        <TableHead>Status</TableHead>
-                        <TableHead>Nome do Arquivo</TableHead>
-                        <TableHead>Tamanho</TableHead>
-                        <TableHead>Confiança</TableHead>
-                        <TableHead>Data</TableHead>
-                        <TableHead>Ações</TableHead>
+                        <TableHead>{t.webhooks.documentsTable.type}</TableHead>
+                        <TableHead>{t.webhooks.documentsTable.status}</TableHead>
+                        <TableHead>{t.webhooks.documentsTable.filename}</TableHead>
+                        <TableHead>{t.webhooks.documentsTable.size}</TableHead>
+                        <TableHead>{t.webhooks.documentsTable.confidence}</TableHead>
+                        <TableHead>{t.webhooks.documentsTable.date}</TableHead>
+                        <TableHead>{t.webhooks.documentsTable.actions}</TableHead>
                       </TableRow>
                     </TableHeader>
                     <TableBody>
                       {documents?.length === 0 ? (
                         <TableRow>
                           <TableCell colSpan={7} className="text-center py-8 text-gray-500">
-                            Nenhum documento WhatsApp encontrado
+                            {t.webhooks.documentsTable.noDocumentsFound}
                           </TableCell>
                         </TableRow>
                       ) : (
@@ -313,7 +314,7 @@ export default function WebhooksMonitoringPage() {
         <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
           <div className="bg-white rounded-lg p-6 max-w-2xl w-full mx-4 max-h-[80vh] overflow-y-auto">
             <div className="flex items-center justify-between mb-4">
-              <h2 className="text-xl font-bold">Detalhes do Documento</h2>
+              <h2 className="text-xl font-bold">{t.webhooks.modal.title}</h2>
               <Button variant="ghost" onClick={closeDocumentDetails}>
                 ✕
               </Button>
@@ -321,22 +322,22 @@ export default function WebhooksMonitoringPage() {
 
             <div className="space-y-4">
               <div>
-                <h3 className="font-semibold">Informações Básicas</h3>
+                <h3 className="font-semibold">{t.webhooks.modal.basicInfo}</h3>
                 <div className="grid grid-cols-2 gap-4 mt-2">
                   <div>
-                    <span className="text-sm text-gray-600">Nome:</span>
+                    <span className="text-sm text-gray-600">{t.webhooks.modal.name}:</span>
                     <p className="font-medium">{selectedDocument.filename}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600">Tamanho:</span>
+                    <span className="text-sm text-gray-600">{t.webhooks.modal.size}:</span>
                     <p className="font-medium">{formatFileSize(selectedDocument.file_size)}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600">Tipo:</span>
+                    <span className="text-sm text-gray-600">{t.webhooks.modal.type}:</span>
                     <p className="font-medium">{selectedDocument.mime_type || 'N/A'}</p>
                   </div>
                   <div>
-                    <span className="text-sm text-gray-600">Status:</span>
+                    <span className="text-sm text-gray-600">{t.webhooks.modal.status}:</span>
                     <p className="font-medium">{getStatusLabel(selectedDocument.processing_status)}</p>
                   </div>
                 </div>
@@ -344,15 +345,15 @@ export default function WebhooksMonitoringPage() {
 
               {selectedDocument.extracted_data?.ai_analysis && (
                 <div>
-                  <h3 className="font-semibold">Análise de IA</h3>
+                  <h3 className="font-semibold">{t.webhooks.modal.aiAnalysis}</h3>
                   <div className="bg-gray-50 p-4 rounded-lg mt-2">
                     <div className="grid grid-cols-2 gap-4">
                       <div>
-                        <span className="text-sm text-gray-600">Tipo:</span>
+                        <span className="text-sm text-gray-600">{t.webhooks.modal.documentType}:</span>
                         <p className="font-medium">{selectedDocument.extracted_data.ai_analysis.document_type}</p>
                       </div>
                       <div>
-                        <span className="text-sm text-gray-600">Confiança:</span>
+                        <span className="text-sm text-gray-600">{t.webhooks.modal.confidence}:</span>
                         <p className="font-medium">
                           {(selectedDocument.extracted_data.ai_analysis.confidence * 100).toFixed(1)}%
                         </p>
@@ -361,7 +362,7 @@ export default function WebhooksMonitoringPage() {
 
                     {selectedDocument.extracted_data.ai_analysis.extracted_data && (
                       <div className="mt-4">
-                        <h4 className="font-medium mb-2">Dados Extraídos:</h4>
+                        <h4 className="font-medium mb-2">{t.webhooks.modal.extractedData}:</h4>
                         <pre className="text-xs bg-white p-3 rounded border overflow-x-auto">
                           {JSON.stringify(selectedDocument.extracted_data.ai_analysis.extracted_data, null, 2)}
                         </pre>
@@ -373,7 +374,7 @@ export default function WebhooksMonitoringPage() {
 
               {selectedDocument.extracted_data?.processing_notes && (
                 <div>
-                  <h3 className="font-semibold">Notas de Processamento</h3>
+                  <h3 className="font-semibold">{t.webhooks.modal.processingNotes}</h3>
                   <div className="bg-blue-50 p-4 rounded-lg mt-2">
                     <ul className="list-disc list-inside space-y-1">
                       {selectedDocument.extracted_data.processing_notes.map((note: string, index: number) => (
@@ -386,7 +387,7 @@ export default function WebhooksMonitoringPage() {
 
               <div className="flex justify-end space-x-2 pt-4">
                 <Button variant="outline" onClick={closeDocumentDetails}>
-                  Fechar
+                  {t.webhooks.modal.close}
                 </Button>
               </div>
             </div>

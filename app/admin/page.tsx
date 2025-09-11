@@ -1,6 +1,7 @@
 'use client'
 
 import { useState } from 'react'
+import { useLanguage } from '@/hooks/useLanguage';
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
 import WebhookCredentials from "@/components/WebhookCredentials"
@@ -13,14 +14,14 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { 
-  Users, 
-  Building2, 
-  Database, 
-  Activity, 
-  Settings, 
-  User, 
-  Shield, 
+import {
+  Users,
+  Building2,
+  Database,
+  Activity,
+  Settings,
+  User,
+  Shield,
   AlertTriangle,
   CheckCircle,
   XCircle,
@@ -37,6 +38,7 @@ import {
 } from 'lucide-react'
 
 export default function AdminPage() {
+  const { t } = useLanguage();
   const [activeTab, setActiveTab] = useState('overview')
 
   const systemStats = {
@@ -185,17 +187,17 @@ export default function AdminPage() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-2xl font-bold text-foreground">Administração</h1>
-                <p className="text-muted-foreground">Painel de controlo do sistema</p>
+                <h1 className="text-2xl font-bold text-foreground">{t.admin.title}</h1>
+                <p className="text-muted-foreground">{t.admin.subtitle}</p>
               </div>
               <div className="flex items-center space-x-2">
                 <Button variant="outline" size="sm">
                   <Download className="w-4 h-4 mr-2" />
-                  Exportar Dados
+                  {t.admin.actions.exportData}
                 </Button>
                 <Button size="sm">
                   <Upload className="w-4 h-4 mr-2" />
-                  Backup Sistema
+                  {t.admin.actions.systemBackup}
                 </Button>
               </div>
             </div>
@@ -207,42 +209,42 @@ export default function AdminPage() {
                 size="sm"
                 onClick={() => setActiveTab('overview')}
               >
-                Visão Geral
+                {t.admin.tabs.overview}
               </Button>
               <Button
                 variant={activeTab === 'users' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab('users')}
               >
-                Utilizadores
+                {t.admin.tabs.users}
               </Button>
               <Button
                 variant={activeTab === 'companies' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab('companies')}
               >
-                Empresas
+                {t.admin.tabs.companies}
               </Button>
               <Button
                 variant={activeTab === 'system' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab('system')}
               >
-                Sistema
+                {t.admin.tabs.system}
               </Button>
               <Button
                 variant={activeTab === 'logs' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab('logs')}
               >
-                Logs
+                {t.admin.tabs.logs}
               </Button>
               <Button
                 variant={activeTab === 'webhooks' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab('webhooks')}
               >
-                Webhooks
+                {t.admin.tabs.webhooks}
               </Button>
               <Button
                 variant={activeTab === 'processors' ? 'default' : 'ghost'}
@@ -250,14 +252,14 @@ export default function AdminPage() {
                 onClick={() => setActiveTab('processors')}
               >
                 <Cpu className="w-4 h-4 mr-1" />
-                Processadores
+                {t.admin.tabs.processors}
               </Button>
               <Button
                 variant={activeTab === 'settings' ? 'default' : 'ghost'}
                 size="sm"
                 onClick={() => setActiveTab('settings')}
               >
-                Configurações
+                {t.admin.tabs.settings}
               </Button>
             </div>
 
@@ -267,14 +269,14 @@ export default function AdminPage() {
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">
-                        Total Utilizadores
+                        {t.admin.metrics.totalUsers}
                       </CardTitle>
                       <Users className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{systemStats.totalUsers}</div>
                       <p className="text-xs text-muted-foreground">
-                        {systemStats.activeUsers} ativos
+                        {systemStats.activeUsers} {t.admin.metrics.active}
                       </p>
                     </CardContent>
                   </Card>
@@ -282,14 +284,14 @@ export default function AdminPage() {
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">
-                        Empresas
+                        {t.admin.metrics.totalCompanies}
                       </CardTitle>
                       <Building2 className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{systemStats.totalCompanies}</div>
                       <p className="text-xs text-muted-foreground">
-                        {systemStats.activeCompanies} ativas
+                        {systemStats.activeCompanies} {t.admin.metrics.active}
                       </p>
                     </CardContent>
                   </Card>
@@ -297,14 +299,14 @@ export default function AdminPage() {
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">
-                        Documentos
+                        {t.admin.metrics.totalDocuments}
                       </CardTitle>
                       <FileText className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{systemStats.totalDocuments}</div>
                       <p className="text-xs text-muted-foreground">
-                        Processados
+                        {t.admin.metrics.processed}
                       </p>
                     </CardContent>
                   </Card>
@@ -312,14 +314,14 @@ export default function AdminPage() {
                   <Card>
                     <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
                       <CardTitle className="text-sm font-medium">
-                        Armazenamento
+                        {t.admin.metrics.storage}
                       </CardTitle>
                       <HardDrive className="h-4 w-4 text-muted-foreground" />
                     </CardHeader>
                     <CardContent>
                       <div className="text-2xl font-bold">{systemStats.totalStorage} GB</div>
                       <p className="text-xs text-muted-foreground">
-                        Utilizado
+                        {t.admin.metrics.used}
                       </p>
                     </CardContent>
                   </Card>
@@ -330,18 +332,18 @@ export default function AdminPage() {
                     <CardHeader>
                       <CardTitle className="flex items-center space-x-2">
                         <Activity className="w-5 h-5" />
-                        <span>Estado do Sistema</span>
+                        <span>{t.admin.systemStatus.title}</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-4">
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Saúde do Sistema</span>
+                        <span className="text-sm font-medium">{t.admin.systemStatus.systemHealth}</span>
                         <Badge variant="default">
-                          {systemStats.systemHealth === 'healthy' ? 'Saudável' : 'Problemas'}
+                          {systemStats.systemHealth === 'healthy' ? t.admin.systemStatus.healthy : t.admin.systemStatus.problems}
                         </Badge>
                       </div>
                       <div className="flex items-center justify-between">
-                        <span className="text-sm font-medium">Último Backup</span>
+                        <span className="text-sm font-medium">{t.admin.systemStatus.lastBackup}</span>
                         <span className="text-sm text-muted-foreground">
                           {new Date(systemStats.lastBackup).toLocaleString('pt-PT')}
                         </span>
@@ -353,21 +355,21 @@ export default function AdminPage() {
                     <CardHeader>
                       <CardTitle className="flex items-center space-x-2">
                         <Settings className="w-5 h-5" />
-                        <span>Ações Rápidas</span>
+                        <span>{t.admin.quickActions.title}</span>
                       </CardTitle>
                     </CardHeader>
                     <CardContent className="space-y-3">
                       <Button variant="outline" className="w-full justify-start">
                         <Plus className="w-4 h-4 mr-2" />
-                        Criar Novo Utilizador
+                        {t.admin.quickActions.createUser}
                       </Button>
                       <Button variant="outline" className="w-full justify-start">
                         <Building2 className="w-4 h-4 mr-2" />
-                        Adicionar Empresa
+                        {t.admin.quickActions.addCompany}
                       </Button>
                       <Button variant="outline" className="w-full justify-start">
                         <Database className="w-4 h-4 mr-2" />
-                        Fazer Backup
+                        {t.admin.quickActions.backup}
                       </Button>
                     </CardContent>
                   </Card>
@@ -380,18 +382,18 @@ export default function AdminPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Users className="w-5 h-5" />
-                    <span>Gestão de Utilizadores</span>
+                    <span>{t.admin.users.title}</span>
                   </CardTitle>
                   <CardDescription>
-                    Gerir contas de utilizadores do sistema
+                    {t.admin.users.description}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between mb-4">
-                    <Input placeholder="Pesquisar utilizadores..." className="max-w-sm" />
+                    <Input placeholder={t.admin.users.searchPlaceholder} className="max-w-sm" />
                     <Button>
                       <Plus className="w-4 h-4 mr-2" />
-                      Novo Utilizador
+                      {t.admin.users.newUser}
                     </Button>
                   </div>
 
@@ -400,22 +402,22 @@ export default function AdminPage() {
                       <thead className="bg-muted">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Utilizador
+                            {t.admin.users.table.user}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Empresa
+                            {t.admin.users.table.company}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Função
+                            {t.admin.users.table.role}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Estado
+                            {t.admin.users.table.status}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Último Acesso
+                            {t.admin.users.table.lastAccess}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Ações
+                            {t.admin.users.table.actions}
                           </th>
                         </tr>
                       </thead>
@@ -447,7 +449,7 @@ export default function AdminPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <Badge variant={getStatusColor(user.status)}>
-                                {user.status === 'active' ? 'Ativo' : 'Inativo'}
+                                {user.status === 'active' ? t.admin.users.status.active : t.admin.users.status.inactive}
                               </Badge>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -479,18 +481,18 @@ export default function AdminPage() {
                 <CardHeader>
                   <CardTitle className="flex items-center space-x-2">
                     <Building2 className="w-5 h-5" />
-                    <span>Gestão de Empresas</span>
+                    <span>{t.admin.companies.title}</span>
                   </CardTitle>
                   <CardDescription>
-                    Gerir empresas registadas no sistema
+                    {t.admin.companies.description}
                   </CardDescription>
                 </CardHeader>
                 <CardContent>
                   <div className="flex items-center justify-between mb-4">
-                    <Input placeholder="Pesquisar empresas..." className="max-w-sm" />
+                    <Input placeholder={t.admin.companies.searchPlaceholder} className="max-w-sm" />
                     <Button>
                       <Plus className="w-4 h-4 mr-2" />
-                      Nova Empresa
+                      {t.admin.companies.newCompany}
                     </Button>
                   </div>
 
@@ -499,19 +501,19 @@ export default function AdminPage() {
                       <thead className="bg-muted">
                         <tr>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Empresa
+                            {t.admin.companies.table.company}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Utilizadores
+                            {t.admin.companies.table.users}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Documentos
+                            {t.admin.companies.table.documents}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Armazenamento
+                            {t.admin.companies.table.storage}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
-                            Estado
+                            {t.admin.companies.table.status}
                           </th>
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                             Ações
@@ -547,8 +549,8 @@ export default function AdminPage() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
                               <Badge variant={getStatusColor(company.status)}>
-                                {company.status === 'active' ? 'Ativa' : 
-                                 company.status === 'suspended' ? 'Suspensa' : 'Inativa'}
+                                {company.status === 'active' ? 'Ativa' :
+                                  company.status === 'suspended' ? 'Suspensa' : 'Inativa'}
                               </Badge>
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap">
@@ -616,7 +618,7 @@ export default function AdminPage() {
                     <p className="text-muted-foreground">Configure integrações de webhook para WhatsApp, Gmail e Dropbox</p>
                   </div>
                 </div>
-                
+
                 {/* Webhook Testing Panel */}
                 <Card>
                   <CardHeader>
@@ -632,7 +634,7 @@ export default function AdminPage() {
                     <WebhookTestingPanel />
                   </CardContent>
                 </Card>
-                
+
                 {/* Webhook Credential Form */}
                 <Card>
                   <CardHeader>
@@ -648,7 +650,7 @@ export default function AdminPage() {
                     <WebhookCredentialForm />
                   </CardContent>
                 </Card>
-                
+
                 {/* Webhook Configuration Manager */}
                 <Card>
                   <CardHeader>
@@ -664,7 +666,7 @@ export default function AdminPage() {
                     <WebhookConfigManager />
                   </CardContent>
                 </Card>
-                
+
                 {/* Webhook Analytics */}
                 <Card>
                   <CardHeader>
@@ -721,7 +723,7 @@ export default function AdminPage() {
                         </p>
                       </div>
                     </div>
-                    
+
                     <div className="border rounded-lg p-4">
                       <h4 className="font-medium mb-2">Configurações de Sistema</h4>
                       <p className="text-sm text-muted-foreground">

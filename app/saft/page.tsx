@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useLanguage } from '@/hooks/useLanguage';
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
@@ -171,12 +172,12 @@ export default function SAFTPage() {
                   <span className="text-white text-xs font-bold">i</span>
                 </div>
                 <div>
-                  <h3 className="font-medium text-blue-900 mb-2">{t.saft.about.title}</h3>
+                  <h3 className="font-medium text-blue-900 mb-2">{t.saft.info.title}</h3>
                   <p className="text-blue-700 text-sm leading-relaxed">
-                    {t.saft.about.description}
+                    {t.saft.info.description}
                   </p>
                   <div className="mt-3 text-blue-700 text-sm">
-                    <strong>{t.saft.about.periodicity}:</strong> {t.saft.about.annual} • <strong>{t.saft.about.format}:</strong> {t.saft.about.xml} • <strong>{t.saft.about.encoding}:</strong> {t.saft.about.utf8}
+                    <strong>{t.saft.info.periodicity}:</strong> {t.saft.info.periodicity} • <strong>{t.saft.info.format}:</strong> {t.saft.info.format} • <strong>{t.saft.info.encoding}:</strong> {t.saft.info.encoding}
                   </div>
                 </div>
               </div>
@@ -249,7 +250,7 @@ export default function SAFTPage() {
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />
-                      <span className="text-sm">{t.saft.requirements.clientsSuppliers}</span>
+                      <span className="text-sm">{t.saft.requirements.customersSuppliers}</span>
                     </div>
                     <div className="flex items-center space-x-3">
                       <CheckCircle className="w-5 h-5 text-green-600" />

@@ -1,6 +1,7 @@
 'use client'
 
-import { useState, useRef, useEffect } from "react"
+import { useState, useEffect, useRef } from 'react'
+import { useLanguage } from '@/hooks/useLanguage';
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
 import { Button } from "@/components/ui/button"
@@ -22,12 +23,13 @@ interface ChatMessage {
 }
 
 export default function AIAssistantPage() {
+  const { t } = useLanguage();
   const [message, setMessage] = useState('')
   const [chatHistory, setChatHistory] = useState<ChatMessage[]>([
     {
       id: 1,
       type: 'assistant',
-      message: 'Olá! Sou o seu assistente de contabilidade portuguesa. Como posso ajudá-lo hoje? Pode enviar mensagens ou subir imagens/PDFs de faturas para análise.',
+      message: t.aiAssistant.welcomeMessage,
       timestamp: new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' })
     }
   ])
@@ -118,20 +120,20 @@ export default function AIAssistantPage() {
     } catch (error) {
       console.error('Erro ao enviar mensagem:', error)
 
-      let errorText = 'Desculpe, ocorreu um erro ao processar a sua mensagem. Tente novamente.'
+      let errorText = t.aiAssistant.errors.generic;
 
       // Tentar obter mais detalhes do erro
       if (error instanceof Error) {
         if (error.message.includes('401')) {
-          errorText = '🔑 Problema de autenticação da API. Contacte o administrador.'
+          errorText = t.aiAssistant.errors.auth;
         } else if (error.message.includes('429')) {
-          errorText = '⏳ Limite de uso da API atingido. Tente novamente mais tarde.'
+          errorText = t.aiAssistant.errors.rateLimit;
         } else if (error.message.includes('timeout')) {
-          errorText = '⏱️ A resposta demorou muito. Tente uma pergunta mais simples.'
+          errorText = t.aiAssistant.errors.timeout;
         } else if (error.message.includes('500')) {
-          errorText = '🔧 Erro interno do servidor. Verifique se o servidor está a funcionar.'
+          errorText = t.aiAssistant.errors.server;
         } else if (error.message.includes('Failed to fetch')) {
-          errorText = '🌐 Erro de conexão. Verifique se o servidor está a executar na porta 5000.'
+          errorText = t.aiAssistant.errors.connection;
         }
       }
 
@@ -172,13 +174,13 @@ export default function AIAssistantPage() {
     ]
 
     if (!allowedTypes.includes(file.type)) {
-      alert('Tipo de arquivo não suportado. Por favor, selecione um PDF ou imagem (PNG, JPG, GIF, BMP, WebP, TIFF).')
+      alert(t.aiAssistant.fileErrors.unsupportedType);
       return
     }
 
     // Verificar tamanho do arquivo (máx 10MB)
     if (file.size > 10 * 1024 * 1024) {
-      alert('Arquivo muito grande. Tamanho máximo: 10MB.')
+      alert(t.aiAssistant.fileErrors.tooLarge);
       return
     }
 
@@ -202,7 +204,7 @@ export default function AIAssistantPage() {
     const userMessage: ChatMessage = {
       id: Date.now(),
       type: 'user',
-      message: `Analisando arquivo: ${selectedFile.name}`,
+      message: t.aiAssistant.analyzingFile.replace('{fileName}', selectedFile.name),
       timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '',
       hasFile: true,
       fileName: selectedFile.name,
@@ -235,36 +237,36 @@ export default function AIAssistantPage() {
 
       if (data.success) {
         // Crear mensaje de respuesta con datos extraídos
-        let responseMessage = '📄 **Análise do documento concluída!**\n\n'
+        let responseMessage = t.aiAssistant.analysisComplete + '\n\n'
 
         if (data.extractedData) {
           const extracted = data.extractedData
-          responseMessage += '**Dados extraídos:**\n'
+          responseMessage += t.aiAssistant.extractedData + '\n'
 
           // Verificar se é da nossa empresa
           const isMyCompany = extracted.nif === 'PT517124548' || extracted.nif === '517124548'
 
           if (isMyCompany) {
-            responseMessage += '🏢 **EMPRESA PRÓPRIA DETECTADA** (NIF: 517124548)\n\n'
+            responseMessage += t.aiAssistant.ownCompany + '\n\n'
           } else {
-            responseMessage += '🏪 **EMPRESA EXTERNA**\n\n'
+            responseMessage += t.aiAssistant.externalCompany + '\n\n'
           }
 
-          responseMessage += `• **Fornecedor:** ${extracted.vendor || 'N/A'}\n`
-          responseMessage += `• **NIF:** ${extracted.nif || 'N/A'}\n`
-          responseMessage += `• **País:** ${extracted.nifCountry || 'N/A'}\n`
-          responseMessage += `• **Endereço:** ${extracted.vendorAddress || 'N/A'}\n`
-          responseMessage += `• **Nº Fatura:** ${extracted.invoiceNumber || 'N/A'}\n`
-          responseMessage += `• **Data:** ${extracted.issueDate || 'N/A'}\n`
-          responseMessage += `• **Valor sem IVA:** €${extracted.netAmount || '0.00'}\n`
-          responseMessage += `• **IVA:** €${extracted.vatAmount || '0.00'} (${(extracted.vatRate * 100).toFixed(1)}%)\n`
-          responseMessage += `• **Total:** €${extracted.total || '0.00'}\n`
-          responseMessage += `• **Categoria:** ${extracted.category || 'N/A'}\n`
-          responseMessage += `• **Descrição:** ${extracted.description || 'N/A'}\n`
-          responseMessage += `• **Confiança:** ${(extracted.confidence * 100).toFixed(1)}%\n`
+          responseMessage += `• **${t.aiAssistant.fields.vendor}:** ${extracted.vendor || 'N/A'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.nif}:** ${extracted.nif || 'N/A'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.country}:** ${extracted.nifCountry || 'N/A'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.address}:** ${extracted.vendorAddress || 'N/A'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.invoiceNumber}:** ${extracted.invoiceNumber || 'N/A'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.date}:** ${extracted.issueDate || 'N/A'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.netAmount}:** €${extracted.netAmount || '0.00'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.vat}:** €${extracted.vatAmount || '0.00'} (${(extracted.vatRate * 100).toFixed(1)}%)\n`
+          responseMessage += `• **${t.aiAssistant.fields.total}:** €${extracted.total || '0.00'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.category}:** ${extracted.category || 'N/A'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.description}:** ${extracted.description || 'N/A'}\n`
+          responseMessage += `• **${t.aiAssistant.fields.confidence}:** ${(extracted.confidence * 100).toFixed(1)}%\n`
 
           if (extracted.extractionIssues && extracted.extractionIssues.length > 0) {
-            responseMessage += `\n⚠️  **Problemas detectados:**\n${extracted.extractionIssues.map((issue: string) => `• ${issue}`).join('\n')}`
+            responseMessage += `\n⚠️  **${t.aiAssistant.issuesDetected}:**\n${extracted.extractionIssues.map((issue: string) => `• ${issue}`).join('\n')}`
           }
         }
 
@@ -295,14 +297,14 @@ export default function AIAssistantPage() {
       const errorMessage: ChatMessage = {
         id: Date.now() + 1,
         type: 'assistant',
-        message: '❌ Erro ao processar o arquivo. Verifique se é um PDF ou imagem válida e tente novamente.',
+        message: t.aiAssistant.fileProcessingError,
         timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
       }
 
       setChatHistory(prev => [...prev, errorMessage])
 
       // Guardar mensaje de error del análisis de archivo
-      await saveChatMessage(userMessage.message, '❌ Erro ao processar o arquivo. Verifique se é um PDF ou imagem válida e tente novamente.', false, {
+      await saveChatMessage(userMessage.message, t.aiAssistant.fileProcessingError, false, {
         timestamp: new Date().toISOString(),
         success: false,
         error: error instanceof Error ? error.message : 'Unknown error',
@@ -333,13 +335,13 @@ export default function AIAssistantPage() {
           <div className="p-6 space-y-6">
             <div className="flex items-center justify-between">
               <div>
-                <h1 className="text-3xl font-bold text-foreground">Assistente IA</h1>
-                <p className="text-gray-600 mt-1">Assistente inteligente para contabilidade portuguesa</p>
+                <h1 className="text-3xl font-bold text-foreground">{t.aiAssistant.title}</h1>
+                <p className="text-gray-600 mt-1">{t.aiAssistant.subtitle}</p>
               </div>
               <div className="flex items-center space-x-2">
                 <Badge variant="default" className="bg-green-100 text-green-800">
                   <Bot className="w-3 h-3 mr-1" />
-                  Online
+                  {t.aiAssistant.status.online}
                 </Badge>
               </div>
             </div>
@@ -347,9 +349,9 @@ export default function AIAssistantPage() {
 
             <div className="bg-white rounded-lg border shadow-sm">
               <div className="p-6 border-b">
-                <h3 className="text-lg font-semibold text-foreground">Chat com AI Assistant</h3>
+                <h3 className="text-lg font-semibold text-foreground">{t.aiAssistant.chat.title}</h3>
                 <p className="text-sm text-gray-600 mt-1">
-                  Faça perguntas sobre contabilidade, IVA, e gestão financeira em português
+                  {t.aiAssistant.chat.description}
                 </p>
               </div>
 
@@ -374,7 +376,7 @@ export default function AIAssistantPage() {
                     <div className="bg-gray-100 text-gray-900 max-w-md p-3 rounded-lg">
                       <div className="flex items-center space-x-2">
                         <Loader2 className="w-4 h-4 animate-spin" />
-                        <span className="text-sm">Assistente está digitando...</span>
+                        <span className="text-sm">{t.aiAssistant.typing}</span>
                       </div>
                     </div>
                   </div>
@@ -420,7 +422,7 @@ export default function AIAssistantPage() {
                           ) : (
                             <>
                               <Brain className="w-3 h-3 mr-1" />
-                              Analisar
+                              {t.aiAssistant.analyze}
                             </>
                           )}
                         </Button>
@@ -439,7 +441,7 @@ export default function AIAssistantPage() {
 
                 <div className="flex space-x-2">
                   <Input
-                    placeholder="Pergunte sobre contabilidade, IVA, despesas..."
+                    placeholder={t.aiAssistant.inputPlaceholder}
                     value={message}
                     onChange={(e) => setMessage(e.target.value)}
                     onKeyPress={handleKeyPress}
@@ -450,7 +452,7 @@ export default function AIAssistantPage() {
                     onClick={() => fileInputRef.current?.click()}
                     disabled={isTyping || selectedFile !== null}
                     className="flex items-center space-x-2 bg-blue-600 hover:bg-blue-700"
-                    title="Subir PDF ou imagem"
+                    title={t.aiAssistant.uploadTooltip}
                   >
                     <Upload className="w-4 h-4" />
                   </Button>
@@ -469,19 +471,19 @@ export default function AIAssistantPage() {
                 <div className="flex items-center space-x-4 mt-3 text-xs text-gray-500">
                   <div className="flex items-center space-x-1">
                     <Zap className="w-3 h-3" />
-                    <span>Resposta rápida</span>
+                    <span>{t.aiAssistant.features.fastResponse}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <FileText className="w-3 h-3" />
-                    <span>Contexto português</span>
+                    <span>{t.aiAssistant.features.portugueseContext}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Brain className="w-3 h-3" />
-                    <span>IA especializada</span>
+                    <span>{t.aiAssistant.features.specializedAI}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Upload className="w-3 h-3" />
-                    <span>Análise de PDF/imagens</span>
+                    <span>{t.aiAssistant.features.pdfAnalysis}</span>
                   </div>
                 </div>
               </div>

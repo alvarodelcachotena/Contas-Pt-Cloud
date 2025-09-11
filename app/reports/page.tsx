@@ -1,5 +1,6 @@
 'use client'
 
+import { useState } from 'react'
 import { useLanguage } from '@/hooks/useLanguage';
 import Sidebar from "@/components/layout/sidebar"
 import Header from "@/components/layout/header"
@@ -29,48 +30,48 @@ export default function ReportsPage() {
   const reportTypes = [
     {
       id: 'financial',
-      name: t.reports.types.financial,
-      description: t.reports.types.financialDesc,
+      name: t.reports.reportTypes.financial.name,
+      description: t.reports.reportTypes.financial.description,
       icon: TrendingUp,
       color: 'bg-blue-100 text-blue-600',
       data: { revenue: '€45,230', expenses: '€23,150', profit: '€22,080' }
     },
     {
       id: 'invoices',
-      name: t.reports.types.invoices,
-      description: t.reports.types.invoicesDesc,
+      name: t.reports.reportTypes.invoices.name,
+      description: t.reports.reportTypes.invoices.description,
       icon: FileText,
       color: 'bg-green-100 text-green-600',
       data: { issued: 124, paid: 98, pending: 26 }
     },
     {
       id: 'expenses',
-      name: t.reports.types.expenses,
-      description: t.reports.types.expensesDesc,
+      name: t.reports.reportTypes.expenses.name,
+      description: t.reports.reportTypes.expenses.description,
       icon: Receipt,
       color: 'bg-red-100 text-red-600',
       data: { total: '€23,150', categories: 8, deductible: '€18,420' }
     },
     {
       id: 'clients',
-      name: t.reports.types.clients,
-      description: t.reports.types.clientsDesc,
+      name: t.reports.reportTypes.clients.name,
+      description: t.reports.reportTypes.clients.description,
       icon: Users,
       color: 'bg-purple-100 text-purple-600',
       data: { active: 45, new: 12, revenue: '€35,840' }
     },
     {
       id: 'vat',
-      name: t.reports.types.vat,
-      description: t.reports.types.vatDesc,
+      name: t.reports.reportTypes.vat.name,
+      description: t.reports.reportTypes.vat.description,
       icon: BarChart3,
       color: 'bg-yellow-100 text-yellow-600',
       data: { toPay: '€3,240', toReceive: '€1,850', balance: '€1,390' }
     },
     {
       id: 'assets',
-      name: t.reports.types.assets,
-      description: t.reports.types.assetsDesc,
+      name: t.reports.reportTypes.assets.name,
+      description: t.reports.reportTypes.assets.description,
       icon: Building2,
       color: 'bg-indigo-100 text-indigo-600',
       data: { total: '€125,000', depreciation: '€8,500', net: '€116,500' }
@@ -80,24 +81,24 @@ export default function ReportsPage() {
   const recentReports = [
     {
       id: 1,
-      name: t.reports.recent.monthlyJune,
-      type: t.reports.recent.financial,
+      name: t.reports.recentReports.monthlyJune,
+      type: t.reports.recentReports.financial,
       generated: '2025-06-30T18:30:00',
       size: '2.1 MB',
       format: 'PDF'
     },
     {
       id: 2,
-      name: t.reports.recent.expensesQ2,
-      type: t.reports.recent.expenses,
+      name: t.reports.recentReports.expensesQ2,
+      type: t.reports.recentReports.expenses,
       generated: '2025-06-28T14:15:00',
       size: '1.8 MB',
       format: 'Excel'
     },
     {
       id: 3,
-      name: t.reports.recent.vatQ2,
-      type: t.reports.recent.vat,
+      name: t.reports.recentReports.vatQ2,
+      type: t.reports.recentReports.vat,
       generated: '2025-06-25T10:00:00',
       size: '890 KB',
       format: 'PDF'
@@ -235,12 +236,12 @@ export default function ReportsPage() {
             <div className="bg-white rounded-lg border shadow-sm">
               <div className="p-6 border-b">
                 <div className="flex items-center justify-between">
-                  <h3 className="text-lg font-semibold text-foreground">{t.reports.recent.title}</h3>
+                  <h3 className="text-lg font-semibold text-foreground">{t.reports.recentReports.title}</h3>
                   <div className="flex items-center space-x-2">
                     <div className="relative">
                       <Search className="w-4 h-4 absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400" />
                       <Input
-                        placeholder={t.reports.searchPlaceholder}
+                        placeholder={t.reports.recentReports.searchPlaceholder}
                         className="pl-10 w-64"
                       />
                     </div>
@@ -251,12 +252,12 @@ export default function ReportsPage() {
                 <table className="w-full">
                   <thead>
                     <tr className="border-b">
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.table.name}</th>
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.table.type}</th>
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.table.date}</th>
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.table.size}</th>
-                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.table.format}</th>
-                      <th className="text-right p-4 font-medium text-gray-600">{t.reports.table.actions}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.name}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.type}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.date}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.size}</th>
+                      <th className="text-left p-4 font-medium text-gray-600">{t.reports.recentReports.format}</th>
+                      <th className="text-right p-4 font-medium text-gray-600">{t.reports.recentReports.actions}</th>
                     </tr>
                   </thead>
                   <tbody>

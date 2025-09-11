@@ -582,59 +582,321 @@ export interface Translations {
         }
     }
 
-    // Reports
-    reports: {
+    // Webhooks Monitoring
+    webhooks: {
         title: string
         subtitle: string
-        exportAll: string
-        quickStats: {
-            revenue: string
-            expenses: string
-            profit: string
-            margin: string
+        loading: string
+        refresh: string
+        metrics: {
+            total: string
+            documentsReceived: string
+            pending: string
+            waitingProcessing: string
+            processing: string
+            inProcessing: string
+            completed: string
+            processedSuccessfully: string
+            failed: string
+            processingErrors: string
         }
-        reportTypes: {
-            title: string
-            financial: {
-                name: string
-                description: string
-                generate: string
-            }
-            invoices: {
-                name: string
-                description: string
-                generate: string
-            }
-            expenses: {
-                name: string
-                description: string
-                generate: string
-            }
-            clients: {
-                name: string
-                description: string
-                generate: string
-            }
-            vat: {
-                name: string
-                description: string
-                generate: string
-            }
-            assets: {
-                name: string
-                description: string
-                generate: string
-            }
+        status: {
+            completed: string
+            processing: string
+            pending: string
+            failed: string
         }
-        recentReports: {
+        documentsTable: {
             title: string
-            searchPlaceholder: string
-            name: string
             type: string
-            date: string
+            status: string
+            filename: string
             size: string
-            format: string
+            confidence: string
+            date: string
             actions: string
+            noDocumentsFound: string
+        }
+        modal: {
+            title: string
+            basicInfo: string
+            name: string
+            size: string
+            type: string
+            status: string
+            aiAnalysis: string
+            documentType: string
+            confidence: string
+            extractedData: string
+            processingNotes: string
+            close: string
+        }
+    }
+    title: string
+    subtitle: string
+    connectDrive: string
+    loading: string
+    metrics: {
+        connectedDrives: string
+        totalFiles: string
+        processedToday: string
+        pending: string
+    }
+    status: {
+        connected: string
+        error: string
+        pending: string
+        unknown: string
+    }
+    actions: {
+        test: string
+        folder: string
+        manage: string
+        disconnect: string
+        close: string
+        cancel: string
+    }
+    connectedDrives: {
+        title: string
+    }
+    dropboxManager: {
+        title: string
+    }
+    emptyState: {
+        title: string
+        description: string
+    }
+    modal: {
+        connectTitle: string
+        selectProvider: string
+    }
+    providers: {
+        dropbox: string
+        googleDrive: string
+        oneDrive: string
+    }
+    messages: {
+        dropboxConnected: string
+        googleDriveConnected: string
+        oneDriveConnected: string
+        connectionSuccessful: string
+        disconnectSuccess: string
+    }
+    errors: {
+        authFailed: string
+        tokenFailed: string
+        userFailed: string
+        saveFailed: string
+        callbackFailed: string
+        configMissing: string
+        tokenExchangeFailed: string
+        connectionError: string
+        loadingError: string
+        disconnectError: string
+    }
+
+    // Admin
+    admin: {
+        title: string
+        subtitle: string
+        actions: {
+            exportData: string
+            systemBackup: string
+        }
+        tabs: {
+            overview: string
+            users: string
+            companies: string
+            system: string
+            logs: string
+            webhooks: string
+            processors: string
+            settings: string
+        }
+        metrics: {
+            totalUsers: string
+            totalCompanies: string
+            totalDocuments: string
+            storage: string
+            active: string
+            processed: string
+            used: string
+        }
+        systemStatus: {
+            title: string
+            systemHealth: string
+            healthy: string
+            problems: string
+            lastBackup: string
+        }
+        quickActions: {
+            title: string
+            createUser: string
+            addCompany: string
+            backup: string
+        }
+        users: {
+            title: string
+            description: string
+            searchPlaceholder: string
+            newUser: string
+            table: {
+                user: string
+                company: string
+                role: string
+                status: string
+                lastAccess: string
+                actions: string
+            }
+            status: {
+                active: string
+                inactive: string
+            }
+        }
+        companies: {
+            title: string
+            description: string
+            searchPlaceholder: string
+            newCompany: string
+            table: {
+                company: string
+                users: string
+                documents: string
+                storage: string
+                status: string
+                actions: string
+            }
+        }
+    }
+
+    // AI Assistant
+    aiAssistant: {
+        title: string
+        subtitle: string
+        welcomeMessage: string
+        status: {
+            online: string
+        }
+        chat: {
+            title: string
+            description: string
+        }
+        typing: string
+        inputPlaceholder: string
+        analyze: string
+        uploadTooltip: string
+        errors: {
+            networkError: string
+            auth: string
+            rateLimit: string
+            timeout: string
+            server: string
+            connection: string
+            generic: string
+        }
+        fileErrors: {
+            unsupportedType: string
+            tooLarge: string
+        }
+        features: {
+            fastResponse: string
+            portugueseContext: string
+            specializedAI: string
+            pdfAnalysis: string
+        }
+        analyzingFile: string
+        analysisComplete: string
+        extractedData: string
+        ownCompany: string
+        externalCompany: string
+        fields: {
+            invoiceNumber: string
+            date: string
+            amount: string
+            vat: string
+            total: string
+            category: string
+            description: string
+            confidence: string
+            vendor: string
+            nif: string
+            country: string
+            address: string
+            netAmount: string
+        }
+        issuesDetected: string
+        fileProcessingError: string
+    }
+
+    // Cloud Drives
+    cloudDrives: {
+        title: string
+        subtitle: string
+        connectDrive: string
+        loading: string
+        messages: {
+            dropboxSuccess: string
+            googleDriveSuccess: string
+            oneDriveSuccess: string
+            disconnectSuccess: string
+            dropboxConnected: string
+            googleDriveConnected: string
+            oneDriveConnected: string
+            connectionSuccessful: string
+        }
+        errors: {
+            dropboxError: string
+            googleDriveError: string
+            oneDriveError: string
+            authError: string
+            loadingError: string
+            disconnectError: string
+            authFailed: string
+            tokenFailed: string
+            userFailed: string
+            saveFailed: string
+            callbackFailed: string
+            configMissing: string
+            tokenExchangeFailed: string
+            connectionError: string
+        }
+        metrics: {
+            connectedDrives: string
+            totalFiles: string
+            processedToday: string
+            pending: string
+        }
+        status: {
+            connected: string
+            error: string
+            pending: string
+            unknown: string
+        }
+        actions: {
+            test: string
+            folder: string
+            manage: string
+            disconnect: string
+            close: string
+            cancel: string
+        }
+        dropboxManager: {
+            title: string
+        }
+        emptyState: {
+            title: string
+            description: string
+        }
+        modal: {
+            title: string
+            description: string
+            connectTitle: string
+            selectProvider: string
+        }
+        providers: {
+            dropbox: string
+            googleDrive: string
+            oneDrive: string
         }
     }
 }
@@ -1222,6 +1484,12 @@ export const translations: Record<Language, Translations> = {
             title: 'Relatórios',
             subtitle: 'Análises e relatórios financeiros',
             exportAll: 'Exportar Tudo',
+            filters: {
+                thisWeek: 'Esta Semana',
+                thisMonth: 'Este Mês',
+                quarter: 'Trimestre',
+                year: 'Ano'
+            },
             quickStats: {
                 revenue: 'Receitas',
                 expenses: 'Despesas',
@@ -1270,6 +1538,326 @@ export const translations: Record<Language, Translations> = {
                 size: 'Tamanho',
                 format: 'Formato',
                 actions: 'Ações'
+            }
+        },
+
+        // Webhooks Monitoring
+        webhooks: {
+            title: 'Monitoreo de WhatsApp',
+            subtitle: 'Documentos recibidos y procesados via WhatsApp',
+            loading: 'Carregando...',
+            refresh: 'Actualizar',
+            metrics: {
+                total: 'Total',
+                documentsReceived: 'Documentos recibidos',
+                pending: 'Pendentes',
+                waitingProcessing: 'Aguardando processamento',
+                processing: 'Processando',
+                inProcessing: 'Em processamento',
+                completed: 'Completados',
+                processedSuccessfully: 'Processados com sucesso',
+                failed: 'Falharam',
+                processingErrors: 'Erros no processamento'
+            },
+            status: {
+                completed: 'Completado',
+                processing: 'Processando',
+                pending: 'Pendente',
+                failed: 'Falhou'
+            },
+            documentsTable: {
+                title: 'Documentos WhatsApp',
+                type: 'Tipo',
+                status: 'Status',
+                filename: 'Nome do Arquivo',
+                size: 'Tamanho',
+                confidence: 'Confiança',
+                date: 'Data',
+                actions: 'Ações',
+                noDocumentsFound: 'Nenhum documento WhatsApp encontrado'
+            },
+            modal: {
+                title: 'Detalhes do Documento',
+                basicInfo: 'Informações Básicas',
+                name: 'Nome',
+                size: 'Tamanho',
+                type: 'Tipo',
+                status: 'Status',
+                aiAnalysis: 'Análise de IA',
+                documentType: 'Tipo',
+                confidence: 'Confiança',
+                extractedData: 'Dados Extraídos',
+                processingNotes: 'Notas de Processamento',
+                close: 'Fechar'
+            }
+        },
+
+        // Cloud Drives
+        cloudDrives: {
+            title: 'Drives na Nuvem',
+            subtitle: 'Gestão de armazenamento em nuvem e sincronização automática',
+            connectDrive: 'Conectar Drive',
+            loading: 'A carregar configurações...',
+            metrics: {
+                connectedDrives: 'Drives Conectados',
+                totalFiles: 'Arquivos Totais',
+                processedToday: 'Processados Hoje',
+                pending: 'Pendentes'
+            },
+            status: {
+                connected: 'Conectado',
+                error: 'Erro',
+                pending: 'Pendente',
+                unknown: 'Desconhecido'
+            },
+            actions: {
+                test: 'Testar',
+                folder: 'Pasta',
+                manage: 'Gestionar',
+                disconnect: 'Desconectar',
+                close: 'Cerrar',
+                cancel: 'Cancelar'
+            },
+            connectedDrives: {
+                title: 'Drives Conectados'
+            },
+            dropboxManager: {
+                title: 'Gestión de Dropbox'
+            },
+            emptyState: {
+                title: 'Não há drives conectados',
+                description: 'Conecte a sua primeira conta de armazenamento na nuvem'
+            },
+            modal: {
+                connectTitle: 'Conectar Armazenamento na Nuvem',
+                selectProvider: 'Selecione o fornecedor que deseja conectar:'
+            },
+            providers: {
+                dropbox: 'Dropbox',
+                googleDrive: 'Google Drive',
+                oneDrive: 'OneDrive'
+            },
+            messages: {
+                dropboxConnected: 'Dropbox conectado com sucesso',
+                googleDriveConnected: 'Google Drive conectado com sucesso',
+                oneDriveConnected: 'OneDrive conectado com sucesso',
+                connectionSuccessful: 'Conexão bem-sucedida',
+                disconnectSuccess: 'Fornecedor desconectado com sucesso'
+            },
+            errors: {
+                authFailed: 'Erro na autenticação',
+                tokenFailed: 'Erro ao obter token de acesso',
+                userFailed: 'Erro ao obter dados do usuário',
+                saveFailed: 'Erro ao guardar a configuração',
+                callbackFailed: 'Erro no processo de autenticação',
+                configMissing: 'Configuração de Dropbox não encontrada. Verifique as variáveis de ambiente DROPBOX_CLIENT_ID e DROPBOX_CLIENT_SECRET.',
+                tokenExchangeFailed: 'Erro ao trocar código por token de acesso',
+                connectionError: 'Erro na conexão',
+                loadingError: 'Erro ao carregar configurações de cloud drives',
+                disconnectError: 'Erro ao desconectar o fornecedor'
+            }
+        },
+
+        // AI Assistant
+        aiAssistant: {
+            title: 'Assistente IA',
+            subtitle: 'Assistente inteligente para contabilidade portuguesa',
+            welcomeMessage: 'Olá! Sou o seu assistente de contabilidade portuguesa. Como posso ajudá-lo hoje? Pode enviar mensagens ou subir imagens/PDFs de faturas para análise.',
+            status: {
+                online: 'Online'
+            },
+            chat: {
+                title: 'Chat com AI Assistant',
+                description: 'Faça perguntas sobre contabilidade, IVA, e gestão financeira em português'
+            },
+            typing: 'Assistente está digitando...',
+            inputPlaceholder: 'Pergunte sobre contabilidade, IVA, despesas...',
+            uploadTooltip: 'Subir PDF ou imagem',
+            analyze: 'Analisar',
+            analyzingFile: 'Analisando arquivo: {fileName}',
+            analysisComplete: '📄 **Análise do documento concluída!**',
+            extractedData: '**Dados extraídos:**',
+            ownCompany: '🏢 **EMPRESA PRÓPRIA DETECTADA** (NIF: 517124548)',
+            externalCompany: '🏪 **EMPRESA EXTERNA**',
+            issuesDetected: 'Problemas detectados:',
+            fileProcessingError: '❌ Erro ao processar o arquivo. Verifique se é um PDF ou imagem válida e tente novamente.',
+            fields: {
+                vendor: 'Fornecedor',
+                nif: 'NIF',
+                country: 'País',
+                address: 'Endereço',
+                invoiceNumber: 'Nº Fatura',
+                date: 'Data',
+                netAmount: 'Valor sem IVA',
+                vat: 'IVA',
+                total: 'Total',
+                category: 'Categoria',
+                description: 'Descrição',
+                confidence: 'Confiança'
+            },
+            errors: {
+                generic: 'Desculpe, ocorreu um erro ao processar a sua mensagem. Tente novamente.',
+                auth: '🔑 Problema de autenticação da API. Contacte o administrador.',
+                rateLimit: '⏳ Limite de uso da API atingido. Tente novamente mais tarde.',
+                timeout: '⏱️ A resposta demorou muito. Tente uma pergunta mais simples.',
+                server: '🔧 Erro interno do servidor. Verifique se o servidor está a funcionar.',
+                connection: '🌐 Erro de conexão. Verifique se o servidor está a executar na porta 5000.'
+            },
+            fileErrors: {
+                unsupportedType: 'Tipo de arquivo não suportado. Por favor, selecione um PDF ou imagem (PNG, JPG, GIF, BMP, WebP, TIFF).',
+                tooLarge: 'Arquivo muito grande. Tamanho máximo: 10MB.'
+            },
+            features: {
+                fastResponse: 'Resposta rápida',
+                portugueseContext: 'Contexto português',
+                specializedAI: 'IA especializada',
+                pdfAnalysis: 'Análise de PDF/imagens'
+            }
+        },
+
+        // Admin
+        admin: {
+            title: 'Administração',
+            subtitle: 'Gestão do sistema e utilizadores',
+            actions: {
+                exportData: 'Exportar Dados',
+                systemBackup: 'Backup Sistema'
+            },
+            tabs: {
+                overview: 'Visão Geral',
+                users: 'Utilizadores',
+                companies: 'Empresas',
+                system: 'Sistema',
+                logs: 'Logs',
+                webhooks: 'Webhooks',
+                processors: 'Processadores',
+                settings: 'Configurações'
+            },
+            metrics: {
+                totalUsers: 'Total Utilizadores',
+                totalCompanies: 'Total Empresas',
+                totalDocuments: 'Documentos',
+                storage: 'Armazenamento',
+                active: 'ativos',
+                processed: 'Processados',
+                used: 'Utilizado'
+            },
+            systemStatus: {
+                title: 'Estado do Sistema',
+                systemHealth: 'Saúde do Sistema',
+                healthy: 'Saudável',
+                problems: 'Problemas',
+                lastBackup: 'Último Backup'
+            },
+            quickActions: {
+                title: 'Ações Rápidas',
+                createUser: 'Criar Novo Utilizador',
+                addCompany: 'Adicionar Empresa',
+                backup: 'Fazer Backup'
+            },
+            users: {
+                title: 'Gestão de Utilizadores',
+                description: 'Gerir contas de utilizadores do sistema',
+                searchPlaceholder: 'Pesquisar utilizadores...',
+                newUser: 'Novo Utilizador',
+                table: {
+                    user: 'Utilizador',
+                    company: 'Empresa',
+                    role: 'Função',
+                    status: 'Estado',
+                    lastAccess: 'Último Acesso',
+                    actions: 'Ações'
+                },
+                status: {
+                    active: 'Ativo',
+                    inactive: 'Inativo'
+                }
+            },
+            companies: {
+                title: 'Gestão de Empresas',
+                description: 'Gerir empresas registadas no sistema',
+                searchPlaceholder: 'Pesquisar empresas...',
+                newCompany: 'Nova Empresa',
+                table: {
+                    company: 'Empresa',
+                    users: 'Utilizadores',
+                    documents: 'Documentos',
+                    storage: 'Armazenamento',
+                    status: 'Estado',
+                    actions: 'Ações'
+                }
+            }
+        },
+
+        // Cloud Drives
+        cloudDrives: {
+            title: 'Armazenamento na Nuvem',
+            subtitle: 'Gestão de drives conectados',
+            connectDrive: 'Conectar Drive',
+            loading: 'A carregar configurações...',
+            messages: {
+                dropboxSuccess: 'Dropbox conectado com sucesso',
+                googleDriveSuccess: 'Google Drive conectado com sucesso',
+                oneDriveSuccess: 'OneDrive conectado com sucesso',
+                disconnectSuccess: 'Drive desconectado com sucesso',
+                dropboxConnected: 'Dropbox conectado',
+                googleDriveConnected: 'Google Drive conectado',
+                oneDriveConnected: 'OneDrive conectado',
+                connectionSuccessful: 'Conexão bem-sucedida'
+            },
+            errors: {
+                dropboxError: 'Erro na autenticação do Dropbox',
+                googleDriveError: 'Erro na autenticação do Google Drive',
+                oneDriveError: 'Erro na autenticação do OneDrive',
+                authError: 'Erro na autenticação',
+                loadingError: 'Erro ao carregar configurações',
+                disconnectError: 'Erro ao desconectar drive',
+                authFailed: 'Falha na autenticação',
+                tokenFailed: 'Falha no token',
+                userFailed: 'Falha no utilizador',
+                saveFailed: 'Falha ao salvar',
+                callbackFailed: 'Falha no callback',
+                configMissing: 'Configuração em falta',
+                tokenExchangeFailed: 'Falha na troca de token',
+                connectionError: 'Erro de conexão'
+            },
+            metrics: {
+                connectedDrives: 'Drives Conectados',
+                totalFiles: 'Arquivos Totais',
+                processedToday: 'Processados Hoje',
+                pending: 'Pendentes'
+            },
+            status: {
+                connected: 'Conectado',
+                error: 'Erro',
+                pending: 'Pendente',
+                unknown: 'Desconhecido'
+            },
+            actions: {
+                test: 'Testar',
+                folder: 'Pasta',
+                manage: 'Gestionar',
+                disconnect: 'Desconectar',
+                close: 'Cerrar',
+                cancel: 'Cancelar'
+            },
+            dropboxManager: {
+                title: 'Gestión de Dropbox'
+            },
+            emptyState: {
+                title: 'Não há drives conectados',
+                description: 'Conecte a sua primeira conta de armazenamento na nuvem'
+            },
+            modal: {
+                title: 'Conectar Armazenamento na Nuvem',
+                description: 'Selecione o fornecedor que deseja conectar:',
+                connectTitle: 'Conectar Armazenamento na Nuvem',
+                selectProvider: 'Selecione o fornecedor que deseja conectar:'
+            },
+            providers: {
+                dropbox: 'Dropbox',
+                googleDrive: 'Google Drive',
+                oneDrive: 'OneDrive'
             }
         }
     },
@@ -1905,6 +2493,326 @@ export const translations: Record<Language, Translations> = {
                 format: 'Format',
                 actions: 'Actions'
             }
+        },
+
+        // Webhooks Monitoring
+        webhooks: {
+            title: 'WhatsApp Monitoring',
+            subtitle: 'Documents received and processed via WhatsApp',
+            loading: 'Loading...',
+            refresh: 'Refresh',
+            metrics: {
+                total: 'Total',
+                documentsReceived: 'Documents received',
+                pending: 'Pending',
+                waitingProcessing: 'Waiting for processing',
+                processing: 'Processing',
+                inProcessing: 'In processing',
+                completed: 'Completed',
+                processedSuccessfully: 'Processed successfully',
+                failed: 'Failed',
+                processingErrors: 'Processing errors'
+            },
+            status: {
+                completed: 'Completed',
+                processing: 'Processing',
+                pending: 'Pending',
+                failed: 'Failed'
+            },
+            documentsTable: {
+                title: 'WhatsApp Documents',
+                type: 'Type',
+                status: 'Status',
+                filename: 'Filename',
+                size: 'Size',
+                confidence: 'Confidence',
+                date: 'Date',
+                actions: 'Actions',
+                noDocumentsFound: 'No WhatsApp documents found'
+            },
+            modal: {
+                title: 'Document Details',
+                basicInfo: 'Basic Information',
+                name: 'Name',
+                size: 'Size',
+                type: 'Type',
+                status: 'Status',
+                aiAnalysis: 'AI Analysis',
+                documentType: 'Type',
+                confidence: 'Confidence',
+                extractedData: 'Extracted Data',
+                processingNotes: 'Processing Notes',
+                close: 'Close'
+            }
+        },
+
+        // Cloud Drives
+        cloudDrives: {
+            title: 'Cloud Drives',
+            subtitle: 'Cloud storage management and automatic synchronization',
+            connectDrive: 'Connect Drive',
+            loading: 'Loading configurations...',
+            metrics: {
+                connectedDrives: 'Connected Drives',
+                totalFiles: 'Total Files',
+                processedToday: 'Processed Today',
+                pending: 'Pending'
+            },
+            status: {
+                connected: 'Connected',
+                error: 'Error',
+                pending: 'Pending',
+                unknown: 'Unknown'
+            },
+            actions: {
+                test: 'Test',
+                folder: 'Folder',
+                manage: 'Manage',
+                disconnect: 'Disconnect',
+                close: 'Close',
+                cancel: 'Cancel'
+            },
+            connectedDrives: {
+                title: 'Connected Drives'
+            },
+            dropboxManager: {
+                title: 'Dropbox Management'
+            },
+            emptyState: {
+                title: 'No drives connected',
+                description: 'Connect your first cloud storage account'
+            },
+            modal: {
+                connectTitle: 'Connect Cloud Storage',
+                selectProvider: 'Select the provider you want to connect:'
+            },
+            providers: {
+                dropbox: 'Dropbox',
+                googleDrive: 'Google Drive',
+                oneDrive: 'OneDrive'
+            },
+            messages: {
+                dropboxConnected: 'Dropbox connected successfully',
+                googleDriveConnected: 'Google Drive connected successfully',
+                oneDriveConnected: 'OneDrive connected successfully',
+                connectionSuccessful: 'Connection successful',
+                disconnectSuccess: 'Provider disconnected successfully'
+            },
+            errors: {
+                authFailed: 'Authentication error',
+                tokenFailed: 'Error getting access token',
+                userFailed: 'Error getting user data',
+                saveFailed: 'Error saving configuration',
+                callbackFailed: 'Authentication process error',
+                configMissing: 'Dropbox configuration not found. Check DROPBOX_CLIENT_ID and DROPBOX_CLIENT_SECRET environment variables.',
+                tokenExchangeFailed: 'Error exchanging code for access token',
+                connectionError: 'Connection error',
+                loadingError: 'Error loading cloud drives configurations',
+                disconnectError: 'Error disconnecting provider'
+            }
+        },
+
+        // AI Assistant
+        aiAssistant: {
+            title: 'AI Assistant',
+            subtitle: 'Intelligent assistant for Portuguese accounting',
+            welcomeMessage: 'Hello! I am your Portuguese accounting assistant. How can I help you today? You can send messages or upload images/PDFs of invoices for analysis.',
+            status: {
+                online: 'Online'
+            },
+            chat: {
+                title: 'Chat with AI Assistant',
+                description: 'Ask questions about accounting, VAT, and financial management in Portuguese'
+            },
+            typing: 'Assistant is typing...',
+            inputPlaceholder: 'Ask about accounting, VAT, expenses...',
+            uploadTooltip: 'Upload PDF or image',
+            analyze: 'Analyze',
+            analyzingFile: 'Analyzing file: {fileName}',
+            analysisComplete: '📄 **Document analysis completed!**',
+            extractedData: '**Extracted data:**',
+            ownCompany: '🏢 **OWN COMPANY DETECTED** (NIF: 517124548)',
+            externalCompany: '🏪 **EXTERNAL COMPANY**',
+            issuesDetected: 'Issues detected:',
+            fileProcessingError: '❌ Error processing file. Please verify it is a valid PDF or image and try again.',
+            fields: {
+                vendor: 'Vendor',
+                nif: 'NIF',
+                country: 'Country',
+                address: 'Address',
+                invoiceNumber: 'Invoice No.',
+                date: 'Date',
+                netAmount: 'Net Amount',
+                vat: 'VAT',
+                total: 'Total',
+                category: 'Category',
+                description: 'Description',
+                confidence: 'Confidence'
+            },
+            errors: {
+                generic: 'Sorry, an error occurred processing your message. Please try again.',
+                auth: '🔑 API authentication problem. Contact administrator.',
+                rateLimit: '⏳ API usage limit reached. Try again later.',
+                timeout: '⏱️ Response took too long. Try a simpler question.',
+                server: '🔧 Internal server error. Check if server is running.',
+                connection: '🌐 Connection error. Check if server is running on port 5000.'
+            },
+            fileErrors: {
+                unsupportedType: 'Unsupported file type. Please select a PDF or image (PNG, JPG, GIF, BMP, WebP, TIFF).',
+                tooLarge: 'File too large. Maximum size: 10MB.'
+            },
+            features: {
+                fastResponse: 'Fast response',
+                portugueseContext: 'Portuguese context',
+                specializedAI: 'Specialized AI',
+                pdfAnalysis: 'PDF/image analysis'
+            }
+        },
+
+        // Admin
+        admin: {
+            title: 'Administration',
+            subtitle: 'System and user management',
+            actions: {
+                exportData: 'Export Data',
+                systemBackup: 'System Backup'
+            },
+            tabs: {
+                overview: 'Overview',
+                users: 'Users',
+                companies: 'Companies',
+                system: 'System',
+                logs: 'Logs',
+                webhooks: 'Webhooks',
+                processors: 'Processors',
+                settings: 'Settings'
+            },
+            metrics: {
+                totalUsers: 'Total Users',
+                totalCompanies: 'Total Companies',
+                totalDocuments: 'Documents',
+                storage: 'Storage',
+                active: 'active',
+                processed: 'Processed',
+                used: 'Used'
+            },
+            systemStatus: {
+                title: 'System Status',
+                systemHealth: 'System Health',
+                healthy: 'Healthy',
+                problems: 'Problems',
+                lastBackup: 'Last Backup'
+            },
+            quickActions: {
+                title: 'Quick Actions',
+                createUser: 'Create New User',
+                addCompany: 'Add Company',
+                backup: 'Backup'
+            },
+            users: {
+                title: 'User Management',
+                description: 'Manage system user accounts',
+                searchPlaceholder: 'Search users...',
+                newUser: 'New User',
+                table: {
+                    user: 'User',
+                    company: 'Company',
+                    role: 'Role',
+                    status: 'Status',
+                    lastAccess: 'Last Access',
+                    actions: 'Actions'
+                },
+                status: {
+                    active: 'Active',
+                    inactive: 'Inactive'
+                }
+            },
+            companies: {
+                title: 'Company Management',
+                description: 'Manage registered companies',
+                searchPlaceholder: 'Search companies...',
+                newCompany: 'New Company',
+                table: {
+                    company: 'Company',
+                    users: 'Users',
+                    documents: 'Documents',
+                    storage: 'Storage',
+                    status: 'Status',
+                    actions: 'Actions'
+                }
+            }
+        },
+
+        // Cloud Drives
+        cloudDrives: {
+            title: 'Cloud Storage',
+            subtitle: 'Connected drives management',
+            connectDrive: 'Connect Drive',
+            loading: 'Loading settings...',
+            messages: {
+                dropboxSuccess: 'Dropbox connected successfully',
+                googleDriveSuccess: 'Google Drive connected successfully',
+                oneDriveSuccess: 'OneDrive connected successfully',
+                disconnectSuccess: 'Drive disconnected successfully',
+                dropboxConnected: 'Dropbox connected',
+                googleDriveConnected: 'Google Drive connected',
+                oneDriveConnected: 'OneDrive connected',
+                connectionSuccessful: 'Connection successful'
+            },
+            errors: {
+                dropboxError: 'Dropbox authentication error',
+                googleDriveError: 'Google Drive authentication error',
+                oneDriveError: 'OneDrive authentication error',
+                authError: 'Authentication error',
+                loadingError: 'Error loading settings',
+                disconnectError: 'Error disconnecting drive',
+                authFailed: 'Authentication failed',
+                tokenFailed: 'Token failed',
+                userFailed: 'User failed',
+                saveFailed: 'Save failed',
+                callbackFailed: 'Callback failed',
+                configMissing: 'Configuration missing',
+                tokenExchangeFailed: 'Token exchange failed',
+                connectionError: 'Connection error'
+            },
+            metrics: {
+                connectedDrives: 'Connected Drives',
+                totalFiles: 'Total Files',
+                processedToday: 'Processed Today',
+                pending: 'Pending'
+            },
+            status: {
+                connected: 'Connected',
+                error: 'Error',
+                pending: 'Pending',
+                unknown: 'Unknown'
+            },
+            actions: {
+                test: 'Test',
+                folder: 'Folder',
+                manage: 'Manage',
+                disconnect: 'Disconnect',
+                close: 'Close',
+                cancel: 'Cancel'
+            },
+            dropboxManager: {
+                title: 'Dropbox Manager'
+            },
+            emptyState: {
+                title: 'No drives connected',
+                description: 'Connect your first cloud storage account'
+            },
+            modal: {
+                title: 'Connect Cloud Storage',
+                description: 'Select the provider you want to connect:',
+                connectTitle: 'Connect Cloud Storage',
+                selectProvider: 'Select the provider you want to connect:'
+            },
+            providers: {
+                dropbox: 'Dropbox',
+                googleDrive: 'Google Drive',
+                oneDrive: 'OneDrive'
+            }
         }
     },
 
@@ -2538,6 +3446,326 @@ export const translations: Record<Language, Translations> = {
                 size: 'Taille',
                 format: 'Format',
                 actions: 'Actions'
+            }
+        },
+
+        // Webhooks Monitoring
+        webhooks: {
+            title: 'Surveillance WhatsApp',
+            subtitle: 'Documents reçus et traités via WhatsApp',
+            loading: 'Chargement...',
+            refresh: 'Actualiser',
+            metrics: {
+                total: 'Total',
+                documentsReceived: 'Documents reçus',
+                pending: 'En Attente',
+                waitingProcessing: 'En attente de traitement',
+                processing: 'En Cours',
+                inProcessing: 'En cours de traitement',
+                completed: 'Terminés',
+                processedSuccessfully: 'Traités avec succès',
+                failed: 'Échoués',
+                processingErrors: 'Erreurs de traitement'
+            },
+            status: {
+                completed: 'Terminé',
+                processing: 'En Cours',
+                pending: 'En Attente',
+                failed: 'Échoué'
+            },
+            documentsTable: {
+                title: 'Documents WhatsApp',
+                type: 'Type',
+                status: 'Statut',
+                filename: 'Nom du Fichier',
+                size: 'Taille',
+                confidence: 'Confiance',
+                date: 'Date',
+                actions: 'Actions',
+                noDocumentsFound: 'Aucun document WhatsApp trouvé'
+            },
+            modal: {
+                title: 'Détails du Document',
+                basicInfo: 'Informations de Base',
+                name: 'Nom',
+                size: 'Taille',
+                type: 'Type',
+                status: 'Statut',
+                aiAnalysis: 'Analyse IA',
+                documentType: 'Type',
+                confidence: 'Confiance',
+                extractedData: 'Données Extraites',
+                processingNotes: 'Notes de Traitement',
+                close: 'Fermer'
+            }
+        },
+
+        // Cloud Drives
+        cloudDrives: {
+            title: 'Disques Cloud',
+            subtitle: 'Gestion du stockage cloud et synchronisation automatique',
+            connectDrive: 'Connecter Disque',
+            loading: 'Chargement des configurations...',
+            metrics: {
+                connectedDrives: 'Disques Connectés',
+                totalFiles: 'Fichiers Totaux',
+                processedToday: 'Traités Aujourd\'hui',
+                pending: 'En Attente'
+            },
+            status: {
+                connected: 'Connecté',
+                error: 'Erreur',
+                pending: 'En Attente',
+                unknown: 'Inconnu'
+            },
+            actions: {
+                test: 'Tester',
+                folder: 'Dossier',
+                manage: 'Gérer',
+                disconnect: 'Déconnecter',
+                close: 'Fermer',
+                cancel: 'Annuler'
+            },
+            connectedDrives: {
+                title: 'Disques Connectés'
+            },
+            dropboxManager: {
+                title: 'Gestion Dropbox'
+            },
+            emptyState: {
+                title: 'Aucun disque connecté',
+                description: 'Connectez votre premier compte de stockage cloud'
+            },
+            modal: {
+                connectTitle: 'Connecter Stockage Cloud',
+                selectProvider: 'Sélectionnez le fournisseur que vous souhaitez connecter :'
+            },
+            providers: {
+                dropbox: 'Dropbox',
+                googleDrive: 'Google Drive',
+                oneDrive: 'OneDrive'
+            },
+            messages: {
+                dropboxConnected: 'Dropbox connecté avec succès',
+                googleDriveConnected: 'Google Drive connecté avec succès',
+                oneDriveConnected: 'OneDrive connecté avec succès',
+                connectionSuccessful: 'Connexion réussie',
+                disconnectSuccess: 'Fournisseur déconnecté avec succès'
+            },
+            errors: {
+                authFailed: 'Erreur d\'authentification',
+                tokenFailed: 'Erreur lors de l\'obtention du token d\'accès',
+                userFailed: 'Erreur lors de l\'obtention des données utilisateur',
+                saveFailed: 'Erreur lors de la sauvegarde de la configuration',
+                callbackFailed: 'Erreur dans le processus d\'authentification',
+                configMissing: 'Configuration Dropbox non trouvée. Vérifiez les variables d\'environnement DROPBOX_CLIENT_ID et DROPBOX_CLIENT_SECRET.',
+                tokenExchangeFailed: 'Erreur lors de l\'échange du code contre le token d\'accès',
+                connectionError: 'Erreur de connexion',
+                loadingError: 'Erreur lors du chargement des configurations de disques cloud',
+                disconnectError: 'Erreur lors de la déconnexion du fournisseur'
+            }
+        },
+
+        // AI Assistant
+        aiAssistant: {
+            title: 'Assistant IA',
+            subtitle: 'Assistant intelligent pour la comptabilité portugaise',
+            welcomeMessage: 'Bonjour ! Je suis votre assistant de comptabilité portugaise. Comment puis-je vous aider aujourd\'hui ? Vous pouvez envoyer des messages ou télécharger des images/PDF de factures pour analyse.',
+            status: {
+                online: 'En ligne'
+            },
+            chat: {
+                title: 'Chat avec Assistant IA',
+                description: 'Posez des questions sur la comptabilité, la TVA et la gestion financière en portugais'
+            },
+            typing: 'L\'assistant tape...',
+            inputPlaceholder: 'Demandez sur la comptabilité, TVA, dépenses...',
+            uploadTooltip: 'Télécharger PDF ou image',
+            analyze: 'Analyser',
+            analyzingFile: 'Analyse du fichier : {fileName}',
+            analysisComplete: '📄 **Analyse du document terminée !**',
+            extractedData: '**Données extraites :**',
+            ownCompany: '🏢 **ENTREPRISE PROPRE DÉTECTÉE** (NIF : 517124548)',
+            externalCompany: '🏪 **ENTREPRISE EXTERNE**',
+            issuesDetected: 'Problèmes détectés :',
+            fileProcessingError: '❌ Erreur lors du traitement du fichier. Vérifiez qu\'il s\'agit d\'un PDF ou d\'une image valide et réessayez.',
+            fields: {
+                vendor: 'Fournisseur',
+                nif: 'NIF',
+                country: 'Pays',
+                address: 'Adresse',
+                invoiceNumber: 'N° Facture',
+                date: 'Date',
+                netAmount: 'Montant Net',
+                vat: 'TVA',
+                total: 'Total',
+                category: 'Catégorie',
+                description: 'Description',
+                confidence: 'Confiance'
+            },
+            errors: {
+                generic: 'Désolé, une erreur s\'est produite lors du traitement de votre message. Veuillez réessayer.',
+                auth: '🔑 Problème d\'authentification API. Contactez l\'administrateur.',
+                rateLimit: '⏳ Limite d\'utilisation de l\'API atteinte. Réessayez plus tard.',
+                timeout: '⏱️ La réponse a pris trop de temps. Essayez une question plus simple.',
+                server: '🔧 Erreur interne du serveur. Vérifiez si le serveur fonctionne.',
+                connection: '🌐 Erreur de connexion. Vérifiez si le serveur fonctionne sur le port 5000.'
+            },
+            fileErrors: {
+                unsupportedType: 'Type de fichier non supporté. Veuillez sélectionner un PDF ou une image (PNG, JPG, GIF, BMP, WebP, TIFF).',
+                tooLarge: 'Fichier trop volumineux. Taille maximale : 10MB.'
+            },
+            features: {
+                fastResponse: 'Réponse rapide',
+                portugueseContext: 'Contexte portugais',
+                specializedAI: 'IA spécialisée',
+                pdfAnalysis: 'Analyse PDF/images'
+            }
+        },
+
+        // Admin
+        admin: {
+            title: 'Administration',
+            subtitle: 'Gestion du système et des utilisateurs',
+            actions: {
+                exportData: 'Exporter les Données',
+                systemBackup: 'Sauvegarde Système'
+            },
+            tabs: {
+                overview: 'Aperçu',
+                users: 'Utilisateurs',
+                companies: 'Entreprises',
+                system: 'Système',
+                logs: 'Journaux',
+                webhooks: 'Webhooks',
+                processors: 'Processeurs',
+                settings: 'Paramètres'
+            },
+            metrics: {
+                totalUsers: 'Total Utilisateurs',
+                totalCompanies: 'Total Entreprises',
+                totalDocuments: 'Documents',
+                storage: 'Stockage',
+                active: 'actifs',
+                processed: 'Traités',
+                used: 'Utilisé'
+            },
+            systemStatus: {
+                title: 'État du Système',
+                systemHealth: 'Santé du Système',
+                healthy: 'Sain',
+                problems: 'Problèmes',
+                lastBackup: 'Dernière Sauvegarde'
+            },
+            quickActions: {
+                title: 'Actions Rapides',
+                createUser: 'Créer Nouvel Utilisateur',
+                addCompany: 'Ajouter Entreprise',
+                backup: 'Sauvegarder'
+            },
+            users: {
+                title: 'Gestion des Utilisateurs',
+                description: 'Gérer les comptes utilisateurs du système',
+                searchPlaceholder: 'Rechercher utilisateurs...',
+                newUser: 'Nouvel Utilisateur',
+                table: {
+                    user: 'Utilisateur',
+                    company: 'Entreprise',
+                    role: 'Rôle',
+                    status: 'Statut',
+                    lastAccess: 'Dernier Accès',
+                    actions: 'Actions'
+                },
+                status: {
+                    active: 'Actif',
+                    inactive: 'Inactif'
+                }
+            },
+            companies: {
+                title: 'Gestion des Entreprises',
+                description: 'Gérer les entreprises enregistrées',
+                searchPlaceholder: 'Rechercher entreprises...',
+                newCompany: 'Nouvelle Entreprise',
+                table: {
+                    company: 'Entreprise',
+                    users: 'Utilisateurs',
+                    documents: 'Documents',
+                    storage: 'Stockage',
+                    status: 'Statut',
+                    actions: 'Actions'
+                }
+            }
+        },
+
+        // Cloud Drives
+        cloudDrives: {
+            title: 'Stockage Cloud',
+            subtitle: 'Gestion des lecteurs connectés',
+            connectDrive: 'Connecter Lecteur',
+            loading: 'Chargement des paramètres...',
+            messages: {
+                dropboxSuccess: 'Dropbox connecté avec succès',
+                googleDriveSuccess: 'Google Drive connecté avec succès',
+                oneDriveSuccess: 'OneDrive connecté avec succès',
+                disconnectSuccess: 'Lecteur déconnecté avec succès',
+                dropboxConnected: 'Dropbox connecté',
+                googleDriveConnected: 'Google Drive connecté',
+                oneDriveConnected: 'OneDrive connecté',
+                connectionSuccessful: 'Connexion réussie'
+            },
+            errors: {
+                dropboxError: 'Erreur d\'authentification Dropbox',
+                googleDriveError: 'Erreur d\'authentification Google Drive',
+                oneDriveError: 'Erreur d\'authentification OneDrive',
+                authError: 'Erreur d\'authentification',
+                loadingError: 'Erreur de chargement des paramètres',
+                disconnectError: 'Erreur de déconnexion du lecteur',
+                authFailed: 'Échec de l\'authentification',
+                tokenFailed: 'Échec du token',
+                userFailed: 'Échec de l\'utilisateur',
+                saveFailed: 'Échec de la sauvegarde',
+                callbackFailed: 'Échec du callback',
+                configMissing: 'Configuration manquante',
+                tokenExchangeFailed: 'Échec de l\'échange de token',
+                connectionError: 'Erreur de connexion'
+            },
+            metrics: {
+                connectedDrives: 'Lecteurs Connectés',
+                totalFiles: 'Fichiers Totaux',
+                processedToday: 'Traités Aujourd\'hui',
+                pending: 'En Attente'
+            },
+            status: {
+                connected: 'Connecté',
+                error: 'Erreur',
+                pending: 'En Attente',
+                unknown: 'Inconnu'
+            },
+            actions: {
+                test: 'Tester',
+                folder: 'Dossier',
+                manage: 'Gérer',
+                disconnect: 'Déconnecter',
+                close: 'Fermer',
+                cancel: 'Annuler'
+            },
+            dropboxManager: {
+                title: 'Gestionnaire Dropbox'
+            },
+            emptyState: {
+                title: 'Aucun lecteur connecté',
+                description: 'Connectez votre premier compte de stockage cloud'
+            },
+            modal: {
+                title: 'Connecter Stockage Cloud',
+                description: 'Sélectionnez le fournisseur que vous souhaitez connecter:',
+                connectTitle: 'Connecter Stockage Cloud',
+                selectProvider: 'Sélectionnez le fournisseur que vous souhaitez connecter:'
+            },
+            providers: {
+                dropbox: 'Dropbox',
+                googleDrive: 'Google Drive',
+                oneDrive: 'OneDrive'
             }
         }
     }
