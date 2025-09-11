@@ -414,26 +414,42 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             console.log(`🔍 Final document type: ${finalDocumentType}`)
 
-            if (finalDocumentType === 'invoice') {
-              console.log(`💰 Procesando INVOICE como GASTO (dinero que pagaste)`)
-              console.log(`🔍 Datos de extracted_data antes de processInvoice:`, JSON.stringify(analysisResult.extracted_data, null, 2))
+            // SIEMPRE guardar los datos extraídos, sin importar el tipo
+            console.log(`💾 GUARDANDO DATOS EXTRAÍDOS OBLIGATORIAMENTE`)
+            console.log(`🔍 Datos extraídos:`, JSON.stringify(analysisResult.extracted_data, null, 2))
+
+            // Intentar guardar como INVOICE primero (para restaurantes y facturas)
+            let savedAsInvoice = false
+            if (finalDocumentType === 'invoice' || isRestaurantReceipt) {
+              console.log(`💰 Intentando guardar como INVOICE`)
               try {
                 await processInvoice(analysisResult.extracted_data, document.id, supabase, tenantId)
                 console.log(`✅ processInvoice completado exitosamente`)
+                savedAsInvoice = true
               } catch (error) {
-                console.error(`❌ Error en processInvoice:`, error)
+                console.error(`❌ Error en processInvoice:`, error instanceof Error ? error.message : 'Unknown error')
+                console.log(`🔄 Intentando guardar como EXPENSE como fallback`)
               }
-            } else if (finalDocumentType === 'expense') {
-              console.log(`💰 Procesando EXPENSE como GASTO`)
-              console.log(`🔍 Datos de extracted_data antes de processExpense:`, JSON.stringify(analysisResult.extracted_data, null, 2))
+            }
+
+            // Si no se guardó como invoice, intentar como expense
+            if (!savedAsInvoice) {
+              console.log(`💰 Guardando como EXPENSE`)
               try {
                 await processExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
                 console.log(`✅ processExpense completado exitosamente`)
               } catch (error) {
-                console.error(`❌ Error en processExpense:`, error)
+                console.error(`❌ Error en processExpense:`, error instanceof Error ? error.message : 'Unknown error')
+                console.log(`⚠️ FALLO TOTAL: No se pudo guardar ni como invoice ni como expense`)
+
+                // Crear un registro mínimo en expenses como último recurso
+                try {
+                  await createMinimalExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
+                  console.log(`✅ Registro mínimo creado como último recurso`)
+                } catch (minimalError) {
+                  console.error(`❌ Error crítico: No se pudo crear registro mínimo:`, minimalError instanceof Error ? minimalError.message : 'Unknown error')
+                }
               }
-            } else {
-              console.log(`⚠️ Tipo de documento no reconocido: ${finalDocumentType}`)
             }
 
             console.log(`✅ Document processing completed with AI: ${document.id}`)
@@ -894,13 +910,29 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
 
     console.log(`📋 Número de factura generado: ${invoiceNumber}`)
 
-    // Create or find client automatically
-    const clientId = await createOrFindClient(invoiceData, tenantId, supabase)
-    console.log(`👤 Cliente ID: ${clientId || 'null'}`)
+    // Validación de datos críticos
+    console.log(`🔍 VALIDACIÓN DE DATOS CRÍTICOS:`)
+    console.log(`   - clientName: "${clientName}"`)
+    console.log(`   - invoiceDate: "${invoiceDate}"`)
+    console.log(`   - amount: ${invoiceData.subtotal || invoiceData.amount || 0}`)
 
-    // Create or find supplier automatically
-    const supplierId = await createOrFindSupplier(invoiceData, tenantId, supabase)
-    console.log(`🏢 Proveedor ID: ${supplierId || 'null'}`)
+    // Create or find client automatically (con manejo de errores)
+    let clientId = null
+    try {
+      clientId = await createOrFindClient(invoiceData, tenantId, supabase)
+      console.log(`👤 Cliente ID: ${clientId || 'null'}`)
+    } catch (clientError) {
+      console.log(`⚠️ Error creando cliente, continuando sin cliente:`, clientError instanceof Error ? clientError.message : 'Unknown error')
+    }
+
+    // Create or find supplier automatically (con manejo de errores)
+    let supplierId = null
+    try {
+      supplierId = await createOrFindSupplier(invoiceData, tenantId, supabase)
+      console.log(`🏢 Proveedor ID: ${supplierId || 'null'}`)
+    } catch (supplierError) {
+      console.log(`⚠️ Error creando proveedor, continuando sin proveedor:`, supplierError instanceof Error ? supplierError.message : 'Unknown error')
+    }
 
     // Create invoice record
     console.log(`🔍 Datos de la factura antes de crear:`, {
@@ -995,6 +1027,53 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
 }
 
 // Process expense data and create expense record
+// Función de último recurso para crear un gasto mínimo
+async function createMinimalExpense(expenseData: any, documentId: number, supabase: any, tenantId: number) {
+  try {
+    console.log(`🚨 CREANDO REGISTRO MÍNIMO COMO ÚLTIMO RECURSO`)
+
+    const vendorName = expenseData.vendor_name || expenseData.vendor || expenseData.client_name || 'Proveedor Desconocido'
+    const amount = expenseData.amount || expenseData.total || expenseData.subtotal || 0
+    const description = expenseData.description || `Documento procesado desde WhatsApp - ${vendorName}`
+    const expenseDate = expenseData.expense_date || expenseData.invoice_date || expenseData.date || new Date().toISOString().split('T')[0]
+
+    console.log(`📋 Datos mínimos:`, {
+      vendor: vendorName,
+      amount: amount,
+      description: description,
+      date: expenseDate
+    })
+
+    const { data: expense, error: expenseError } = await supabase
+      .from('expenses')
+      .insert({
+        tenant_id: tenantId,
+        vendor: vendorName,
+        amount: amount,
+        vat_amount: expenseData.vat_amount || 0,
+        vat_rate: expenseData.vat_rate || 0,
+        category: 'General',
+        description: description,
+        receipt_number: expenseData.invoice_number || `MINIMAL-${Date.now()}`,
+        expense_date: expenseDate,
+        is_deductible: true,
+        created_at: new Date().toISOString()
+      })
+      .select()
+      .single()
+
+    if (expenseError) {
+      throw new Error(`Error creating minimal expense: ${expenseError.message}`)
+    }
+
+    console.log(`✅ Registro mínimo creado: ${expense.id}`)
+    return expense
+  } catch (error) {
+    console.error(`❌ Error crítico en createMinimalExpense:`, error instanceof Error ? error.message : 'Unknown error')
+    throw error
+  }
+}
+
 async function processExpense(expenseData: any, documentId: number, supabase: any, tenantId: number) {
   try {
     console.log(`🚀 INICIANDO processExpense`)
