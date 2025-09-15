@@ -248,3 +248,88 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
+
+export async function DELETE(request: NextRequest) {
+  try {
+    const tenantId = request.headers.get('x-tenant-id') || '1'
+    const url = new URL(request.url)
+    const deleteType = url.searchParams.get('type') // 'all' or 'individual'
+    const period = url.searchParams.get('period') // For individual deletion
+
+    console.log(`🗑️ Deleting VAT data for tenant: ${tenantId}, type: ${deleteType}`)
+
+    if (deleteType === 'all') {
+      // Eliminar todas las facturas de WhatsApp
+      const { error: invoicesError } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .ilike('description', '%WhatsApp%')
+
+      if (invoicesError) {
+        console.error('❌ Error deleting WhatsApp invoices:', invoicesError)
+        return NextResponse.json({ error: 'Failed to delete invoices' }, { status: 500 })
+      }
+
+      // Eliminar todos los gastos de WhatsApp
+      const { error: expensesError } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .ilike('description', '%WhatsApp%')
+
+      if (expensesError) {
+        console.error('❌ Error deleting WhatsApp expenses:', expensesError)
+        return NextResponse.json({ error: 'Failed to delete expenses' }, { status: 500 })
+      }
+
+      console.log('✅ All WhatsApp VAT data deleted successfully')
+      return NextResponse.json({ message: 'All WhatsApp VAT data deleted successfully' })
+
+    } else if (deleteType === 'individual' && period) {
+      // Eliminar datos de un período específico
+      const year = parseInt(period.split('-')[0])
+      const month = parseInt(period.split('-')[1])
+      const monthStart = `${year}-${month.toString().padStart(2, '0')}-01`
+      const monthEnd = `${year}-${month.toString().padStart(2, '0')}-31`
+
+      // Eliminar facturas del período
+      const { error: invoicesError } = await supabase
+        .from('invoices')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .ilike('description', '%WhatsApp%')
+        .gte('issue_date', monthStart)
+        .lte('issue_date', monthEnd)
+
+      if (invoicesError) {
+        console.error('❌ Error deleting invoices for period:', invoicesError)
+        return NextResponse.json({ error: 'Failed to delete invoices for period' }, { status: 500 })
+      }
+
+      // Eliminar gastos del período
+      const { error: expensesError } = await supabase
+        .from('expenses')
+        .delete()
+        .eq('tenant_id', tenantId)
+        .ilike('description', '%WhatsApp%')
+        .gte('expense_date', monthStart)
+        .lte('expense_date', monthEnd)
+
+      if (expensesError) {
+        console.error('❌ Error deleting expenses for period:', expensesError)
+        return NextResponse.json({ error: 'Failed to delete expenses for period' }, { status: 500 })
+      }
+
+      console.log(`✅ VAT data for period ${period} deleted successfully`)
+      return NextResponse.json({ message: `VAT data for period ${period} deleted successfully` })
+
+    } else {
+      return NextResponse.json({ error: 'Invalid delete request' }, { status: 400 })
+    }
+
+  } catch (error) {
+    console.error('❌ VAT DELETE API error:', error)
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
+  }
+}

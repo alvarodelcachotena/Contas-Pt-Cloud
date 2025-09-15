@@ -8,7 +8,7 @@ import { Button } from '@/components/ui/button'
 import { Input } from '@/components/ui/input'
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Search, Plus, Calculator, TrendingUp, TrendingDown, FileText } from 'lucide-react'
+import { Search, Plus, Calculator, TrendingUp, TrendingDown, FileText, Trash2, AlertTriangle } from 'lucide-react'
 import { useLanguage } from '@/hooks/useLanguage'
 
 interface VATEntry {
@@ -41,6 +41,8 @@ interface VATData {
 export default function VATPage() {
   const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteConfirm, setDeleteConfirm] = useState<{ type: 'all' | 'individual', period?: string } | null>(null)
 
   const { data: vatData, isLoading } = useQuery<VATData>({
     queryKey: ['/api/vat'],
@@ -64,6 +66,58 @@ export default function VATPage() {
     entry.period.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
+  // Función para eliminar todos los datos
+  const handleDeleteAll = async () => {
+    setIsDeleting(true)
+    try {
+      const response = await fetch('/api/vat?type=all', {
+        method: 'DELETE',
+        headers: {
+          'x-tenant-id': '1'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete all VAT data')
+      }
+
+      // Refrescar los datos
+      window.location.reload()
+    } catch (error) {
+      console.error('Error deleting all VAT data:', error)
+      alert('Error al eliminar todos los datos de IVA')
+    } finally {
+      setIsDeleting(false)
+      setDeleteConfirm(null)
+    }
+  }
+
+  // Función para eliminar datos de un período específico
+  const handleDeletePeriod = async (period: string) => {
+    setIsDeleting(true)
+    try {
+      const response = await fetch(`/api/vat?type=individual&period=${period}`, {
+        method: 'DELETE',
+        headers: {
+          'x-tenant-id': '1'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error('Failed to delete period VAT data')
+      }
+
+      // Refrescar los datos
+      window.location.reload()
+    } catch (error) {
+      console.error('Error deleting period VAT data:', error)
+      alert('Error al eliminar los datos del período')
+    } finally {
+      setIsDeleting(false)
+      setDeleteConfirm(null)
+    }
+  }
+
   return (
     <div className="flex h-screen bg-background">
       <Sidebar />
@@ -79,10 +133,22 @@ export default function VATPage() {
                   📱 Datos generados automáticamente desde WhatsApp
                 </p>
               </div>
-              <Button className="flex items-center space-x-2">
-                <Plus className="w-4 h-4" />
-                <span>{t.vat.newDeclaration}</span>
-              </Button>
+              <div className="flex items-center gap-2">
+                <Button
+                  variant="destructive"
+                  size="sm"
+                  onClick={() => setDeleteConfirm({ type: 'all' })}
+                  disabled={isDeleting || filteredEntries.length === 0}
+                  className="flex items-center gap-2"
+                >
+                  <Trash2 className="w-4 h-4" />
+                  Eliminar Todo
+                </Button>
+                <Button className="flex items-center space-x-2">
+                  <Plus className="w-4 h-4" />
+                  <span>{t.vat.newDeclaration}</span>
+                </Button>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -216,6 +282,9 @@ export default function VATPage() {
                           <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
                             {t.vat.declarations.status}
                           </th>
+                          <th className="px-6 py-3 text-left text-xs font-medium text-muted-foreground uppercase tracking-wider">
+                            Acciones
+                          </th>
                         </tr>
                       </thead>
                       <tbody className="bg-card divide-y divide-border">
@@ -244,6 +313,18 @@ export default function VATPage() {
                                 {entry.status === 'pago' ? t.vat.status.paid : t.vat.status.pending}
                               </Badge>
                             </td>
+                            <td className="px-6 py-4 whitespace-nowrap">
+                              <Button
+                                variant="destructive"
+                                size="sm"
+                                onClick={() => setDeleteConfirm({ type: 'individual', period: entry.period })}
+                                disabled={isDeleting}
+                                className="flex items-center gap-1"
+                              >
+                                <Trash2 className="w-3 h-3" />
+                                Eliminar
+                              </Button>
+                            </td>
                           </tr>
                         ))}
                       </tbody>
@@ -255,6 +336,61 @@ export default function VATPage() {
           </div>
         </main>
       </div>
+
+      {/* Modal de confirmación de eliminación */}
+      {deleteConfirm && (
+        <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+          <div className="bg-white rounded-lg p-6 max-w-md w-full mx-4">
+            <div className="flex items-center gap-3 mb-4">
+              <AlertTriangle className="w-6 h-6 text-red-600" />
+              <h3 className="text-lg font-semibold text-gray-900">
+                {deleteConfirm.type === 'all' ? 'Eliminar Todos los Datos' : 'Eliminar Período'}
+              </h3>
+            </div>
+
+            <p className="text-gray-600 mb-6">
+              {deleteConfirm.type === 'all'
+                ? '¿Estás seguro de que quieres eliminar TODOS los datos de IVA de WhatsApp? Esta acción no se puede deshacer.'
+                : `¿Estás seguro de que quieres eliminar los datos de IVA del período ${deleteConfirm.period}? Esta acción no se puede deshacer.`
+              }
+            </p>
+
+            <div className="flex gap-3 justify-end">
+              <Button
+                variant="outline"
+                onClick={() => setDeleteConfirm(null)}
+                disabled={isDeleting}
+              >
+                Cancelar
+              </Button>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  if (deleteConfirm.type === 'all') {
+                    handleDeleteAll()
+                  } else if (deleteConfirm.period) {
+                    handleDeletePeriod(deleteConfirm.period)
+                  }
+                }}
+                disabled={isDeleting}
+                className="flex items-center gap-2"
+              >
+                {isDeleting ? (
+                  <>
+                    <div className="w-4 h-4 border-2 border-white border-t-transparent rounded-full animate-spin"></div>
+                    Eliminando...
+                  </>
+                ) : (
+                  <>
+                    <Trash2 className="w-4 h-4" />
+                    Eliminar
+                  </>
+                )}
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   )
 }
