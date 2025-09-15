@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
     // Obtener datos reales de facturas emitidas (ingresos)
     const { data: invoicesData, error: invoicesError } = await supabase
       .from('invoices')
-      .select('total_amount, vat_amount, issue_date, status')
+      .select('total_amount, vat_amount, vat_rate, amount, issue_date, status')
       .eq('tenant_id', tenantId)
       .not('description', 'ilike', '%WhatsApp%') // Excluir facturas de WhatsApp (son gastos)
 
@@ -30,11 +30,31 @@ export async function GET(request: NextRequest) {
     // Obtener datos reales de gastos (facturas recibidas)
     const { data: expensesData, error: expensesError } = await supabase
       .from('expenses')
-      .select('amount, vat_amount, expense_date, is_deductible')
+      .select('amount, vat_amount, vat_rate, expense_date, is_deductible')
       .eq('tenant_id', tenantId)
 
     if (expensesError) {
       console.error('❌ Error fetching expenses:', expensesError)
+    }
+
+    // Función auxiliar para calcular IVA correctamente
+    const calculateVAT = (amount: number, vatRate: number): number => {
+      if (!amount || !vatRate) return 0
+      return Math.round((amount * vatRate / 100) * 100) / 100 // Redondear a 2 decimales
+    }
+
+    // Función auxiliar para obtener el IVA real de una factura
+    const getRealVAT = (invoice: any): number => {
+      // Si ya tiene vat_amount calculado, usarlo
+      if (invoice.vat_amount && parseFloat(invoice.vat_amount) > 0) {
+        return parseFloat(invoice.vat_amount)
+      }
+
+      // Si no, calcularlo basado en el porcentaje y el importe base
+      const amount = parseFloat(invoice.amount || invoice.total_amount || '0')
+      const vatRate = parseFloat(invoice.vat_rate || '23') // Default 23% si no especificado
+
+      return calculateVAT(amount, vatRate)
     }
 
     // Calcular totales por mes
@@ -66,11 +86,21 @@ export async function GET(request: NextRequest) {
       const totalPurchases = currentMonthExpenses.reduce((sum, expense) =>
         sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0)
 
+      // Calcular IVA usando el porcentaje real de cada factura
       const vatCollected = currentMonthInvoices.reduce((sum, invoice) =>
-        sum + (parseFloat(invoice.vat_amount?.toString() || '0') || 0), 0)
+        sum + getRealVAT(invoice), 0)
 
-      const vatPaid = currentMonthExpenses.reduce((sum, expense) =>
-        sum + (parseFloat(expense.vat_amount?.toString() || '0') || 0), 0)
+      const vatPaid = currentMonthExpenses.reduce((sum, expense) => {
+        // Para gastos, usar el IVA calculado o el almacenado
+        if (expense.vat_amount && parseFloat(expense.vat_amount) > 0) {
+          return sum + parseFloat(expense.vat_amount)
+        }
+
+        // Si no tiene IVA calculado, calcularlo
+        const amount = parseFloat(expense.amount || '0')
+        const vatRate = parseFloat(expense.vat_rate || '23')
+        return sum + calculateVAT(amount, vatRate)
+      }, 0)
 
       return {
         totalSales,
@@ -105,11 +135,21 @@ export async function GET(request: NextRequest) {
       const totalPurchases = monthExpenses.reduce((sum, expense) =>
         sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0)
 
+      // Calcular IVA usando el porcentaje real de cada factura
       const vatCollected = monthInvoices.reduce((sum, invoice) =>
-        sum + (parseFloat(invoice.vat_amount?.toString() || '0') || 0), 0)
+        sum + getRealVAT(invoice), 0)
 
-      const vatPaid = monthExpenses.reduce((sum, expense) =>
-        sum + (parseFloat(expense.vat_amount?.toString() || '0') || 0), 0)
+      const vatPaid = monthExpenses.reduce((sum, expense) => {
+        // Para gastos, usar el IVA calculado o el almacenado
+        if (expense.vat_amount && parseFloat(expense.vat_amount) > 0) {
+          return sum + parseFloat(expense.vat_amount)
+        }
+
+        // Si no tiene IVA calculado, calcularlo
+        const amount = parseFloat(expense.amount || '0')
+        const vatRate = parseFloat(expense.vat_rate || '23')
+        return sum + calculateVAT(amount, vatRate)
+      }, 0)
 
       return {
         period: `${year}-${month.toString().padStart(2, '0')}`,
@@ -133,6 +173,12 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Generated VAT data for ${vatRecords.length} months`)
     console.log(`📊 Current month data:`, currentMonthData)
+    console.log(`🔍 VAT calculation details:`)
+    console.log(`   - Facturas procesadas: ${invoicesData?.length || 0}`)
+    console.log(`   - Gastos procesados: ${expensesData?.length || 0}`)
+    console.log(`   - IVA cobrado (mes actual): €${currentMonthData.vatCollected.toFixed(2)}`)
+    console.log(`   - IVA pagado (mes actual): €${currentMonthData.vatPaid.toFixed(2)}`)
+    console.log(`   - IVA a pagar (mes actual): €${currentMonthData.vatDue.toFixed(2)}`)
 
     return NextResponse.json({
       records: vatRecords,
@@ -142,6 +188,11 @@ export async function GET(request: NextRequest) {
         totalVatCollected: currentMonthData.vatCollected,
         totalVatPaid: currentMonthData.vatPaid,
         declarationsCount: vatRecords.length
+      },
+      calculationDetails: {
+        invoicesProcessed: invoicesData?.length || 0,
+        expensesProcessed: expensesData?.length || 0,
+        vatCalculationMethod: 'Real percentage per invoice/expense'
       }
     })
   } catch (error) {
