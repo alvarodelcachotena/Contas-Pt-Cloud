@@ -3630,7 +3630,7 @@ export const translations: Record<Language, Translations> = {
         }
     },
 
-    es:{
+    es: {
         navbar: {
             systemName: 'Sistema de Contabilidad Portugués',
             logout: 'Cerrar Sesión',
@@ -3663,825 +3663,825 @@ export const translations: Record<Language, Translations> = {
             }
         },
         dashboard: {
-            title: "",
-            subtitle: "",
-            lastUpdate: "",
-            whatsappFiles: "",
-            tryAgain: "",
-            errorLoading: "",
+            title: "Panel de Control",
+            subtitle: "Visión general de tu negocio",
+            lastUpdate: "Última actualización",
+            whatsappFiles: "Archivos de WhatsApp",
+            tryAgain: "Intentar de nuevo",
+            errorLoading: "Error al cargar",
             metrics: {
                 invoices: {
-                    title: "",
-                    subtitle: ""
+                    title: "Facturas",
+                    subtitle: "Facturas procesadas"
                 },
                 expenses: {
-                    title: "",
-                    subtitle: ""
+                    title: "Gastos",
+                    subtitle: "Gastos registrados"
                 },
                 documents: {
-                    title: "",
-                    processed: "",
-                    pending: ""
+                    title: "Documentos",
+                    processed: "Procesados",
+                    pending: "Pendientes"
                 },
                 clients: {
-                    title: "",
-                    subtitle: ""
+                    title: "Clientes",
+                    subtitle: "Clientes registrados"
                 },
                 totalRevenue: {
-                    title: "",
-                    thisMonth: "",
-                    subtitle: ""
+                    title: "Ingresos Totales",
+                    thisMonth: "Este mes",
+                    subtitle: "Ingresos del mes"
                 },
                 totalExpenses: {
-                    title: "",
-                    thisMonth: "",
-                    subtitle: ""
+                    title: "Gastos Totales",
+                    thisMonth: "Este mes",
+                    subtitle: "Gastos del mes"
                 },
                 netProfit: {
-                    title: "",
-                    thisMonth: "",
-                    subtitle: ""
+                    title: "Beneficio Neto",
+                    thisMonth: "Este mes",
+                    subtitle: "Beneficio del mes"
                 },
                 processingStatus: {
-                    title: "",
-                    successRate: "",
-                    processed: "",
-                    pending: ""
+                    title: "Estado del Procesamiento",
+                    successRate: "Tasa de Éxito",
+                    processed: "Procesados",
+                    pending: "Pendientes"
                 },
                 monthlySummary: {
-                    title: "",
-                    monthlyRevenue: "",
-                    monthlyExpenses: "",
-                    monthlyProfit: ""
+                    title: "Resumen Mensual",
+                    monthlyRevenue: "Ingresos Mensuales",
+                    monthlyExpenses: "Gastos Mensuales",
+                    monthlyProfit: "Beneficio Mensual"
                 }
             }
         },
         invoices: {
-            title: "",
-            subtitle: "",
-            searchPlaceholder: "",
-            newInvoice: "",
-            export: "",
-            noInvoices: "",
-            totalInvoices: "",
-            totalValue: "",
+            title: "Facturas",
+            subtitle: "Gestiona tus facturas",
+            searchPlaceholder: "Buscar facturas...",
+            newInvoice: "Nueva Factura",
+            export: "Exportar",
+            noInvoices: "No hay facturas",
+            totalInvoices: "Total de Facturas",
+            totalValue: "Valor Total",
             table: {
-                fileName: "",
-                nif: "",
-                vat: "",
-                total: "",
-                paymentType: "",
-                issueDate: "",
-                status: "",
-                actions: ""
+                fileName: "Archivo",
+                nif: "NIF",
+                vat: "IVA",
+                total: "Total",
+                paymentType: "Tipo de Pago",
+                issueDate: "Fecha de Emisión",
+                status: "Estado",
+                actions: "Acciones"
             },
             modal: {
-                title: "",
-                submitLabel: "",
-                clientName: "",
-                clientEmail: "",
-                clientTaxId: "",
-                baseAmount: "",
-                vatRate: "",
-                description: "",
-                paymentType: "",
-                supplier: "",
-                summary: "",
-                autoCompleteHint: "",
-                clientFound: ""
+                title: "Detalles de la Factura",
+                submitLabel: "Guardar Factura",
+                clientName: "Nombre del Cliente",
+                clientEmail: "Email del Cliente",
+                clientTaxId: "NIF del Cliente",
+                baseAmount: "Importe Base",
+                vatRate: "Tasa de IVA",
+                description: "Descripción",
+                paymentType: "Tipo de Pago",
+                supplier: "Proveedor",
+                summary: "Resumen",
+                autoCompleteHint: "Escribe para buscar...",
+                clientFound: "Cliente encontrado"
             },
             status: {
-                paid: "",
-                sent: "",
-                draft: "",
-                overdue: ""
+                paid: "Pagada",
+                sent: "Enviada",
+                draft: "Borrador",
+                overdue: "Vencida"
             },
             paymentTypes: {
-                bankTransfer: "",
-                card: "",
-                supplierCredit: ""
+                bankTransfer: "Transferencia Bancaria",
+                card: "Tarjeta",
+                supplierCredit: "Crédito de Proveedor"
             },
             errors: {
-                clientNameRequired: "",
-                taxIdRequired: "",
-                amountRequired: "",
-                vatRateInvalid: "",
-                createError: "",
-                exportError: ""
+                clientNameRequired: "El nombre del cliente es obligatorio",
+                taxIdRequired: "El NIF es obligatorio",
+                amountRequired: "El importe es obligatorio",
+                vatRateInvalid: "La tasa de IVA no es válida",
+                createError: "Error al crear factura",
+                exportError: "No hay facturas para exportar"
             }
         },
         expenses: {
-            title: "",
-            subtitle: "",
-            searchPlaceholder: "",
-            newExpense: "",
-            export: "",
-            noExpenses: "",
-            totalExpenses: "",
-            totalValue: "",
+            title: "Gastos",
+            subtitle: "Gestiona tus gastos",
+            searchPlaceholder: "Buscar gastos...",
+            newExpense: "Nuevo Gasto",
+            export: "Exportar",
+            noExpenses: "No hay gastos",
+            totalExpenses: "Total de Gastos",
+            totalValue: "Valor Total",
             table: {
-                vendor: "",
-                total: "",
-                vat: "",
-                category: "",
-                date: "",
-                deductible: "",
-                actions: ""
+                vendor: "Proveedor",
+                total: "Total",
+                vat: "IVA",
+                category: "Categoría",
+                date: "Fecha",
+                deductible: "Deducible",
+                actions: "Acciones"
             },
             modal: {
-                title: "",
-                submitLabel: "",
-                vendor: "",
-                amount: "",
-                vatRate: "",
-                category: "",
-                receiptNumber: "",
-                description: ""
+                title: "Detalles del Gasto",
+                submitLabel: "Guardar Gasto",
+                vendor: "Proveedor",
+                amount: "Importe",
+                vatRate: "Tasa de IVA",
+                category: "Categoría",
+                receiptNumber: "Número de Recibo",
+                description: "Descripción"
             },
             vatRates: {
-                exempt: "",
-                reduced: "",
-                intermediate: "",
-                normal: ""
+                exempt: "0% (Exento)",
+                reduced: "6% (Reducido)",
+                intermediate: "13% (Intermedio)",
+                normal: "23% (Normal)"
             },
             deductible: {
-                yes: "",
-                no: ""
+                yes: "Sí",
+                no: "No"
             },
             errors: {
-                vendorRequired: "",
-                amountRequired: "",
-                categoryRequired: "",
-                vatRateInvalid: "",
-                createError: "",
-                exportError: ""
+                vendorRequired: "El proveedor es obligatorio",
+                amountRequired: "El importe es obligatorio",
+                categoryRequired: "La categoría es obligatoria",
+                vatRateInvalid: "La tasa de IVA no es válida",
+                createError: "Error al crear gasto",
+                exportError: "No hay gastos para exportar"
             }
         },
         payments: {
-            title: "",
-            subtitle: "",
-            searchPlaceholder: "",
-            registerPayment: "",
-            export: "",
-            noPayments: "",
-            totalPayments: "",
-            totalValue: "",
-            loading: "",
+            title: "Pagos",
+            subtitle: "Gestiona tus pagos",
+            searchPlaceholder: "Buscar pagos...",
+            registerPayment: "Registrar Pago",
+            export: "Exportar",
+            noPayments: "No hay pagos",
+            totalPayments: "Total de Pagos",
+            totalValue: "Valor Total",
+            loading: "Cargando...",
             metrics: {
-                monthlyIncome: "",
-                pendingPayments: "",
-                collectionRate: ""
+                monthlyIncome: "Ingresos Mensuales",
+                pendingPayments: "Pagos Pendientes",
+                collectionRate: "Tasa de Cobro"
             },
             table: {
-                description: "",
-                amount: "",
-                type: "",
-                date: "",
-                reference: "",
-                status: "",
-                actions: ""
+                description: "Descripción",
+                amount: "Importe",
+                type: "Tipo",
+                date: "Fecha",
+                reference: "Referencia",
+                status: "Estado",
+                actions: "Acciones"
             },
             modal: {
-                title: "",
-                submitLabel: "",
-                paymentType: "",
-                method: "",
-                description: "",
-                amount: "",
-                reference: "",
-                notes: "",
-                summary: ""
+                title: "Detalles del Pago",
+                submitLabel: "Guardar Pago",
+                paymentType: "Tipo de Pago",
+                method: "Método",
+                description: "Descripción",
+                amount: "Importe",
+                reference: "Referencia",
+                notes: "Notas",
+                summary: "Resumen"
             },
             types: {
-                income: "",
-                expense: ""
+                income: "Ingreso",
+                expense: "Gasto"
             },
             methods: {
-                transfer: "",
-                cash: "",
-                card: "",
-                check: ""
+                transfer: "Transferencia",
+                cash: "Efectivo",
+                card: "Tarjeta",
+                check: "Cheque"
             },
             status: {
-                completed: "",
-                pending: "",
-                failed: ""
+                completed: "Completado",
+                pending: "Pendiente",
+                failed: "Fallido"
             },
             errors: {
-                descriptionRequired: "",
-                amountRequired: "",
-                typeInvalid: "",
-                methodInvalid: "",
-                createError: "",
-                exportError: ""
+                descriptionRequired: "La descripción es obligatoria",
+                amountRequired: "El importe es obligatorio",
+                typeInvalid: "El tipo no es válido",
+                methodInvalid: "El método no es válido",
+                createError: "Error al crear pago",
+                exportError: "No hay pagos para exportar"
             }
         },
         clients: {
-            title: "",
-            subtitle: "",
-            searchPlaceholder: "",
-            newClient: "",
-            noClients: "",
-            totalClients: "",
-            clientsFound: "",
+            title: "Clientes",
+            subtitle: "Gestiona tus clientes",
+            searchPlaceholder: "Buscar clientes...",
+            newClient: "Nuevo Cliente",
+            noClients: "No hay clientes",
+            totalClients: "Total de Clientes",
+            clientsFound: "Clientes encontrados",
             table: {
-                client: "",
-                contact: "",
-                nif: "",
-                location: "",
-                created: ""
+                client: "Cliente",
+                contact: "Contacto",
+                nif: "NIF",
+                location: "Ubicación",
+                created: "Creado"
             },
             modal: {
-                title: "",
-                submitLabel: "",
-                name: "",
-                email: "",
-                phone: "",
-                taxId: "",
-                address: "",
-                postalCode: "",
-                city: ""
+                title: "Detalles del Cliente",
+                submitLabel: "Guardar Cliente",
+                name: "Nombre",
+                email: "Email",
+                phone: "Teléfono",
+                taxId: "NIF",
+                address: "Dirección",
+                postalCode: "Código Postal",
+                city: "Ciudad"
             },
             errors: {
-                nameRequired: "",
-                createError: ""
+                nameRequired: "El nombre es obligatorio",
+                createError: "Error al crear cliente"
             }
         },
         suppliers: {
-            title: "",
-            subtitle: "",
-            newSupplier: "",
-            editSupplier: "",
-            listTitle: "",
-            searchPlaceholder: "",
-            noSuppliersFound: "",
-            noSuppliersRegistered: "",
-            tryAdjustingSearch: "",
-            startAddingSupplier: "",
-            addSupplier: "",
+            title: "Proveedores",
+            subtitle: "Gestiona tus proveedores",
+            newSupplier: "Nuevo Proveedor",
+            editSupplier: "Editar Proveedor",
+            listTitle: "Lista de Proveedores",
+            searchPlaceholder: "Buscar proveedores...",
+            noSuppliersFound: "No se encontraron proveedores",
+            noSuppliersRegistered: "No hay proveedores registrados",
+            tryAdjustingSearch: "Intenta ajustar tu búsqueda",
+            startAddingSupplier: "Comienza añadiendo un proveedor",
+            addSupplier: "Añadir Proveedor",
             form: {
-                companyName: "",
-                companyNameRequired: "",
-                companyNamePlaceholder: "",
-                taxId: "",
-                taxIdPlaceholder: "",
-                email: "",
-                emailPlaceholder: "",
-                phone: "",
-                phonePlaceholder: "",
-                address: "",
-                addressPlaceholder: "",
-                postalCode: "",
-                postalCodePlaceholder: "",
-                city: "",
-                cityPlaceholder: "",
-                contactPerson: "",
-                contactPersonPlaceholder: "",
-                paymentTerms: "",
-                paymentTermsPlaceholder: "",
-                notes: "",
-                notesPlaceholder: ""
+                companyName: "Nombre de la Empresa",
+                companyNameRequired: "El nombre de la empresa es obligatorio",
+                companyNamePlaceholder: "Introduce el nombre de la empresa",
+                taxId: "NIF",
+                taxIdPlaceholder: "Introduce el NIF",
+                email: "Email",
+                emailPlaceholder: "Introduce el email",
+                phone: "Teléfono",
+                phonePlaceholder: "Introduce el teléfono",
+                address: "Dirección",
+                addressPlaceholder: "Introduce la dirección",
+                postalCode: "Código Postal",
+                postalCodePlaceholder: "Introduce el código postal",
+                city: "Ciudad",
+                cityPlaceholder: "Introduce la ciudad",
+                contactPerson: "Persona de Contacto",
+                contactPersonPlaceholder: "Introduce la persona de contacto",
+                paymentTerms: "Términos de Pago",
+                paymentTermsPlaceholder: "Introduce los términos de pago",
+                notes: "Notas",
+                notesPlaceholder: "Introduce notas adicionales"
             },
             card: {
-                taxId: "",
-                contact: "",
-                terms: ""
+                taxId: "NIF",
+                contact: "Contacto",
+                terms: "Términos"
             },
             validation: {
-                nameRequired: "",
-                saveError: "",
-                deleteConfirm: "",
-                deleteError: ""
+                nameRequired: "El nombre es obligatorio",
+                saveError: "Error al guardar proveedor",
+                deleteConfirm: "¿Estás seguro de que quieres eliminar este proveedor?",
+                deleteError: "Error al eliminar proveedor"
             }
         },
         documents: {
-            title: "",
-            subtitle: "",
-            newDocument: "",
-            searchPlaceholder: "",
-            export: "",
+            title: "Documentos",
+            subtitle: "Gestiona tus documentos",
+            newDocument: "Nuevo Documento",
+            searchPlaceholder: "Buscar documentos...",
+            export: "Exportar",
             metrics: {
-                totalDocuments: "",
-                pending: "",
-                completed: "",
-                failed: ""
+                totalDocuments: "Total de Documentos",
+                pending: "Pendientes",
+                completed: "Completados",
+                failed: "Fallidos"
             },
             table: {
-                status: "",
-                filename: "",
-                type: "",
-                size: "",
-                documentType: "",
-                uploadDate: "",
-                confidence: "",
-                actions: ""
+                status: "Estado",
+                filename: "Nombre del Archivo",
+                type: "Tipo",
+                size: "Tamaño",
+                documentType: "Tipo de Documento",
+                uploadDate: "Fecha de Subida",
+                confidence: "Confianza",
+                actions: "Acciones"
             },
             status: {
-                completed: "",
-                processing: "",
-                pending: "",
-                failed: ""
+                completed: "Completado",
+                processing: "Procesando",
+                pending: "Pendiente",
+                failed: "Fallido"
             },
             form: {
-                filename: "",
-                filenameRequired: "",
-                filenamePlaceholder: "",
-                fileType: "",
-                fileTypeRequired: "",
-                fileSize: "",
-                fileSizeRequired: "",
-                fileSizePlaceholder: "",
-                documentType: "",
-                documentTypeRequired: "",
-                selectPlaceholder: "",
-                summary: "",
-                file: "",
-                type: "",
-                document: "",
-                size: ""
+                filename: "Nombre del Archivo",
+                filenameRequired: "El nombre del archivo es obligatorio",
+                filenamePlaceholder: "Introduce el nombre del archivo",
+                fileType: "Tipo de Archivo",
+                fileTypeRequired: "El tipo de archivo es obligatorio",
+                fileSize: "Tamaño del Archivo",
+                fileSizeRequired: "El tamaño del archivo es obligatorio",
+                fileSizePlaceholder: "Introduce el tamaño del archivo",
+                documentType: "Tipo de Documento",
+                documentTypeRequired: "El tipo de documento es obligatorio",
+                selectPlaceholder: "Selecciona un tipo",
+                summary: "Resumen",
+                file: "Archivo",
+                type: "Tipo",
+                document: "Documento",
+                size: "Tamaño"
             },
             fileTypes: {
-                pdf: "",
-                doc: "",
-                docx: "",
-                jpg: "",
-                png: "",
-                txt: "",
-                xml: ""
+                pdf: "PDF",
+                doc: "DOC",
+                docx: "DOCX",
+                jpg: "JPG",
+                png: "PNG",
+                txt: "TXT",
+                xml: "XML"
             },
             documentTypes: {
-                invoice: "",
-                receipt: "",
-                contract: "",
-                report: "",
-                other: ""
+                invoice: "Factura",
+                receipt: "Recibo",
+                contract: "Contrato",
+                report: "Informe",
+                other: "Otro"
             },
             validation: {
-                filenameRequired: "",
-                fileTypeRequired: "",
-                documentTypeRequired: "",
-                fileSizeValid: "",
-                createError: "",
-                deleteConfirm: "",
-                deleteError: "",
-                exportError: "",
-                noDocumentsToExport: ""
+                filenameRequired: "El nombre del archivo es obligatorio",
+                fileTypeRequired: "El tipo de archivo es obligatorio",
+                documentTypeRequired: "El tipo de documento es obligatorio",
+                fileSizeValid: "El tamaño del archivo debe ser válido",
+                createError: "Error al crear documento",
+                deleteConfirm: "¿Estás seguro de que quieres eliminar este documento?",
+                deleteError: "Error al eliminar documento",
+                exportError: "Error al exportar documentos",
+                noDocumentsToExport: "No hay documentos para exportar"
             },
-            loading: "",
-            noDocumentsFound: "",
-            totalDocuments: "",
-            processingProgress: ""
+            loading: "Cargando...",
+            noDocumentsFound: "No se encontraron documentos",
+            totalDocuments: "Total de Documentos",
+            processingProgress: "Progreso del Procesamiento"
         },
         banking: {
-            title: "",
-            subtitle: "",
-            newTransaction: "",
-            searchPlaceholder: "",
-            export: "",
+            title: "Bancos",
+            subtitle: "Gestiona tus cuentas bancarias",
+            newTransaction: "Nueva Transacción",
+            searchPlaceholder: "Buscar transacciones...",
+            export: "Exportar",
             metrics: {
-                currentBalance: "",
-                totalCredits: "",
-                totalDebits: "",
-                transactions: ""
+                currentBalance: "Saldo Actual",
+                totalCredits: "Total de Créditos",
+                totalDebits: "Total de Débitos",
+                transactions: "Transacciones"
             },
             table: {
-                type: "",
-                description: "",
-                amount: "",
-                date: "",
-                balance: "",
-                category: "",
-                actions: ""
+                type: "Tipo",
+                description: "Descripción",
+                amount: "Importe",
+                date: "Fecha",
+                balance: "Saldo",
+                category: "Categoría",
+                actions: "Acciones"
             },
             transactionTypes: {
-                credit: "",
-                debit: "",
-                transfer: ""
+                credit: "Crédito",
+                debit: "Débito",
+                transfer: "Transferencia"
             },
             form: {
-                transactionType: "",
-                transactionTypeRequired: "",
-                amount: "",
-                amountRequired: "",
-                amountPlaceholder: "",
-                description: "",
-                descriptionRequired: "",
-                descriptionPlaceholder: "",
-                category: "",
-                categoryRequired: "",
-                categoryPlaceholder: "",
-                reference: "",
-                referencePlaceholder: "",
-                summary: "",
-                type: "",
-                value: "",
-                newBalance: ""
+                transactionType: "Tipo de Transacción",
+                transactionTypeRequired: "El tipo de transacción es obligatorio",
+                amount: "Importe",
+                amountRequired: "El importe es obligatorio",
+                amountPlaceholder: "Introduce el importe",
+                description: "Descripción",
+                descriptionRequired: "La descripción es obligatoria",
+                descriptionPlaceholder: "Introduce la descripción",
+                category: "Categoría",
+                categoryRequired: "La categoría es obligatoria",
+                categoryPlaceholder: "Introduce la categoría",
+                reference: "Referencia",
+                referencePlaceholder: "Introduce la referencia",
+                summary: "Resumen",
+                type: "Tipo",
+                value: "Valor",
+                newBalance: "Nuevo Saldo"
             },
             validation: {
-                descriptionRequired: "",
-                amountValid: "",
-                categoryRequired: "",
-                createError: "",
-                exportError: "",
-                noTransactionsToExport: ""
+                descriptionRequired: "La descripción es obligatoria",
+                amountValid: "El importe debe ser válido",
+                categoryRequired: "La categoría es obligatoria",
+                createError: "Error al crear transacción",
+                exportError: "Error al exportar transacciones",
+                noTransactionsToExport: "No hay transacciones para exportar"
             },
-            loading: "",
-            noTransactionsFound: "",
-            totalTransactions: "",
-            finalBalance: ""
+            loading: "Cargando...",
+            noTransactionsFound: "No se encontraron transacciones",
+            totalTransactions: "Total de Transacciones",
+            finalBalance: "Saldo Final"
         },
         vat: {
-            title: "",
-            subtitle: "",
-            newDeclaration: "",
+            title: "IVA",
+            subtitle: "Gestiona el IVA",
+            newDeclaration: "Nueva Declaración",
             metrics: {
-                vatToPay: "",
-                currentPeriod: "",
-                vatCollected: "",
-                thisMonth: "",
-                vatPaid: "",
-                declarations: "",
-                thisYear: ""
+                vatToPay: "IVA a Pagar",
+                currentPeriod: "Período Actual",
+                vatCollected: "IVA Cobrado",
+                thisMonth: "Este mes",
+                vatPaid: "IVA Pagado",
+                declarations: "Declaraciones",
+                thisYear: "Este año"
             },
             declarations: {
-                title: "",
-                searchPlaceholder: "",
-                period: "",
-                sales: "",
-                purchases: "",
-                vatCollected: "",
-                vatPaid: "",
-                vatDue: "",
-                status: ""
+                title: "Declaraciones de IVA",
+                searchPlaceholder: "Buscar declaraciones...",
+                period: "Período",
+                sales: "Ventas",
+                purchases: "Compras",
+                vatCollected: "IVA Cobrado",
+                vatPaid: "IVA Pagado",
+                vatDue: "IVA a Pagar",
+                status: "Estado"
             },
             status: {
-                paid: "",
-                pending: ""
+                paid: "Pagado",
+                pending: "Pendiente"
             },
-            loading: ""
+            loading: "Cargando..."
         },
         saft: {
-            title: "",
-            subtitle: "",
-            generateSaft: "",
+            title: "SAF-T",
+            subtitle: "Archivo de Seguridad de Facturas",
+            generateSaft: "Generar SAF-T",
             metrics: {
-                reportsGenerated: "",
-                totalRecords: "",
-                lastReport: "",
-                currentStatus: ""
+                reportsGenerated: "Informes Generados",
+                totalRecords: "Total de Registros",
+                lastReport: "Último Informe",
+                currentStatus: "Estado Actual"
             },
             status: {
-                updated: "",
-                completed: "",
-                processing: "",
-                pending: "",
-                error: "",
-                unknown: ""
+                updated: "Actualizado",
+                completed: "Completado",
+                processing: "Procesando",
+                pending: "Pendiente",
+                error: "Error",
+                unknown: "Desconocido"
             },
             info: {
-                title: "",
-                description: "",
-                periodicity: "",
-                format: "",
-                encoding: ""
+                title: "Información del SAF-T",
+                description: "El SAF-T es un archivo XML que contiene información sobre las transacciones comerciales",
+                periodicity: "Periodicidad",
+                format: "Formato",
+                encoding: "Codificación"
             },
             reports: {
-                title: "",
-                period: "",
-                type: "",
-                generationDate: "",
-                records: "",
-                size: "",
-                status: "",
-                actions: ""
+                title: "Informes SAF-T",
+                period: "Período",
+                type: "Tipo",
+                generationDate: "Fecha de Generación",
+                records: "Registros",
+                size: "Tamaño",
+                status: "Estado",
+                actions: "Acciones"
             },
             requirements: {
-                title: "",
-                companyData: "",
-                chartOfAccounts: "",
-                customersSuppliers: "",
-                productsServices: "",
-                salesDocuments: "",
-                purchaseDocuments: "",
-                accountingMovements: "",
-                xmlValidation: ""
+                title: "Requisitos del SAF-T",
+                companyData: "Datos de la Empresa",
+                chartOfAccounts: "Plan de Cuentas",
+                customersSuppliers: "Clientes y Proveedores",
+                productsServices: "Productos y Servicios",
+                salesDocuments: "Documentos de Venta",
+                purchaseDocuments: "Documentos de Compra",
+                accountingMovements: "Movimientos Contables",
+                xmlValidation: "Validación XML"
             }
         },
         webhooks: {
-            title: "",
-            subtitle: "",
-            loading: "",
-            refresh: "",
+            title: "Webhooks",
+            subtitle: "Gestiona tus webhooks",
+            loading: "Cargando...",
+            refresh: "Actualizar",
             metrics: {
-                total: "",
-                documentsReceived: "",
-                pending: "",
-                waitingProcessing: "",
-                processing: "",
-                inProcessing: "",
-                completed: "",
-                processedSuccessfully: "",
-                failed: "",
-                processingErrors: ""
+                total: "Total",
+                documentsReceived: "Documentos Recibidos",
+                pending: "Pendientes",
+                waitingProcessing: "Esperando Procesamiento",
+                processing: "Procesando",
+                inProcessing: "En Procesamiento",
+                completed: "Completados",
+                processedSuccessfully: "Procesados Exitosamente",
+                failed: "Fallidos",
+                processingErrors: "Errores de Procesamiento"
             },
             status: {
-                completed: "",
-                processing: "",
-                pending: "",
-                failed: ""
+                completed: "Completado",
+                processing: "Procesando",
+                pending: "Pendiente",
+                failed: "Fallido"
             },
             documentsTable: {
-                title: "",
-                type: "",
-                status: "",
-                filename: "",
-                size: "",
-                confidence: "",
-                date: "",
-                actions: "",
-                noDocumentsFound: ""
+                title: "Tabla de Documentos",
+                type: "Tipo",
+                status: "Estado",
+                filename: "Nombre del Archivo",
+                size: "Tamaño",
+                confidence: "Confianza",
+                date: "Fecha",
+                actions: "Acciones",
+                noDocumentsFound: "No se encontraron documentos"
             },
             modal: {
-                title: "",
-                basicInfo: "",
-                name: "",
-                size: "",
-                type: "",
-                status: "",
-                aiAnalysis: "",
-                documentType: "",
-                confidence: "",
-                extractedData: "",
-                processingNotes: "",
-                close: ""
+                title: "Detalles del Webhook",
+                basicInfo: "Información Básica",
+                name: "Nombre",
+                size: "Tamaño",
+                type: "Tipo",
+                status: "Estado",
+                aiAnalysis: "Análisis de IA",
+                documentType: "Tipo de Documento",
+                confidence: "Confianza",
+                extractedData: "Datos Extraídos",
+                processingNotes: "Notas de Procesamiento",
+                close: "Cerrar"
             }
         },
         admin: {
-            title: "",
-            subtitle: "",
+            title: "Administrador",
+            subtitle: "Configuración del sistema",
             actions: {
-                exportData: "",
-                systemBackup: ""
+                exportData: "Exportar Datos",
+                systemBackup: "Respaldo del Sistema"
             },
             tabs: {
-                overview: "",
-                users: "",
-                companies: "",
-                system: "",
-                logs: "",
-                webhooks: "",
-                processors: "",
-                settings: ""
+                overview: "Resumen",
+                users: "Usuarios",
+                companies: "Empresas",
+                system: "Sistema",
+                logs: "Registros",
+                webhooks: "Webhooks",
+                processors: "Procesadores",
+                settings: "Configuración"
             },
             metrics: {
-                totalUsers: "",
-                totalCompanies: "",
-                totalDocuments: "",
-                storage: "",
-                active: "",
-                processed: "",
-                used: ""
+                totalUsers: "Total de Usuarios",
+                totalCompanies: "Total de Empresas",
+                totalDocuments: "Total de Documentos",
+                storage: "Almacenamiento",
+                active: "Activo",
+                processed: "Procesado",
+                used: "Usado"
             },
             systemStatus: {
-                title: "",
-                systemHealth: "",
-                healthy: "",
-                problems: "",
-                lastBackup: ""
+                title: "Estado del Sistema",
+                systemHealth: "Salud del Sistema",
+                healthy: "Saludable",
+                problems: "Problemas",
+                lastBackup: "Último Respaldo"
             },
             quickActions: {
-                title: "",
-                createUser: "",
-                addCompany: "",
-                backup: ""
+                title: "Acciones Rápidas",
+                createUser: "Crear Usuario",
+                addCompany: "Añadir Empresa",
+                backup: "Respaldo"
             },
             users: {
-                title: "",
-                description: "",
-                searchPlaceholder: "",
-                newUser: "",
+                title: "Usuarios",
+                description: "Gestiona los usuarios del sistema",
+                searchPlaceholder: "Buscar usuarios...",
+                newUser: "Nuevo Usuario",
                 table: {
-                    user: "",
-                    company: "",
-                    role: "",
-                    status: "",
-                    lastAccess: "",
-                    actions: ""
+                    user: "Usuario",
+                    company: "Empresa",
+                    role: "Rol",
+                    status: "Estado",
+                    lastAccess: "Último Acceso",
+                    actions: "Acciones"
                 },
                 status: {
-                    active: "",
-                    inactive: ""
+                    active: "Activo",
+                    inactive: "Inactivo"
                 }
             },
             companies: {
-                title: "",
-                description: "",
-                searchPlaceholder: "",
-                newCompany: "",
+                title: "Empresas",
+                description: "Gestiona las empresas del sistema",
+                searchPlaceholder: "Buscar empresas...",
+                newCompany: "Nueva Empresa",
                 table: {
-                    company: "",
-                    users: "",
-                    documents: "",
-                    storage: "",
-                    status: "",
-                    actions: ""
+                    company: "Empresa",
+                    users: "Usuarios",
+                    documents: "Documentos",
+                    storage: "Almacenamiento",
+                    status: "Estado",
+                    actions: "Acciones"
                 }
             }
         },
         aiAssistant: {
-            title: "",
-            subtitle: "",
-            welcomeMessage: "",
+            title: "Asistente IA",
+            subtitle: "Chatea con tu asistente de IA",
+            welcomeMessage: "¡Hola! Soy tu asistente de IA especializado en contabilidad portuguesa. ¿En qué puedo ayudarte?",
             status: {
-                online: ""
+                online: "En línea"
             },
             chat: {
-                title: "",
-                description: ""
+                title: "Chat con IA",
+                description: "Conversa con tu asistente de IA"
             },
-            typing: "",
-            inputPlaceholder: "",
-            analyze: "",
-            uploadTooltip: "",
+            typing: "Escribiendo...",
+            inputPlaceholder: "Escribe tu mensaje aquí...",
+            analyze: "Analizar",
+            uploadTooltip: "Subir archivo para análisis",
             errors: {
-                networkError: "",
-                auth: "",
-                rateLimit: "",
-                timeout: "",
-                server: "",
-                connection: "",
-                generic: ""
+                networkError: "Error de red",
+                auth: "Error de autenticación",
+                rateLimit: "Límite de velocidad excedido",
+                timeout: "Tiempo de espera agotado",
+                server: "Error del servidor",
+                connection: "Error de conexión",
+                generic: "Error genérico"
             },
             fileErrors: {
-                unsupportedType: "",
-                tooLarge: ""
+                unsupportedType: "Tipo de archivo no soportado",
+                tooLarge: "Archivo demasiado grande"
             },
             features: {
-                fastResponse: "",
-                portugueseContext: "",
-                specializedAI: "",
-                pdfAnalysis: ""
+                fastResponse: "Respuesta rápida",
+                portugueseContext: "Contexto portugués",
+                specializedAI: "IA especializada",
+                pdfAnalysis: "Análisis de PDF"
             },
-            analyzingFile: "",
-            analysisComplete: "",
-            extractedData: "",
-            ownCompany: "",
-            externalCompany: "",
+            analyzingFile: "Analizando archivo...",
+            analysisComplete: "Análisis completado",
+            extractedData: "Datos extraídos",
+            ownCompany: "Empresa propia",
+            externalCompany: "Empresa externa",
             fields: {
-                invoiceNumber: "",
-                date: "",
-                amount: "",
-                vat: "",
-                total: "",
-                category: "",
-                description: "",
-                confidence: "",
-                vendor: "",
-                nif: "",
-                country: "",
-                address: "",
-                netAmount: ""
+                invoiceNumber: "Número de Factura",
+                date: "Fecha",
+                amount: "Importe",
+                vat: "IVA",
+                total: "Total",
+                category: "Categoría",
+                description: "Descripción",
+                confidence: "Confianza",
+                vendor: "Proveedor",
+                nif: "NIF",
+                country: "País",
+                address: "Dirección",
+                netAmount: "Importe Neto"
             },
-            issuesDetected: "",
-            fileProcessingError: ""
+            issuesDetected: "Problemas detectados",
+            fileProcessingError: "Error al procesar archivo"
         },
         cloudDrives: {
-            title: "",
-            subtitle: "",
-            connectDrive: "",
-            loading: "",
+            title: "Almacenamiento en la Nube",
+            subtitle: "Gestiona tus archivos en la nube",
+            connectDrive: "Conectar Drive",
+            loading: "Cargando...",
             messages: {
-                dropboxSuccess: "",
-                googleDriveSuccess: "",
-                oneDriveSuccess: "",
-                disconnectSuccess: "",
-                dropboxConnected: "",
-                googleDriveConnected: "",
-                oneDriveConnected: "",
-                connectionSuccessful: ""
+                dropboxSuccess: "Dropbox conectado con éxito",
+                googleDriveSuccess: "Google Drive conectado con éxito",
+                oneDriveSuccess: "OneDrive conectado con éxito",
+                disconnectSuccess: "Proveedor desconectado con éxito",
+                dropboxConnected: "Dropbox conectado con éxito",
+                googleDriveConnected: "Google Drive conectado con éxito",
+                oneDriveConnected: "OneDrive conectado con éxito",
+                connectionSuccessful: "Conexión exitosa"
             },
             errors: {
-                dropboxError: "",
-                googleDriveError: "",
-                oneDriveError: "",
-                authError: "",
-                loadingError: "",
-                disconnectError: "",
-                authFailed: "",
-                tokenFailed: "",
-                userFailed: "",
-                saveFailed: "",
-                callbackFailed: "",
-                configMissing: "",
-                tokenExchangeFailed: "",
-                connectionError: ""
+                dropboxError: "Error al conectar Dropbox",
+                googleDriveError: "Error al conectar Google Drive",
+                oneDriveError: "Error al conectar OneDrive",
+                authError: "Error de autenticación",
+                loadingError: "Error al cargar drives",
+                disconnectError: "Error al desconectar drive",
+                authFailed: "Autenticación fallida",
+                tokenFailed: "Error al obtener token",
+                userFailed: "Error al obtener usuario",
+                saveFailed: "Error al guardar configuración",
+                callbackFailed: "Error en callback",
+                configMissing: "Configuración faltante",
+                tokenExchangeFailed: "Error al intercambiar token",
+                connectionError: "Error de conexión"
             },
             metrics: {
-                connectedDrives: "",
-                totalFiles: "",
-                processedToday: "",
-                pending: ""
+                connectedDrives: "Drives Conectados",
+                totalFiles: "Total de Archivos",
+                processedToday: "Procesados Hoy",
+                pending: "Pendientes"
             },
             status: {
-                connected: "",
-                error: "",
-                pending: "",
-                unknown: ""
+                connected: "Conectado",
+                error: "Error",
+                pending: "Pendiente",
+                unknown: "Desconocido"
             },
             actions: {
-                test: "",
-                folder: "",
-                manage: "",
-                disconnect: "",
-                close: "",
-                cancel: ""
+                test: "Probar",
+                folder: "Carpeta",
+                manage: "Gestionar",
+                disconnect: "Desconectar",
+                close: "Cerrar",
+                cancel: "Cancelar"
             },
             dropboxManager: {
-                title: ""
+                title: "Gestor de Dropbox"
             },
             emptyState: {
-                title: "",
-                description: ""
+                title: "No hay drives conectados",
+                description: "Conecta un drive para comenzar a gestionar tus archivos"
             },
             modal: {
-                title: "",
-                description: "",
-                connectTitle: "",
-                selectProvider: ""
+                title: "Conectar Drive",
+                description: "Selecciona un proveedor de almacenamiento en la nube",
+                connectTitle: "Conectar",
+                selectProvider: "Seleccionar Proveedor"
             },
             providers: {
-                dropbox: "",
-                googleDrive: "",
-                oneDrive: ""
+                dropbox: "Dropbox",
+                googleDrive: "Google Drive",
+                oneDrive: "OneDrive"
             }
         },
         reports: {
-            title: "",
-            subtitle: "",
-            exportAll: "",
-            generate: "",
+            title: "Informes",
+            subtitle: "Genera informes de tu negocio",
+            exportAll: "Exportar Todo",
+            generate: "Generar",
             filters: {
-                thisWeek: "",
-                thisMonth: "",
-                quarter: "",
-                year: ""
+                thisWeek: "Esta Semana",
+                thisMonth: "Este Mes",
+                quarter: "Trimestre",
+                year: "Año"
             },
             quickStats: {
-                revenue: "",
-                expenses: "",
-                profit: "",
-                margin: ""
+                revenue: "Ingresos",
+                expenses: "Gastos",
+                profit: "Beneficio",
+                margin: "Margen"
             },
             reportTypes: {
-                title: "",
+                title: "Tipos de Informe",
                 financial: {
-                    name: "",
-                    description: "",
-                    generate: ""
+                    name: "Informe Financiero",
+                    description: "Ingresos, gastos y beneficios",
+                    generate: "Generar"
                 },
                 invoices: {
-                    name: "",
-                    description: "",
-                    generate: ""
+                    name: "Informe de Facturas",
+                    description: "Facturas emitidas y recibidas",
+                    generate: "Generar"
                 },
                 expenses: {
-                    name: "",
-                    description: "",
-                    generate: ""
+                    name: "Informe de Gastos",
+                    description: "Análisis de gastos por categoría",
+                    generate: "Generar"
                 },
                 clients: {
-                    name: "",
-                    description: "",
-                    generate: ""
+                    name: "Informe de Clientes",
+                    description: "Análisis de clientes y ventas",
+                    generate: "Generar"
                 },
                 vat: {
-                    name: "",
-                    description: "",
-                    generate: ""
+                    name: "Informe de IVA",
+                    description: "Análisis de IVA y declaraciones",
+                    generate: "Generar"
                 },
                 assets: {
-                    name: "",
-                    description: "",
-                    generate: ""
+                    name: "Informe de Activos",
+                    description: "Análisis de activos y depreciación",
+                    generate: "Generar"
                 }
             },
             recentReports: {
-                title: "",
-                searchPlaceholder: "",
-                name: "",
-                monthlyJune: "",
-                expensesQ2: "",
-                vatQ2: "",
-                financial: "",
-                expenses: "",
-                vat: "",
+                title: "Informes Recientes",
+                searchPlaceholder: "Buscar informes...",
+                name: "Nombre",
+                monthlyJune: "Mensual Junio",
+                expensesQ2: "Gastos Q2",
+                vatQ2: "IVA Q2",
+                financial: "Financiero",
+                expenses: "Gastos",
+                vat: "IVA",
                 table: {
-                    name: "",
-                    type: "",
-                    date: "",
-                    size: "",
-                    format: "",
-                    actions: ""
+                    name: "Nombre",
+                    type: "Tipo",
+                    date: "Fecha",
+                    size: "Tamaño",
+                    format: "Formato",
+                    actions: "Acciones"
                 }
             }
         }
