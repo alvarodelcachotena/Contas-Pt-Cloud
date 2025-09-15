@@ -70,12 +70,14 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error fetching clients:', clientsError)
     }
 
-    // 6. Revenue calculation (sum of all invoice amounts)
+    // 6. Revenue calculation (sum of all invoice amounts EXCEPT WhatsApp invoices)
+    // Las facturas de WhatsApp son gastos, no ingresos
     const { data: revenueData, error: revenueError } = await supabase
       .from('invoices')
-      .select('total_amount, status')
+      .select('total_amount, status, description')
       .eq('tenant_id', tenantId)
       .eq('status', 'paid') // Only count paid invoices
+      .not('description', 'ilike', '%WhatsApp%') // Exclude WhatsApp invoices
 
     if (revenueError) {
       console.error('❌ Error fetching revenue:', revenueError)
@@ -100,13 +102,14 @@ export async function GET(request: NextRequest) {
       return sum + baseAmount + vatAmount
     }, 0) || 0
 
-    // 8. Current month metrics
+    // 8. Current month metrics (EXCEPT WhatsApp invoices)
     const { data: currentMonthInvoices, error: monthInvoicesError } = await supabase
       .from('invoices')
-      .select('total_amount, status')
+      .select('total_amount, status, description')
       .eq('tenant_id', tenantId)
       .gte('issue_date', `${currentMonth}-01`)
       .lte('issue_date', `${currentMonth}-31`)
+      .not('description', 'ilike', '%WhatsApp%') // Exclude WhatsApp invoices
 
     if (monthInvoicesError) {
       console.error('❌ Error fetching current month invoices:', monthInvoicesError)

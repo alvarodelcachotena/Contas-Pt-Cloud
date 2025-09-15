@@ -14,36 +14,136 @@ const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY)
 export async function GET(request: NextRequest) {
   try {
     const tenantId = request.headers.get('x-tenant-id') || '1'
-    console.log('💰 Fetching VAT records for tenant:', tenantId)
+    console.log('💰 Fetching VAT data for tenant:', tenantId)
 
-    const { data: vatRecords, error } = await supabase
-      .from('vat_records')
-      .select('*')
+    // Obtener datos reales de facturas emitidas (ingresos)
+    const { data: invoicesData, error: invoicesError } = await supabase
+      .from('invoices')
+      .select('total_amount, vat_amount, issue_date, status')
       .eq('tenant_id', tenantId)
-      .order('period', { ascending: false })
+      .not('description', 'ilike', '%WhatsApp%') // Excluir facturas de WhatsApp (son gastos)
 
-    if (error) {
-      console.error('❌ Error fetching VAT records:', error)
-      return NextResponse.json({ error: 'Failed to fetch VAT records' }, { status: 500 })
+    if (invoicesError) {
+      console.error('❌ Error fetching invoices:', invoicesError)
     }
 
-    console.log(`✅ Found ${vatRecords?.length || 0} VAT records`)
+    // Obtener datos reales de gastos (facturas recibidas)
+    const { data: expensesData, error: expensesError } = await supabase
+      .from('expenses')
+      .select('amount, vat_amount, expense_date, is_deductible')
+      .eq('tenant_id', tenantId)
 
-    const formattedVatRecords = vatRecords?.map(record => ({
-      id: record.id,
-      period: record.period,
-      totalSales: record.total_sales,
-      totalPurchases: record.total_purchases,
-      vatCollected: record.vat_collected,
-      vatPaid: record.vat_paid,
-      vatDue: record.vat_due,
-      status: record.status,
-      dueDate: record.due_date,
-      submittedDate: record.submitted_date,
-      createdAt: record.created_at
-    })) || []
+    if (expensesError) {
+      console.error('❌ Error fetching expenses:', expensesError)
+    }
 
-    return NextResponse.json(formattedVatRecords)
+    // Calcular totales por mes
+    const currentDate = new Date()
+    const currentYear = currentDate.getFullYear()
+    const currentMonth = currentDate.getMonth() + 1
+
+    // Función para obtener datos del mes actual
+    const getCurrentMonthData = () => {
+      const monthStart = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`
+      const monthEnd = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-31`
+
+      // Facturas emitidas del mes actual
+      const currentMonthInvoices = invoicesData?.filter(invoice => {
+        const invoiceDate = new Date(invoice.issue_date)
+        return invoiceDate >= new Date(monthStart) && invoiceDate <= new Date(monthEnd)
+      }) || []
+
+      // Gastos del mes actual
+      const currentMonthExpenses = expensesData?.filter(expense => {
+        const expenseDate = new Date(expense.expense_date)
+        return expenseDate >= new Date(monthStart) && expenseDate <= new Date(monthEnd)
+      }) || []
+
+      // Calcular totales
+      const totalSales = currentMonthInvoices.reduce((sum, invoice) =>
+        sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0)
+
+      const totalPurchases = currentMonthExpenses.reduce((sum, expense) =>
+        sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0)
+
+      const vatCollected = currentMonthInvoices.reduce((sum, invoice) =>
+        sum + (parseFloat(invoice.vat_amount?.toString() || '0') || 0), 0)
+
+      const vatPaid = currentMonthExpenses.reduce((sum, expense) =>
+        sum + (parseFloat(expense.vat_amount?.toString() || '0') || 0), 0)
+
+      return {
+        totalSales,
+        totalPurchases,
+        vatCollected,
+        vatPaid,
+        vatDue: vatCollected - vatPaid
+      }
+    }
+
+    // Función para obtener datos de meses anteriores
+    const getPreviousMonthData = (monthsBack: number) => {
+      const targetDate = new Date(currentYear, currentMonth - 1 - monthsBack, 1)
+      const year = targetDate.getFullYear()
+      const month = targetDate.getMonth() + 1
+      const monthStart = `${year}-${month.toString().padStart(2, '0')}-01`
+      const monthEnd = `${year}-${month.toString().padStart(2, '0')}-31`
+
+      const monthInvoices = invoicesData?.filter(invoice => {
+        const invoiceDate = new Date(invoice.issue_date)
+        return invoiceDate >= new Date(monthStart) && invoiceDate <= new Date(monthEnd)
+      }) || []
+
+      const monthExpenses = expensesData?.filter(expense => {
+        const expenseDate = new Date(expense.expense_date)
+        return expenseDate >= new Date(monthStart) && expenseDate <= new Date(monthEnd)
+      }) || []
+
+      const totalSales = monthInvoices.reduce((sum, invoice) =>
+        sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0)
+
+      const totalPurchases = monthExpenses.reduce((sum, expense) =>
+        sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0)
+
+      const vatCollected = monthInvoices.reduce((sum, invoice) =>
+        sum + (parseFloat(invoice.vat_amount?.toString() || '0') || 0), 0)
+
+      const vatPaid = monthExpenses.reduce((sum, expense) =>
+        sum + (parseFloat(expense.vat_amount?.toString() || '0') || 0), 0)
+
+      return {
+        period: `${year}-${month.toString().padStart(2, '0')}`,
+        totalSales,
+        totalPurchases,
+        vatCollected,
+        vatPaid,
+        vatDue: vatCollected - vatPaid,
+        status: vatCollected - vatPaid > 0 ? 'pendente' : 'pago'
+      }
+    }
+
+    // Generar datos para los últimos 12 meses
+    const vatRecords = []
+    for (let i = 0; i < 12; i++) {
+      vatRecords.push(getPreviousMonthData(i))
+    }
+
+    // Datos del mes actual
+    const currentMonthData = getCurrentMonthData()
+
+    console.log(`✅ Generated VAT data for ${vatRecords.length} months`)
+    console.log(`📊 Current month data:`, currentMonthData)
+
+    return NextResponse.json({
+      records: vatRecords,
+      currentMonth: currentMonthData,
+      summary: {
+        totalVatToPay: currentMonthData.vatDue,
+        totalVatCollected: currentMonthData.vatCollected,
+        totalVatPaid: currentMonthData.vatPaid,
+        declarationsCount: vatRecords.length
+      }
+    })
   } catch (error) {
     console.error('❌ VAT API error:', error)
     return NextResponse.json({ error: 'Internal server error' }, { status: 500 })

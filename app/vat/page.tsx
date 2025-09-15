@@ -12,7 +12,6 @@ import { Search, Plus, Calculator, TrendingUp, TrendingDown, FileText } from 'lu
 import { useLanguage } from '@/hooks/useLanguage'
 
 interface VATEntry {
-  id: number
   period: string
   totalSales: number
   totalPurchases: number
@@ -20,60 +19,48 @@ interface VATEntry {
   vatPaid: number
   vatDue: number
   status: string
-  dueDate: string
+}
+
+interface VATData {
+  records: VATEntry[]
+  currentMonth: {
+    totalSales: number
+    totalPurchases: number
+    vatCollected: number
+    vatPaid: number
+    vatDue: number
+  }
+  summary: {
+    totalVatToPay: number
+    totalVatCollected: number
+    totalVatPaid: number
+    declarationsCount: number
+  }
 }
 
 export default function VATPage() {
   const { t } = useLanguage()
   const [searchTerm, setSearchTerm] = useState('')
 
-  const { data: vatData, isLoading } = useQuery({
+  const { data: vatData, isLoading } = useQuery<VATData>({
     queryKey: ['/api/vat'],
     queryFn: async () => {
-      const response = await fetch('/api/vat')
-      if (!response.ok) throw new Error('Failed to fetch VAT entries')
+      const response = await fetch('/api/vat', {
+        headers: {
+          'x-tenant-id': '1' // Hardcoded for now, should come from user context
+        }
+      })
+      if (!response.ok) throw new Error('Failed to fetch VAT data')
       return response.json()
     }
   })
 
-  // Mock VAT entries for the UI since API returns different structure
-  const mockVatEntries: VATEntry[] = [
-    {
-      id: 1,
-      period: '2025-01',
-      totalSales: 25000,
-      totalPurchases: 15000,
-      vatCollected: 5750,
-      vatPaid: 3400,
-      vatDue: 2350,
-      status: 'pendente',
-      dueDate: '2025-02-28'
-    },
-    {
-      id: 2,
-      period: '2024-12',
-      totalSales: 28500,
-      totalPurchases: 18200,
-      vatCollected: 6555,
-      vatPaid: 4186,
-      vatDue: 2369,
-      status: 'pago',
-      dueDate: '2025-01-31'
-    },
-    {
-      id: 3,
-      period: '2024-11',
-      totalSales: 22800,
-      totalPurchases: 16400,
-      vatCollected: 5244,
-      vatPaid: 3772,
-      vatDue: 1472,
-      status: 'pago',
-      dueDate: '2024-12-31'
-    }
-  ]
+  // Usar datos reales del API
+  const vatEntries = vatData?.records || []
+  const currentMonthData = vatData?.currentMonth
+  const summary = vatData?.summary
 
-  const filteredEntries = mockVatEntries.filter(entry =>
+  const filteredEntries = vatEntries.filter(entry =>
     entry.period.toLowerCase().includes(searchTerm.toLowerCase())
   )
 
@@ -104,7 +91,9 @@ export default function VATPage() {
                   <Calculator className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-red-600">€2.350,00</div>
+                  <div className="text-2xl font-bold text-red-600">
+                    €{summary?.totalVatToPay?.toFixed(2) || '0.00'}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {t.vat.metrics.currentPeriod}
                   </p>
@@ -119,7 +108,9 @@ export default function VATPage() {
                   <TrendingUp className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-green-600">€5.750,00</div>
+                  <div className="text-2xl font-bold text-green-600">
+                    €{summary?.totalVatCollected?.toFixed(2) || '0.00'}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {t.vat.metrics.thisMonth}
                   </p>
@@ -134,7 +125,9 @@ export default function VATPage() {
                   <TrendingDown className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold text-orange-600">€3.400,00</div>
+                  <div className="text-2xl font-bold text-orange-600">
+                    €{summary?.totalVatPaid?.toFixed(2) || '0.00'}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {t.vat.metrics.thisMonth}
                   </p>
@@ -149,7 +142,9 @@ export default function VATPage() {
                   <FileText className="h-4 w-4 text-muted-foreground" />
                 </CardHeader>
                 <CardContent>
-                  <div className="text-2xl font-bold">12</div>
+                  <div className="text-2xl font-bold">
+                    {summary?.declarationsCount || 0}
+                  </div>
                   <p className="text-xs text-muted-foreground">
                     {t.vat.metrics.thisYear}
                   </p>
@@ -213,8 +208,8 @@ export default function VATPage() {
                         </tr>
                       </thead>
                       <tbody className="bg-card divide-y divide-border">
-                        {filteredEntries.map((entry) => (
-                          <tr key={entry.id} className="border-b hover:bg-muted/50">
+                        {filteredEntries.map((entry, index) => (
+                          <tr key={`${entry.period}-${index}`} className="border-b hover:bg-muted/50">
                             <td className="px-6 py-4 whitespace-nowrap">
                               <div className="text-sm font-medium text-foreground">{entry.period}</div>
                             </td>
