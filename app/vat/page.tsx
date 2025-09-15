@@ -75,6 +75,9 @@ export default function VATPage() {
               <div>
                 <h1 className="text-2xl font-bold text-foreground">{t.vat.title}</h1>
                 <p className="text-muted-foreground">{t.vat.subtitle}</p>
+                <p className="text-xs text-blue-600 mt-1">
+                  📱 Datos generados automáticamente desde WhatsApp
+                </p>
               </div>
               <Button className="flex items-center space-x-2">
                 <Plus className="w-4 h-4" />
@@ -178,6 +181,14 @@ export default function VATPage() {
                     {[1, 2, 3, 4, 5].map((i) => (
                       <div key={i} className="h-12 bg-muted rounded animate-pulse"></div>
                     ))}
+                  </div>
+                ) : filteredEntries.length === 0 ? (
+                  <div className="text-center py-8">
+                    <div className="text-muted-foreground mb-4">
+                      <FileText className="w-12 h-12 mx-auto mb-2 opacity-50" />
+                      <p className="text-lg font-medium">No hay datos de IVA disponibles</p>
+                      <p className="text-sm">Los datos de IVA se generan automáticamente desde las facturas procesadas por WhatsApp</p>
+                    </div>
                   </div>
                 ) : (
                   <div className="overflow-x-auto">

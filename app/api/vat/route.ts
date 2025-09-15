@@ -16,26 +16,30 @@ export async function GET(request: NextRequest) {
     const tenantId = request.headers.get('x-tenant-id') || '1'
     console.log('💰 Fetching VAT data for tenant:', tenantId)
 
-    // Obtener datos reales de facturas emitidas (ingresos)
-    const { data: invoicesData, error: invoicesError } = await supabase
+    // Obtener datos SOLO de WhatsApp (facturas procesadas desde WhatsApp)
+    const { data: whatsappInvoicesData, error: whatsappInvoicesError } = await supabase
       .from('invoices')
-      .select('total_amount, vat_amount, vat_rate, amount, issue_date, status')
+      .select('total_amount, vat_amount, vat_rate, amount, issue_date, status, description')
       .eq('tenant_id', tenantId)
-      .not('description', 'ilike', '%WhatsApp%') // Excluir facturas de WhatsApp (son gastos)
+      .ilike('description', '%WhatsApp%') // SOLO facturas de WhatsApp
 
-    if (invoicesError) {
-      console.error('❌ Error fetching invoices:', invoicesError)
+    if (whatsappInvoicesError) {
+      console.error('❌ Error fetching WhatsApp invoices:', whatsappInvoicesError)
     }
 
-    // Obtener datos reales de gastos (facturas recibidas)
-    const { data: expensesData, error: expensesError } = await supabase
+    // Obtener datos SOLO de gastos de WhatsApp (facturas recibidas desde WhatsApp)
+    const { data: whatsappExpensesData, error: whatsappExpensesError } = await supabase
       .from('expenses')
-      .select('amount, vat_amount, vat_rate, expense_date, is_deductible')
+      .select('amount, vat_amount, vat_rate, expense_date, is_deductible, description')
       .eq('tenant_id', tenantId)
+      .ilike('description', '%WhatsApp%') // SOLO gastos de WhatsApp
 
-    if (expensesError) {
-      console.error('❌ Error fetching expenses:', expensesError)
+    if (whatsappExpensesError) {
+      console.error('❌ Error fetching WhatsApp expenses:', whatsappExpensesError)
     }
+
+    console.log(`📱 WhatsApp invoices found: ${whatsappInvoicesData?.length || 0}`)
+    console.log(`📱 WhatsApp expenses found: ${whatsappExpensesData?.length || 0}`)
 
     // Función auxiliar para calcular IVA correctamente
     const calculateVAT = (amount: number, vatRate: number): number => {
@@ -67,14 +71,14 @@ export async function GET(request: NextRequest) {
       const monthStart = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`
       const monthEnd = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-31`
 
-      // Facturas emitidas del mes actual
-      const currentMonthInvoices = invoicesData?.filter(invoice => {
+      // Facturas de WhatsApp del mes actual
+      const currentMonthInvoices = whatsappInvoicesData?.filter(invoice => {
         const invoiceDate = new Date(invoice.issue_date)
         return invoiceDate >= new Date(monthStart) && invoiceDate <= new Date(monthEnd)
       }) || []
 
-      // Gastos del mes actual
-      const currentMonthExpenses = expensesData?.filter(expense => {
+      // Gastos de WhatsApp del mes actual
+      const currentMonthExpenses = whatsappExpensesData?.filter(expense => {
         const expenseDate = new Date(expense.expense_date)
         return expenseDate >= new Date(monthStart) && expenseDate <= new Date(monthEnd)
       }) || []
@@ -119,12 +123,12 @@ export async function GET(request: NextRequest) {
       const monthStart = `${year}-${month.toString().padStart(2, '0')}-01`
       const monthEnd = `${year}-${month.toString().padStart(2, '0')}-31`
 
-      const monthInvoices = invoicesData?.filter(invoice => {
+      const monthInvoices = whatsappInvoicesData?.filter(invoice => {
         const invoiceDate = new Date(invoice.issue_date)
         return invoiceDate >= new Date(monthStart) && invoiceDate <= new Date(monthEnd)
       }) || []
 
-      const monthExpenses = expensesData?.filter(expense => {
+      const monthExpenses = whatsappExpensesData?.filter(expense => {
         const expenseDate = new Date(expense.expense_date)
         return expenseDate >= new Date(monthStart) && expenseDate <= new Date(monthEnd)
       }) || []
@@ -173,9 +177,9 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Generated VAT data for ${vatRecords.length} months`)
     console.log(`📊 Current month data:`, currentMonthData)
-    console.log(`🔍 VAT calculation details:`)
-    console.log(`   - Facturas procesadas: ${invoicesData?.length || 0}`)
-    console.log(`   - Gastos procesados: ${expensesData?.length || 0}`)
+    console.log(`🔍 VAT calculation details (WhatsApp only):`)
+    console.log(`   - Facturas WhatsApp procesadas: ${whatsappInvoicesData?.length || 0}`)
+    console.log(`   - Gastos WhatsApp procesados: ${whatsappExpensesData?.length || 0}`)
     console.log(`   - IVA cobrado (mes actual): €${currentMonthData.vatCollected.toFixed(2)}`)
     console.log(`   - IVA pagado (mes actual): €${currentMonthData.vatPaid.toFixed(2)}`)
     console.log(`   - IVA a pagar (mes actual): €${currentMonthData.vatDue.toFixed(2)}`)
@@ -190,9 +194,10 @@ export async function GET(request: NextRequest) {
         declarationsCount: vatRecords.length
       },
       calculationDetails: {
-        invoicesProcessed: invoicesData?.length || 0,
-        expensesProcessed: expensesData?.length || 0,
-        vatCalculationMethod: 'Real percentage per invoice/expense'
+        whatsappInvoicesProcessed: whatsappInvoicesData?.length || 0,
+        whatsappExpensesProcessed: whatsappExpensesData?.length || 0,
+        vatCalculationMethod: 'WhatsApp data only - Real percentage per invoice/expense',
+        dataSource: 'WhatsApp webhook'
       }
     })
   } catch (error) {
