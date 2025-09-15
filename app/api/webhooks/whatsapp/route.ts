@@ -939,23 +939,13 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
     console.log(`   - invoiceDate: "${invoiceDate}"`)
     console.log(`   - amount: ${invoiceData.subtotal || invoiceData.amount || 0}`)
 
-    // Create or find client automatically (con manejo de errores)
+    // NO crear clientes automáticamente - las facturas no son clientes
     let clientId = null
-    try {
-      clientId = await createOrFindClient(invoiceData, tenantId, supabase)
-      console.log(`👤 Cliente ID: ${clientId || 'null'}`)
-    } catch (clientError) {
-      console.log(`⚠️ Error creando cliente, continuando sin cliente:`, clientError instanceof Error ? clientError.message : 'Unknown error')
-    }
+    console.log(`👤 NO se creará cliente automáticamente - las facturas no son clientes`)
 
-    // Create or find supplier automatically (con manejo de errores)
+    // NO crear proveedores automáticamente - solo guardar los datos
     let supplierId = null
-    try {
-      supplierId = await createOrFindSupplier(invoiceData, tenantId, supabase)
-      console.log(`🏢 Proveedor ID: ${supplierId || 'null'}`)
-    } catch (supplierError) {
-      console.log(`⚠️ Error creando proveedor, continuando sin proveedor:`, supplierError instanceof Error ? supplierError.message : 'Unknown error')
-    }
+    console.log(`🏢 NO se creará proveedor automáticamente`)
 
     // Create invoice record
     console.log(`🔍 Datos de la factura antes de crear:`, {
@@ -1137,9 +1127,9 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     console.log(`   - Fecha: ${expenseDate}`)
     console.log(`   - Descripción: ${description}`)
 
-    // Create or find supplier automatically for expenses
-    const supplierId = await createOrFindSupplier(expenseData, tenantId, supabase)
-    console.log(`🏢 Proveedor ID para gasto: ${supplierId || 'null'}`)
+    // NO crear proveedores automáticamente - solo guardar los datos
+    let supplierId = null
+    console.log(`🏢 NO se creará proveedor automáticamente`)
 
     // Create expense record
     console.log(`💾 PREPARANDO INSERCIÓN EN BASE DE DATOS:`)
@@ -1169,6 +1159,51 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     }
 
     console.log(`✅ Gasto creado: ${expense.id}`)
+
+    // Create corresponding invoice record automatically
+    // This ensures the invoice appears in the invoices view
+    try {
+      const invoiceNumber = generateInvoiceNumber(vendorName, expenseDate)
+
+      const { data: invoice, error: invoiceError } = await supabase
+        .from('invoices')
+        .insert({
+          tenant_id: tenantId,
+          client_id: null, // No crear cliente automáticamente
+          number: invoiceNumber,
+          client_name: vendorName,
+          client_email: null,
+          client_tax_id: expenseData.vendor_nif || expenseData.client_nif || null,
+          issue_date: expenseDate,
+          due_date: null,
+          amount: amount,
+          vat_amount: vatAmount,
+          vat_rate: vatRate,
+          total_amount: amount + vatAmount,
+          status: 'paid', // Las facturas procesadas desde WhatsApp ya están pagadas
+          description: description,
+          payment_terms: null,
+          payment_type: expenseData.payment_type || 'card',
+          supplier_id: null // No crear proveedor automáticamente
+        })
+        .select()
+        .single()
+
+      if (invoiceError) {
+        console.log(`⚠️ Error creating invoice (expense will still be created): ${invoiceError.message}`)
+        console.log(`📝 Invoice error details:`, invoiceError)
+      } else {
+        console.log(`✅ Factura creada automáticamente: ${invoice.id}`)
+
+        // Update expense with invoice reference
+        await supabase
+          .from('expenses')
+          .update({ invoice_id: invoice.id })
+          .eq('id', expense.id)
+      }
+    } catch (invoiceException) {
+      console.log(`⚠️ Exception creating invoice: ${invoiceException instanceof Error ? invoiceException.message : 'Unknown error'}`)
+    }
 
     // Update document with expense reference
     await supabase

@@ -10,7 +10,7 @@ export default function LanguageSelector() {
     const { language, setLanguage, t, getFlag, getName } = useLanguage()
     const [isOpen, setIsOpen] = useState(false)
 
-    const languages: Language[] = ['pt', 'en', 'fr']
+    const languages: Language[] = ['pt', 'en', 'fr', 'es']
 
     return (
         <div className="relative">
