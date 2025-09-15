@@ -47,3 +47,4 @@ AND table_schema = 'public';
 -- SELECT * FROM expenses LIMIT 3;
 
 
+

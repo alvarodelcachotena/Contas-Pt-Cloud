@@ -26,3 +26,4 @@ SELECT COUNT(*) as total_documents FROM documents;
 
 
 
+
