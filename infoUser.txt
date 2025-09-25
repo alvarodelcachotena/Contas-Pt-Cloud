@@ -1,0 +1,565 @@
+ Guía Completa del Usuario - Sistema Contas-PT
+
+Descripción General
+
+Contas-PT es un sistema integral de contabilidad portuguesa con procesamiento automático de documentos mediante IA, integración con WhatsApp, gestión de IVA y cumplimiento con SAFT-PT. El sistema está diseñado para empresas portuguesas que necesitan automatizar su gestión contable y fiscal.
+
+---
+
+ Funcionalidades Principales
+
+1. Dashboard Principal 
+Ubicación: Página principal (`/`)
+
+Funcionalidades:
+- Métricas en tiempo real: Facturas, gastos, documentos y clientes
+- Resumen financiero: Ingresos totales, gastos totales y beneficio neto
+- Métricas mensuales: Comparación con el mes actual
+- Estado del procesamiento: Tasa de éxito de documentos procesados
+- Acceso rápido: Botón para ver archivos de WhatsApp
+
+Cómo usar:
+1. Al iniciar sesión, verás automáticamente el dashboard
+2. Las métricas se actualizan cada 30 segundos
+3. Haz clic en "Archivos WhatsApp" para ver documentos procesados
+4. Usa los filtros para analizar diferentes períodos
+
+---
+
+2. Gestión de Facturas
+Ubicación: `/invoices`
+
+Funcionalidades:
+- Crear facturas: Formulario completo con validación automática
+- Listar facturas: Vista tabular con filtros y búsqueda
+- Editar facturas: Modificar datos existentes
+- Eliminar facturas: Con confirmación de seguridad
+- Numeración automática: Sistema FAT-000001, FAT-000002, etc.
+- Cálculo automático de IVA: Según las tasas portuguesas
+- Estados de factura: Pendiente, Pagada, Vencida, Cancelada
+
+Cómo usar:
+1. Haz clic en "Nueva Factura" para crear una
+2. Completa los datos del cliente (nombre, email, NIF)
+3. Añade descripción, cantidad y tasa de IVA
+4. El sistema calcula automáticamente el total
+5. Guarda la factura
+6. Usa la búsqueda para encontrar facturas específicas
+
+---
+
+3. Gestión de Gastos
+Ubicación: `/expenses`
+
+Funcionalidades:
+- Registrar gastos: Con categorización automática
+- Cálculo de IVA: Para gastos deducibles
+- Categorías: Oficina, Transporte, Comunicaciones, etc.
+- Adjuntar documentos: Subir comprobantes
+- Filtros por fecha: Análisis mensual/anual
+- Exportar datos: Para declaraciones fiscales
+
+Cómo usar:
+1. Haz clic en "Nuevo Gasto"
+2. Selecciona la categoría apropiada
+3. Introduce el importe y tasa de IVA
+4. Marca si es deducible
+5. Adjunta el comprobante si es necesario
+6. Guarda el gasto
+
+---
+
+4. Gestión de Clientes
+Ubicación: `/clients`
+
+Funcionalidades:
+- Base de datos de clientes: Información completa
+- Validación de NIF: Verificación automática portuguesa
+- Historial de facturas: Por cliente
+- Contactos: Email, teléfono, dirección
+- Búsqueda avanzada: Por nombre, NIF, email
+- Importar/Exportar: Datos masivos
+
+Cómo usar:
+1. Haz clic en "Nuevo Cliente"
+2. Completa los datos obligatorios (nombre, NIF)
+3. Añade información de contacto
+4. El sistema valida automáticamente el NIF
+5. Guarda el cliente
+6. Usa la búsqueda para encontrar clientes
+
+---
+
+5. Gestión de Proveedores
+Ubicación: `/suppliers`
+
+Funcionalidades:
+- Registro completo: Datos fiscales y de contacto
+- Términos de pago: Configuración personalizada
+- Historial de compras: Seguimiento de gastos
+- Validación fiscal: NIF y datos empresariales
+- Notas y observaciones: Información adicional
+
+Cómo usar:
+1. Haz clic en "Nuevo Proveedor"
+2. Introduce el nombre de la empresa
+3. Añade NIF, email, teléfono
+4. Completa la dirección
+5. Define términos de pago
+6. Añade notas si es necesario
+7. Guarda el proveedor
+
+---
+
+6. Gestión de IVA
+Ubicación: `/vat`
+
+Funcionalidades:
+- Cálculo automático: Desde datos de WhatsApp
+- Declaraciones mensuales: Generación automática
+- IVA cobrado vs pagado: Comparación detallada
+- Períodos fiscales: Gestión por meses
+- Exportar para Finanças: Formato oficial
+- Historial completo: Todas las declaraciones
+
+Cómo usar:
+1. Los datos se generan automáticamente desde WhatsApp
+2. Ve a la sección IVA para ver el resumen
+3. Revisa los cálculos por período
+4. Exporta los datos para presentar en Finanças
+5. Marca como "pagado" cuando completes el pago
+
+---
+
+7. Procesamiento de Documentos
+Ubicación: `/documents`
+
+Funcionalidades:
+- Procesamiento con IA: Extracción automática de datos
+- Múltiples formatos: PDF, imágenes, documentos escaneados
+- Clasificación automática: Facturas, gastos, recibos
+- Validación de datos: Verificación de importes y fechas
+- Confianza del procesamiento: Puntuación de precisión
+- Corrección manual: Edición de datos extraídos
+
+Cómo usar:
+1. Sube documentos desde la interfaz
+2. El sistema procesa automáticamente con IA
+3. Revisa los datos extraídos
+4. Corrige cualquier error manualmente
+5. Confirma para crear facturas/gastos automáticamente
+
+---
+
+8. Integración WhatsApp
+Ubicación: `/webhooks-monitoring`
+
+Funcionalidades:
+- Recepción automática: Documentos enviados por WhatsApp
+- Procesamiento en tiempo real: IA analiza inmediatamente
+- Notificaciones: Estado del procesamiento
+- Historial completo: Todos los documentos recibidos
+- Estadísticas: Tasa de éxito, documentos procesados
+- Debugging: Logs detallados del procesamiento
+
+Cómo usar:
+1. Configura el webhook de WhatsApp
+2. Envía documentos por WhatsApp al bot
+3. Ve a "Monitoreo Webhooks" para ver el estado
+4. Revisa los documentos procesados
+5. Corrige datos si es necesario
+
+---
+
+9. Gestión Bancaria
+Ubicación: `/banking`
+
+Funcionalidades:
+- Registro de transacciones: Ingresos y gastos bancarios
+- Conciliación: Con facturas y gastos registrados
+- Categorización: Automática por tipo de transacción
+- Balance actual: Saldo en tiempo real
+- Exportar movimientos: Para contabilidad
+- Filtros avanzados: Por fecha, tipo, importe
+
+Cómo usar:
+1. Haz clic en "Nueva Transacción"
+2. Selecciona tipo (ingreso/gasto)
+3. Introduce importe y descripción
+4. Asigna categoría
+5. Guarda la transacción
+6. Usa filtros para analizar movimientos
+
+---
+
+10. Gestión de Pagos
+Ubicación: `/payments`
+
+Funcionalidades:
+- Registro de pagos: Facturas pagadas
+- Métodos de pago: Transferencia, efectivo, tarjeta
+- Fechas de pago: Seguimiento de vencimientos
+- Estados: Pendiente, Pagado, Vencido
+- Conciliación: Con movimientos bancarios
+- Reportes: Pagos por período
+
+Cómo usar:
+1. Ve a la lista de facturas pendientes
+2. Haz clic en "Marcar como Pagado"
+3. Selecciona método de pago
+4. Introduce fecha de pago
+5. Guarda el registro
+6. La factura cambia automáticamente a "Pagada"
+
+---
+
+11. Reportes y Análisis
+Ubicación: `/reports`
+
+Funcionalidades:
+- Reportes financieros: Ingresos, gastos, beneficios
+- Análisis de clientes: Facturación por cliente
+- Reportes de IVA: Declaraciones y cálculos
+- Análisis temporal: Tendencias mensuales/anuales
+- Exportar PDF/Excel: Para presentaciones
+- Filtros personalizados: Por fecha, cliente, categoría
+
+Cómo usar:
+1. Selecciona el tipo de reporte
+2. Define el período de análisis
+3. Aplica filtros específicos
+4. Genera el reporte
+5. Exporta en el formato deseado
+6. Comparte o archiva el reporte
+
+---
+
+12. SAFT-PT 
+Ubicación: `/saft`
+
+Funcionalidades:
+- Generación automática: Archivo SAFT-PT oficial
+- Validación fiscal: Cumplimiento con Finanças
+- Períodos fiscales: Por trimestre/año
+- Exportar XML: Formato oficial portugués
+- Verificación: Validación de datos antes de exportar
+- Historial: Archivos SAFT generados
+
+Cómo usar:
+1. Selecciona el período fiscal
+2. Revisa los datos incluidos
+3. Genera el archivo SAFT-PT
+4. Verifica la información
+5. Exporta el archivo XML
+6. Presenta en Finanças
+
+---
+
+13. Integración con Nubes
+Ubicación: `/cloud-drives`
+
+Funcionalidades:
+- Dropbox: Sincronización automática de documentos
+- Google Drive: Acceso a archivos en la nube
+- OneDrive: Integración con Microsoft
+- Sincronización: Automática y manual
+- Gestión de carpetas: Organización por tipo de documento
+- Backup automático: Respaldo de datos importantes
+
+Cómo usar:
+1. Haz clic en "Conectar Dropbox/Google Drive"
+2. Autoriza el acceso a tu cuenta
+3. Selecciona la carpeta a sincronizar
+4. Configura la frecuencia de sincronización
+5. Los documentos se procesan automáticamente
+6. Monitorea el estado de sincronización
+
+---
+
+14. Asistente IA
+Ubicación: `/ai-assistant`
+
+Funcionalidades:
+- Chat inteligente: Preguntas sobre contabilidad
+- Análisis de documentos: Explicación de datos extraídos
+- Sugerencias: Mejores prácticas contables
+- Ayuda contextual: Asistencia específica por módulo
+- Historial de conversaciones: Guardado automático
+- Integración: Con todos los módulos del sistema
+
+Cómo usar:
+1. Haz una pregunta sobre contabilidad
+2. El IA analiza tu consulta
+3. Recibe respuestas contextualizadas
+4. Pide análisis de documentos específicos
+5. Guarda conversaciones importantes
+6. Usa las sugerencias para mejorar tu gestión
+
+---
+
+15. Panel de Administración
+Ubicación: `/admin`
+
+Funcionalidades:
+- Gestión de usuarios: Crear, editar, eliminar usuarios
+- Configuración del sistema: Parámetros globales
+- Logs del sistema: Monitoreo de actividad
+- Backup y restauración: Respaldo de datos
+- Configuración de webhooks: WhatsApp, email, etc.
+- Estadísticas del sistema: Uso y rendimiento
+
+Cómo usar:
+1. Accede como administrador
+2. Ve a "Usuarios" para gestionar cuentas
+3. Configura webhooks en "Integraciones"
+4. Monitorea logs en "Sistema"
+5. Realiza backups en "Mantenimiento"
+6. Revisa estadísticas en "Analytics"
+
+---
+
+16. Configuración de Usuario
+Ubicación: `/user-settings`
+
+Funcionalidades:
+- Perfil personal: Nombre, email, teléfono
+- Configuración de cuenta: Cambiar contraseña
+- Preferencias: Idioma, tema, notificaciones
+- Empresa actual: Información de la empresa asociada
+- Roles y permisos: Nivel de acceso
+- Historial de actividad: Últimas acciones
+
+Cómo usar:
+1. Haz clic en "Editar Perfil"
+2. Modifica tus datos personales
+3. Actualiza información de contacto
+4. Cambia configuración de notificaciones
+5. Guarda los cambios
+6. Revisa tu rol y permisos
+
+---
+
+Autenticación y Seguridad
+
+Inicio de Sesión
+- Email: Tu dirección de correo electrónico
+- Contraseña: Tu contraseña segura
+- Recordar sesión: Opción para mantenerte conectado
+
+Registro de Usuario
+- Datos obligatorios: Nombre, email, contraseña
+- Validación: Verificación de email
+- Empresa: Asociación automática con empresa
+
+Seguridad
+- Encriptación: Todos los datos están protegidos
+- RLS (Row Level Security): Acceso por empresa
+- Auditoría: Registro de todas las acciones
+- Backup automático: Respaldo diario de datos
+
+---
+
+Integración WhatsApp
+
+Configuración Inicial
+1. Token de acceso: Configura tu token de WhatsApp Business para cada número
+2. Webhook: Establece la URL del webhook para cada aplicación
+3. Verificación: Confirma la configuración de cada número
+4. Pruebas: Envía documentos de prueba a cada número autorizado
+
+Números Autorizados:
+- +34613881071 (Principal España) - Administrador
+- +573014241183 (Colombia) - Administrador  
+- +34661613025 (Secundario España) - Administrador
+
+Configuración de Variables de Entorno:
+Para cada número necesitas configurar:
+- WHATSAPP_ACCESS_TOKEN_[1,2,3]
+- WHATSAPP_PHONE_NUMBER_ID_[1,2,3]
+- WHATSAPP_BUSINESS_ACCOUNT_ID_[1,2,3]
+- WHATSAPP_APP_ID_[1,2,3]
+- WHATSAPP_APP_SECRET_[1,2,3]
+- WHATSAPP_VERIFY_TOKEN_[1,2,3]
+- WHATSAPP_WEBHOOK_URL_[1,2,3]
+
+Uso Diario
+1. Envía documentos: Por WhatsApp al bot configurado
+2. Procesamiento automático: IA analiza inmediatamente
+3. Notificaciones: Recibe confirmación del procesamiento
+4. Revisión: Ve a "Monitoreo Webhooks" para ver resultados
+5. Corrección: Edita datos si es necesario
+
+Tipos de Documentos Soportados
+- Facturas: PDF, imágenes escaneadas
+- Recibos: Comprobantes de gastos
+- Extractos bancarios: Movimientos bancarios
+- Documentos fiscales: Declaraciones, certificados
+
+---
+
+17. Chatbot de WhatsApp 🤖
+Ubicación: Integrado en WhatsApp Business
+
+Funcionalidades:
+- Respuestas automáticas: Responde preguntas comunes sobre contabilidad
+- Procesamiento de documentos: Analiza documentos enviados por chat
+- Consultas de estado: Informa sobre facturas, gastos y pagos
+- Recordatorios automáticos: Notifica vencimientos y tareas pendientes
+- Soporte multilingüe: Portugués, español e inglés
+- Integración completa: Conectado con toda la base de datos del sistema
+- Múltiples números: Funciona con 3 números de WhatsApp Business diferentes
+
+Números de WhatsApp Disponibles:
+- +34613881071 (Principal España) - Acceso completo
+- +573014241183 (Colombia) - Acceso completo
+- +34661613025 (Secundario España) - Acceso completo
+
+Sistema de Autorización:
+- Solo números previamente autorizados pueden usar el chatbot
+- Números no autorizados reciben mensaje de error con información de contacto
+- Cada número tiene acceso completo a todas las funcionalidades
+- Los mensajes se procesan usando la configuración específica de cada número
+
+Comandos Principales del Chatbot:
+- "ayuda" o "help": Muestra lista de comandos disponibles
+- "estado": Muestra resumen de facturas y gastos del mes
+- "facturas pendientes": Lista facturas por cobrar
+- "gastos del mes": Resumen de gastos del mes actual
+- "cliente [nombre]": Información sobre un cliente específico
+- "proveedor [nombre]": Datos de un proveedor
+- "iva": Estado de declaraciones de IVA
+- "reporte [mes]": Genera reporte del mes especificado
+- "backup": Solicita backup de datos importantes
+- "contacto": Información de contacto para soporte
+
+Cómo usar el Chatbot:
+1. Envía "ayuda" para ver todos los comandos disponibles
+2. Usa comandos específicos para consultar información
+3. Envía documentos adjuntos para procesamiento automático
+4. El bot responde inmediatamente con la información solicitada
+5. Para documentos complejos, el bot solicita confirmación antes de procesar
+6. Todas las interacciones quedan registradas en el sistema
+
+Ejemplos de Uso:
+- Usuario: "estado"
+  Bot: "📊 Estado actual: 15 facturas pendientes (€2,450), 8 gastos este mes (€890), IVA a pagar: €312"
+
+- Usuario: "facturas pendientes"
+  Bot: "📋 Facturas pendientes: FAT-000123 (Cliente A - €500), FAT-000124 (Cliente B - €750)..."
+
+- Usuario: [envía imagen de factura]
+  Bot: "📄 Documento recibido. Procesando... ✅ Factura procesada: Cliente XYZ, €150 + IVA. ¿Confirmar creación?"
+
+Funciones Avanzadas:
+- Análisis de tendencias: "tendencias últimos 3 meses"
+- Comparaciones: "comparar mes actual con anterior"
+- Alertas personalizadas: Configura notificaciones específicas
+- Exportación: "exportar datos [formato]"
+- Integración con calendario: Recordatorios de vencimientos
+
+Configuración del Chatbot:
+1. Accede al Panel de Administración
+2. Ve a "Configuración de Webhooks"
+3. Selecciona "WhatsApp Chatbot"
+4. Configura respuestas personalizadas
+5. Define horarios de funcionamiento
+6. Establece palabras clave específicas
+7. Activa/desactiva funciones según necesidades
+
+Personalización:
+- Mensajes de bienvenida personalizados
+- Respuestas específicas por tipo de usuario
+- Horarios de funcionamiento configurables
+- Integración con sistemas externos
+- Plantillas de respuesta predefinidas
+
+Seguridad del Chatbot:
+- Verificación de identidad del usuario
+- Encriptación de todas las comunicaciones
+- Logs detallados de todas las interacciones
+- Protección contra spam y mensajes maliciosos
+- Cumplimiento con RGPD y normativas portuguesas
+
+---
+
+ Interfaz de Usuario
+
+Navegación
+- Sidebar: Menú lateral con todas las secciones
+- Header: Información del usuario y empresa
+- Breadcrumbs: Navegación contextual
+- Búsqueda global: Encuentra cualquier dato rápidamente
+
+Temas
+- Claro: Tema por defecto para trabajo diario
+- Oscuro: Para trabajo nocturno
+- Automático: Cambia según la hora del día
+
+Idiomas
+- Portugués: Idioma principal del sistema
+- Español: Disponible para usuarios internacionales
+- Inglés: Para usuarios técnicos
+
+---
+
+ Métricas y Analytics
+
+Dashboard Principal
+- Facturas: Total emitidas, pendientes, pagadas
+- Gastos: Total registrados, categorizados
+- Documentos: Procesados, pendientes, con errores
+- Clientes: Total registrados, activos
+- Financiero: Ingresos, gastos, beneficio neto
+
+Reportes Detallados
+- Análisis temporal: Tendencias por mes/año
+- Análisis de clientes: Facturación por cliente
+- Análisis de gastos: Por categoría y período
+- Análisis de IVA: Declaraciones y cálculos
+
+---
+
+Mantenimiento y Soporte
+
+Backup Automático
+- Frecuencia: Diario a las 2:00 AM
+- Retención: 30 días de backups
+- Ubicación: Almacenamiento seguro en la nube
+- Restauración: Proceso guiado paso a paso
+
+Logs del Sistema
+- Actividad de usuarios: Todas las acciones registradas
+- Errores del sistema: Detección y notificación automática
+- Procesamiento de documentos: Logs detallados de IA
+- Integraciones: Estado de webhooks y APIs
+
+Soporte Técnico
+- Documentación: Guías completas en cada módulo
+- Chat de soporte: Asistencia en tiempo real
+- Base de conocimientos: FAQ y tutoriales
+- Contacto directo: Email y teléfono de soporte
+
+---
+
+ Mejores Prácticas
+
+Gestión Diaria
+1. Revisa el dashboard cada mañana para ver métricas
+2. Procesa documentos recibidos por WhatsApp
+3. Registra gastos inmediatamente después de incurrir
+4. Actualiza estados de facturas cuando se pagan
+5. Revisa reportes semanalmente
+
+Gestión Mensual
+1. Genera reportes de ingresos y gastos
+2. Calcula IVA para la declaración mensual
+3. Revisa clientes y actualiza información
+4. Backup manual de datos importantes
+5. Análisis de tendencias para planificación
+
+Gestión Anual
+1. Genera SAFT-PT para el año completo
+2. Revisa todos los reportes anuales
+3. Actualiza configuración del sistema
+4. Planifica mejoras para el próximo año
+5. Archiva documentos antiguos

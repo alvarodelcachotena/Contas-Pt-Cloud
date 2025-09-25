@@ -16,30 +16,43 @@ export async function GET(request: NextRequest) {
     const tenantId = request.headers.get('x-tenant-id') || '1'
     console.log('💰 Fetching VAT data for tenant:', tenantId)
 
-    // Obtener datos SOLO de WhatsApp (facturas procesadas desde WhatsApp)
-    const { data: whatsappInvoicesData, error: whatsappInvoicesError } = await supabase
-      .from('invoices')
-      .select('total_amount, vat_amount, vat_rate, amount, issue_date, status, description')
+    // Obtener datos de la tabla whatsapp_vat_data (datos reales procesados por WhatsApp)
+    const { data: whatsappVATData, error: whatsappVATError } = await supabase
+      .from('whatsapp_vat_data')
+      .select('*')
       .eq('tenant_id', tenantId)
-      .ilike('description', '%WhatsApp%') // SOLO facturas de WhatsApp
+      .order('processing_date', { ascending: false })
 
-    if (whatsappInvoicesError) {
-      console.error('❌ Error fetching WhatsApp invoices:', whatsappInvoicesError)
+    if (whatsappVATError) {
+      console.error('❌ Error fetching WhatsApp VAT data:', whatsappVATError)
+      // Si la tabla no existe, crear datos vacíos
+      console.log('📝 Table whatsapp_vat_data might not exist yet, returning empty data')
+      // Retornar datos vacíos inmediatamente si la tabla no existe
+      return NextResponse.json({
+        records: [],
+        currentMonth: {
+          totalSales: 0,
+          totalPurchases: 0,
+          vatCollected: 0,
+          vatPaid: 0,
+          vatDue: 0
+        },
+        summary: {
+          totalVatToPay: 0,
+          totalVatCollected: 0,
+          totalVatPaid: 0,
+          declarationsCount: 0
+        },
+        calculationDetails: {
+          whatsappVATRecords: 0,
+          vatCalculationMethod: 'Table not created yet',
+          dataSource: 'whatsapp_vat_data table (not created)',
+          error: 'Table whatsapp_vat_data does not exist. Please create it first.'
+        }
+      })
     }
 
-    // Obtener datos SOLO de gastos de WhatsApp (facturas recibidas desde WhatsApp)
-    const { data: whatsappExpensesData, error: whatsappExpensesError } = await supabase
-      .from('expenses')
-      .select('amount, vat_amount, vat_rate, expense_date, is_deductible, description')
-      .eq('tenant_id', tenantId)
-      .ilike('description', '%WhatsApp%') // SOLO gastos de WhatsApp
-
-    if (whatsappExpensesError) {
-      console.error('❌ Error fetching WhatsApp expenses:', whatsappExpensesError)
-    }
-
-    console.log(`📱 WhatsApp invoices found: ${whatsappInvoicesData?.length || 0}`)
-    console.log(`📱 WhatsApp expenses found: ${whatsappExpensesData?.length || 0}`)
+    console.log(`📱 WhatsApp VAT records found: ${whatsappVATData?.length || 0}`)
 
     // Función auxiliar para calcular IVA correctamente
     const calculateVAT = (amount: number, vatRate: number): number => {
@@ -71,40 +84,21 @@ export async function GET(request: NextRequest) {
       const monthStart = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-01`
       const monthEnd = `${currentYear}-${currentMonth.toString().padStart(2, '0')}-31`
 
-      // Facturas de WhatsApp del mes actual
-      const currentMonthInvoices = whatsappInvoicesData?.filter(invoice => {
-        const invoiceDate = new Date(invoice.issue_date)
-        return invoiceDate >= new Date(monthStart) && invoiceDate <= new Date(monthEnd)
+      // Filtrar datos de WhatsApp del mes actual
+      const currentMonthData = whatsappVATData?.filter(record => {
+        const recordDate = new Date(record.processing_date)
+        return recordDate >= new Date(monthStart) && recordDate <= new Date(monthEnd)
       }) || []
 
-      // Gastos de WhatsApp del mes actual
-      const currentMonthExpenses = whatsappExpensesData?.filter(expense => {
-        const expenseDate = new Date(expense.expense_date)
-        return expenseDate >= new Date(monthStart) && expenseDate <= new Date(monthEnd)
-      }) || []
+      // Separar facturas y gastos
+      const invoices = currentMonthData.filter(record => record.document_type === 'invoice')
+      const expenses = currentMonthData.filter(record => record.document_type === 'expense')
 
       // Calcular totales
-      const totalSales = currentMonthInvoices.reduce((sum, invoice) =>
-        sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0)
-
-      const totalPurchases = currentMonthExpenses.reduce((sum, expense) =>
-        sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0)
-
-      // Calcular IVA usando el porcentaje real de cada factura
-      const vatCollected = currentMonthInvoices.reduce((sum, invoice) =>
-        sum + getRealVAT(invoice), 0)
-
-      const vatPaid = currentMonthExpenses.reduce((sum, expense) => {
-        // Para gastos, usar el IVA calculado o el almacenado
-        if (expense.vat_amount && parseFloat(expense.vat_amount) > 0) {
-          return sum + parseFloat(expense.vat_amount)
-        }
-
-        // Si no tiene IVA calculado, calcularlo
-        const amount = parseFloat(expense.amount || '0')
-        const vatRate = parseFloat(expense.vat_rate || '23')
-        return sum + calculateVAT(amount, vatRate)
-      }, 0)
+      const totalSales = invoices.reduce((sum, record) => sum + parseFloat(record.total_amount || '0'), 0)
+      const totalPurchases = expenses.reduce((sum, record) => sum + parseFloat(record.total_amount || '0'), 0)
+      const vatCollected = invoices.reduce((sum, record) => sum + parseFloat(record.vat_amount || '0'), 0)
+      const vatPaid = expenses.reduce((sum, record) => sum + parseFloat(record.vat_amount || '0'), 0)
 
       return {
         totalSales,
@@ -123,37 +117,21 @@ export async function GET(request: NextRequest) {
       const monthStart = `${year}-${month.toString().padStart(2, '0')}-01`
       const monthEnd = `${year}-${month.toString().padStart(2, '0')}-31`
 
-      const monthInvoices = whatsappInvoicesData?.filter(invoice => {
-        const invoiceDate = new Date(invoice.issue_date)
-        return invoiceDate >= new Date(monthStart) && invoiceDate <= new Date(monthEnd)
+      // Filtrar datos de WhatsApp del mes específico
+      const monthData = whatsappVATData?.filter(record => {
+        const recordDate = new Date(record.processing_date)
+        return recordDate >= new Date(monthStart) && recordDate <= new Date(monthEnd)
       }) || []
 
-      const monthExpenses = whatsappExpensesData?.filter(expense => {
-        const expenseDate = new Date(expense.expense_date)
-        return expenseDate >= new Date(monthStart) && expenseDate <= new Date(monthEnd)
-      }) || []
+      // Separar facturas y gastos
+      const invoices = monthData.filter(record => record.document_type === 'invoice')
+      const expenses = monthData.filter(record => record.document_type === 'expense')
 
-      const totalSales = monthInvoices.reduce((sum, invoice) =>
-        sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0)
-
-      const totalPurchases = monthExpenses.reduce((sum, expense) =>
-        sum + (parseFloat(expense.amount?.toString() || '0') || 0), 0)
-
-      // Calcular IVA usando el porcentaje real de cada factura
-      const vatCollected = monthInvoices.reduce((sum, invoice) =>
-        sum + getRealVAT(invoice), 0)
-
-      const vatPaid = monthExpenses.reduce((sum, expense) => {
-        // Para gastos, usar el IVA calculado o el almacenado
-        if (expense.vat_amount && parseFloat(expense.vat_amount) > 0) {
-          return sum + parseFloat(expense.vat_amount)
-        }
-
-        // Si no tiene IVA calculado, calcularlo
-        const amount = parseFloat(expense.amount || '0')
-        const vatRate = parseFloat(expense.vat_rate || '23')
-        return sum + calculateVAT(amount, vatRate)
-      }, 0)
+      // Calcular totales
+      const totalSales = invoices.reduce((sum, record) => sum + parseFloat(record.total_amount || '0'), 0)
+      const totalPurchases = expenses.reduce((sum, record) => sum + parseFloat(record.total_amount || '0'), 0)
+      const vatCollected = invoices.reduce((sum, record) => sum + parseFloat(record.vat_amount || '0'), 0)
+      const vatPaid = expenses.reduce((sum, record) => sum + parseFloat(record.vat_amount || '0'), 0)
 
       return {
         period: `${year}-${month.toString().padStart(2, '0')}`,
@@ -166,10 +144,25 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    // Generar datos para los últimos 12 meses
+    // Generar datos solo para meses que tienen datos reales
     const vatRecords = []
-    for (let i = 0; i < 12; i++) {
-      vatRecords.push(getPreviousMonthData(i))
+
+    if (whatsappVATData && whatsappVATData.length > 0) {
+      // Obtener todos los períodos únicos que tienen datos
+      const uniquePeriods = [...new Set(whatsappVATData.map(record => {
+        const date = new Date(record.processing_date)
+        return `${date.getFullYear()}-${(date.getMonth() + 1).toString().padStart(2, '0')}`
+      }))]
+
+      // Generar datos solo para períodos con datos reales
+      for (const period of uniquePeriods) {
+        const [year, month] = period.split('-').map(Number)
+        const monthsBack = (currentYear - year) * 12 + (currentMonth - month)
+        vatRecords.push(getPreviousMonthData(monthsBack))
+      }
+
+      // Ordenar por período (más reciente primero)
+      vatRecords.sort((a, b) => b.period.localeCompare(a.period))
     }
 
     // Datos del mes actual
@@ -177,9 +170,8 @@ export async function GET(request: NextRequest) {
 
     console.log(`✅ Generated VAT data for ${vatRecords.length} months`)
     console.log(`📊 Current month data:`, currentMonthData)
-    console.log(`🔍 VAT calculation details (WhatsApp only):`)
-    console.log(`   - Facturas WhatsApp procesadas: ${whatsappInvoicesData?.length || 0}`)
-    console.log(`   - Gastos WhatsApp procesados: ${whatsappExpensesData?.length || 0}`)
+    console.log(`🔍 VAT calculation details (WhatsApp VAT table):`)
+    console.log(`   - WhatsApp VAT records: ${whatsappVATData?.length || 0}`)
     console.log(`   - IVA cobrado (mes actual): €${currentMonthData.vatCollected.toFixed(2)}`)
     console.log(`   - IVA pagado (mes actual): €${currentMonthData.vatPaid.toFixed(2)}`)
     console.log(`   - IVA a pagar (mes actual): €${currentMonthData.vatDue.toFixed(2)}`)
@@ -194,10 +186,9 @@ export async function GET(request: NextRequest) {
         declarationsCount: vatRecords.length
       },
       calculationDetails: {
-        whatsappInvoicesProcessed: whatsappInvoicesData?.length || 0,
-        whatsappExpensesProcessed: whatsappExpensesData?.length || 0,
-        vatCalculationMethod: 'WhatsApp data only - Real percentage per invoice/expense',
-        dataSource: 'WhatsApp webhook'
+        whatsappVATRecords: whatsappVATData?.length || 0,
+        vatCalculationMethod: 'WhatsApp VAT table - Real data per invoice/expense',
+        dataSource: 'whatsapp_vat_data table'
       }
     })
   } catch (error) {
@@ -259,28 +250,20 @@ export async function DELETE(request: NextRequest) {
     console.log(`🗑️ Deleting VAT data for tenant: ${tenantId}, type: ${deleteType}`)
 
     if (deleteType === 'all') {
-      // Eliminar todas las facturas de WhatsApp
-      const { error: invoicesError } = await supabase
-        .from('invoices')
+      // Eliminar todos los datos de la tabla whatsapp_vat_data
+      const { error: vatDataError } = await supabase
+        .from('whatsapp_vat_data')
         .delete()
         .eq('tenant_id', tenantId)
-        .ilike('description', '%WhatsApp%')
 
-      if (invoicesError) {
-        console.error('❌ Error deleting WhatsApp invoices:', invoicesError)
-        return NextResponse.json({ error: 'Failed to delete invoices' }, { status: 500 })
-      }
-
-      // Eliminar todos los gastos de WhatsApp
-      const { error: expensesError } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('tenant_id', tenantId)
-        .ilike('description', '%WhatsApp%')
-
-      if (expensesError) {
-        console.error('❌ Error deleting WhatsApp expenses:', expensesError)
-        return NextResponse.json({ error: 'Failed to delete expenses' }, { status: 500 })
+      if (vatDataError) {
+        console.error('❌ Error deleting WhatsApp VAT data:', vatDataError)
+        // Si la tabla no existe, no es un error real
+        if (vatDataError.code === 'PGRST205') {
+          console.log('📝 Table whatsapp_vat_data does not exist, nothing to delete')
+          return NextResponse.json({ message: 'No VAT data to delete (table does not exist)' })
+        }
+        return NextResponse.json({ error: 'Failed to delete VAT data' }, { status: 500 })
       }
 
       console.log('✅ All WhatsApp VAT data deleted successfully')
@@ -293,32 +276,22 @@ export async function DELETE(request: NextRequest) {
       const monthStart = `${year}-${month.toString().padStart(2, '0')}-01`
       const monthEnd = `${year}-${month.toString().padStart(2, '0')}-31`
 
-      // Eliminar facturas del período
-      const { error: invoicesError } = await supabase
-        .from('invoices')
+      // Eliminar datos del período
+      const { error: vatDataError } = await supabase
+        .from('whatsapp_vat_data')
         .delete()
         .eq('tenant_id', tenantId)
-        .ilike('description', '%WhatsApp%')
-        .gte('issue_date', monthStart)
-        .lte('issue_date', monthEnd)
+        .gte('processing_date', monthStart)
+        .lte('processing_date', monthEnd)
 
-      if (invoicesError) {
-        console.error('❌ Error deleting invoices for period:', invoicesError)
-        return NextResponse.json({ error: 'Failed to delete invoices for period' }, { status: 500 })
-      }
-
-      // Eliminar gastos del período
-      const { error: expensesError } = await supabase
-        .from('expenses')
-        .delete()
-        .eq('tenant_id', tenantId)
-        .ilike('description', '%WhatsApp%')
-        .gte('expense_date', monthStart)
-        .lte('expense_date', monthEnd)
-
-      if (expensesError) {
-        console.error('❌ Error deleting expenses for period:', expensesError)
-        return NextResponse.json({ error: 'Failed to delete expenses for period' }, { status: 500 })
+      if (vatDataError) {
+        console.error('❌ Error deleting VAT data for period:', vatDataError)
+        // Si la tabla no existe, no es un error real
+        if (vatDataError.code === 'PGRST205') {
+          console.log('📝 Table whatsapp_vat_data does not exist, nothing to delete')
+          return NextResponse.json({ message: `No VAT data to delete for period ${period} (table does not exist)` })
+        }
+        return NextResponse.json({ error: 'Failed to delete VAT data for period' }, { status: 500 })
       }
 
       console.log(`✅ VAT data for period ${period} deleted successfully`)

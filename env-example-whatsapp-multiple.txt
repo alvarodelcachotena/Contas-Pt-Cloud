@@ -1,0 +1,65 @@
+# Configuración de WhatsApp para Múltiples Números
+# Copia este archivo como .env.local y configura tus valores reales
+
+# ===========================================
+# NÚMERO PRINCIPAL (España) - +34613881071
+# ===========================================
+WHATSAPP_ACCESS_TOKEN=tu_access_token_principal
+WHATSAPP_PHONE_NUMBER_ID=tu_phone_number_id_principal
+WHATSAPP_BUSINESS_ACCOUNT_ID=tu_business_account_id_principal
+WHATSAPP_APP_ID=tu_app_id_principal
+WHATSAPP_APP_SECRET=tu_app_secret_principal
+WHATSAPP_VERIFY_TOKEN=tu_verify_token_principal
+WHATSAPP_WEBHOOK_URL=https://tu-dominio.com/api/webhooks/whatsapp
+
+# ===========================================
+# NÚMERO SECUNDARIO (Colombia) - +573014241183
+# ===========================================
+WHATSAPP_ACCESS_TOKEN_2=tu_access_token_colombia
+WHATSAPP_PHONE_NUMBER_ID_2=tu_phone_number_id_colombia
+WHATSAPP_BUSINESS_ACCOUNT_ID_2=tu_business_account_id_colombia
+WHATSAPP_APP_ID_2=tu_app_id_colombia
+WHATSAPP_APP_SECRET_2=tu_app_secret_colombia
+WHATSAPP_VERIFY_TOKEN_2=tu_verify_token_colombia
+WHATSAPP_WEBHOOK_URL_2=https://tu-dominio.com/api/webhooks/whatsapp
+
+# ===========================================
+# NÚMERO TERCIARIO (España) - +34661613025
+# ===========================================
+WHATSAPP_ACCESS_TOKEN_3=tu_access_token_espana_2
+WHATSAPP_PHONE_NUMBER_ID_3=tu_phone_number_id_espana_2
+WHATSAPP_BUSINESS_ACCOUNT_ID_3=tu_business_account_id_espana_2
+WHATSAPP_APP_ID_3=tu_app_id_espana_2
+WHATSAPP_APP_SECRET_3=tu_app_secret_espana_2
+WHATSAPP_VERIFY_TOKEN_3=tu_verify_token_espana_2
+WHATSAPP_WEBHOOK_URL_3=https://tu-dominio.com/api/webhooks/whatsapp
+
+# ===========================================
+# CONFIGURACIÓN GENERAL
+# ===========================================
+# Estas variables son compartidas por todos los números
+GEMINI_API_KEY=tu_gemini_api_key
+SUPABASE_URL=tu_supabase_url
+SUPABASE_ANON_KEY=tu_supabase_anon_key
+SUPABASE_SERVICE_ROLE_KEY=tu_supabase_service_role_key
+
+# ===========================================
+# INSTRUCCIONES DE CONFIGURACIÓN
+# ===========================================
+# 1. Ve a https://developers.facebook.com/
+# 2. Crea una aplicación para cada número de WhatsApp Business
+# 3. Configura el webhook para cada aplicación apuntando a:
+#    https://tu-dominio.com/api/webhooks/whatsapp
+# 4. Copia los tokens y IDs de cada aplicación
+# 5. Reemplaza los valores "tu_*" con los valores reales
+# 6. Ejecuta el script SQL: scripts/setup-whatsapp-authorized-users.sql
+# 7. Reinicia la aplicación
+
+# ===========================================
+# VERIFICACIÓN DE CONFIGURACIÓN
+# ===========================================
+# Para verificar que todo está configurado correctamente:
+# 1. Envía un mensaje de prueba a cada número
+# 2. Revisa los logs de la aplicación
+# 3. Verifica que los mensajes se procesen correctamente
+# 4. Comprueba que los números no autorizados reciban el mensaje de error

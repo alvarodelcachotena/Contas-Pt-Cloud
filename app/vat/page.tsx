@@ -36,6 +36,12 @@ interface VATData {
     totalVatPaid: number
     declarationsCount: number
   }
+  calculationDetails?: {
+    whatsappVATRecords: number
+    vatCalculationMethod: string
+    dataSource: string
+    error?: string
+  }
 }
 
 export default function VATPage() {
@@ -77,8 +83,16 @@ export default function VATPage() {
         }
       })
 
+      const responseData = await response.json()
+
       if (!response.ok) {
-        throw new Error('Failed to delete all VAT data')
+        // Si es un error de tabla no encontrada, no mostrar error
+        if (responseData.message && responseData.message.includes('table does not exist')) {
+          console.log('Table does not exist, nothing to delete')
+          window.location.reload()
+          return
+        }
+        throw new Error(responseData.error || 'Failed to delete all VAT data')
       }
 
       // Refrescar los datos
@@ -103,8 +117,16 @@ export default function VATPage() {
         }
       })
 
+      const responseData = await response.json()
+
       if (!response.ok) {
-        throw new Error('Failed to delete period VAT data')
+        // Si es un error de tabla no encontrada, no mostrar error
+        if (responseData.message && responseData.message.includes('table does not exist')) {
+          console.log('Table does not exist, nothing to delete')
+          window.location.reload()
+          return
+        }
+        throw new Error(responseData.error || 'Failed to delete period VAT data')
       }
 
       // Refrescar los datos
@@ -132,6 +154,11 @@ export default function VATPage() {
                 <p className="text-xs text-blue-600 mt-1">
                   📱 Datos generados automáticamente desde WhatsApp
                 </p>
+                {vatData?.calculationDetails?.error && (
+                  <p className="text-xs text-orange-600 mt-1">
+                    ⚠️ {vatData.calculationDetails.error}
+                  </p>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <Button
