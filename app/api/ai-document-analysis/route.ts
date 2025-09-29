@@ -46,10 +46,20 @@ const ALLOWED_TYPES = [
 export async function POST(request: NextRequest) {
   console.log('📎 Nova requisição de análise de documento recebida')
   console.log('🌍 Environment:', process.env.NODE_ENV)
+  console.log('🌍 Platform:', process.env.VERCEL ? 'Vercel' : process.env.NETLIFY ? 'Netlify' : 'Local')
   console.log('🔑 API Keys disponibles:')
   console.log('  - GOOGLE_AI_API_KEY:', process.env.GOOGLE_AI_API_KEY ? '✅ Set' : '❌ Not set')
   console.log('  - OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Not set')
   console.log('  - GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Not set')
+
+  // Debug adicional para Netlify
+  if (process.env.NETLIFY) {
+    console.log('🔍 Netlify Environment Variables:')
+    console.log('  - NODE_ENV:', process.env.NODE_ENV)
+    console.log('  - NETLIFY:', process.env.NETLIFY)
+    console.log('  - CONTEXT:', process.env.CONTEXT)
+    console.log('  - BRANCH:', process.env.BRANCH)
+  }
 
   try {
     const formData = await request.formData()
@@ -104,12 +114,19 @@ export async function POST(request: NextRequest) {
 
     if (!googleAIKey && !openAIKey) {
       console.error('❌ No hay APIs de IA configuradas')
+      console.error('❌ Variables de entorno disponibles:', Object.keys(process.env).filter(key =>
+        key.includes('API') || key.includes('KEY') || key.includes('GEMINI') || key.includes('GOOGLE') || key.includes('OPENAI')
+      ))
+
       return NextResponse.json(
         {
           success: false,
           error: 'Nenhuma API de IA está configurada no servidor',
           errorType: 'NO_AI_API',
-          details: 'Verifique as variáveis de ambiente GOOGLE_AI_API_KEY, GEMINI_API_KEY ou OPENAI_API_KEY'
+          details: 'Verifique as variáveis de ambiente GOOGLE_AI_API_KEY, GEMINI_API_KEY ou OPENAI_API_KEY',
+          availableEnvVars: Object.keys(process.env).filter(key =>
+            key.includes('API') || key.includes('KEY') || key.includes('GEMINI') || key.includes('GOOGLE') || key.includes('OPENAI')
+          )
         },
         { status: 500 }
       )
@@ -129,6 +146,8 @@ export async function POST(request: NextRequest) {
     if (googleAIKey) {
       try {
         console.log('🔄 Tentando extração com Google AI (Gemini)...')
+        console.log('🔑 API Key length:', googleAIKey.length)
+        console.log('🔑 API Key starts with:', googleAIKey.substring(0, 10))
 
         const geminiExtractor = new AgentExtractorGemini(googleAIKey)
 
@@ -176,6 +195,12 @@ export async function POST(request: NextRequest) {
 
       } catch (googleError: any) {
         console.error('❌ Erro na Google AI, tentando fallback para OpenAI:', googleError.message)
+        console.error('❌ Google AI Error details:', {
+          name: googleError.name,
+          message: googleError.message,
+          code: googleError.code,
+          status: googleError.status
+        })
         fallbackUsed = true
 
         // SEGUNDA TENTATIVA: OpenAI (Fallback)
@@ -230,6 +255,12 @@ export async function POST(request: NextRequest) {
 
           } catch (openAIError: any) {
             console.error('❌ Erro também na OpenAI (fallback):', openAIError)
+            console.error('❌ OpenAI Error details:', {
+              name: openAIError.name,
+              message: openAIError.message,
+              code: openAIError.code,
+              status: openAIError.status
+            })
             throw new Error(`Ambas as APIs falharam - Google AI: ${googleError.message}, OpenAI: ${openAIError.message}`)
           }
         } else {

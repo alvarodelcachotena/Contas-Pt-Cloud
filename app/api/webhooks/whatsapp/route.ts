@@ -244,23 +244,31 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
     // Verificar si el número está autorizado
     console.log(`🔍 Verificando autorización para número: ${userPhone}`)
-    const { data: authorizedUser, error: authError } = await supabase
-      .from('whatsapp_authorized_users')
-      .select('*')
-      .eq('phone_number', userPhone)
-      .eq('is_active', true)
-      .single()
 
-    if (authError || !authorizedUser) {
+    // Solo número principal autorizado
+    const authorizedNumbers = [
+      '+34613881071' // Número principal
+    ]
+
+    const isAuthorized = authorizedNumbers.includes(userPhone)
+
+    if (!isAuthorized) {
       console.log(`❌ Número no autorizado: ${userPhone}`)
-      console.log(`🔍 Error de autorización:`, authError)
+      console.log(`📋 Números autorizados: ${authorizedNumbers.join(', ')}`)
 
       // Mensaje simple para números no autorizados
       await sendWhatsAppMessage(
         userPhone,
-        `❌ Tu número ${userPhone} no está autorizado para usar este servicio.\n\nContacta al administrador para obtener acceso.`
+        `❌ Tu número ${userPhone} no está autorizado para usar este servicio.\n\n📋 Números autorizados:\n${authorizedNumbers.map(num => `• ${num}`).join('\n')}\n\nContacta al administrador para obtener acceso.`
       )
       return
+    }
+
+    // Usuario autorizado - crear datos básicos
+    const authorizedUser = {
+      display_name: `Usuario ${userPhone}`,
+      role: 'user',
+      tenant_id: 1
     }
 
     console.log(`✅ Usuario autorizado: ${authorizedUser.display_name} (${authorizedUser.role})`)
