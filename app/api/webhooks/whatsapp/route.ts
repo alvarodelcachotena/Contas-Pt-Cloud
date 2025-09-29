@@ -245,9 +245,10 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
     // Verificar si el número está autorizado
     console.log(`🔍 Verificando autorización para número: ${userPhone}`)
 
-    // Solo número principal autorizado
+    // Solo número principal autorizado (con y sin prefijo +)
     const authorizedNumbers = [
-      '+34613881071' // Número principal
+      '+34613881071', // Número principal con prefijo
+      '34613881071'   // Número principal sin prefijo
     ]
 
     const isAuthorized = authorizedNumbers.includes(userPhone)
