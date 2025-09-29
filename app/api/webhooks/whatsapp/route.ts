@@ -35,9 +35,9 @@ function verifyApiKey() {
 }
 
 // Función para enviar mensajes de WhatsApp
-async function sendWhatsAppMessage(phoneNumber: string, message: string, phoneNumberId?: string) {
+async function sendWhatsAppMessage(phoneNumber: string, message: string) {
   try {
-    const credentials = getWhatsAppCredentials(phoneNumberId)
+    const credentials = getWhatsAppCredentials()
     console.log('📤 Enviando mensaje a WhatsApp:', {
       phoneNumber,
       messageLength: message.length,
@@ -90,7 +90,7 @@ function createSupabaseClient() {
 }
 
 // Get WhatsApp credentials from environment variables
-function getWhatsAppCredentials(phoneNumberId?: string) {
+function getWhatsAppCredentials() {
   // Debug: Log all environment variables
   console.log('🔍 Environment variables:')
   console.log('  - WHATSAPP_ACCESS_TOKEN:', process.env.WHATSAPP_ACCESS_TOKEN ? '✅ Set' : '❌ Not set')
@@ -104,52 +104,20 @@ function getWhatsAppCredentials(phoneNumberId?: string) {
   // Debug: Show actual verify token value
   console.log('  - Verify Token value:', process.env.WHATSAPP_VERIFY_TOKEN)
 
-  // Configuración para múltiples números de WhatsApp
-  const whatsappConfigs = {
-    // Número principal (original)
-    [process.env.WHATSAPP_PHONE_NUMBER_ID!]: {
-      accessToken: process.env.WHATSAPP_ACCESS_TOKEN!,
-      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
-      businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID!,
-      appId: process.env.WHATSAPP_APP_ID!,
-      appSecret: process.env.WHATSAPP_APP_SECRET!,
-      verifyToken: process.env.WHATSAPP_VERIFY_TOKEN!,
-      webhookUrl: process.env.WHATSAPP_WEBHOOK_URL!,
-      displayNumber: '+34613881071'
-    },
-    // Número secundario (Colombia)
-    [process.env.WHATSAPP_PHONE_NUMBER_ID_2!]: {
-      accessToken: process.env.WHATSAPP_ACCESS_TOKEN_2!,
-      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID_2!,
-      businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID_2!,
-      appId: process.env.WHATSAPP_APP_ID_2!,
-      appSecret: process.env.WHATSAPP_APP_SECRET_2!,
-      verifyToken: process.env.WHATSAPP_VERIFY_TOKEN_2!,
-      webhookUrl: process.env.WHATSAPP_WEBHOOK_URL_2!,
-      displayNumber: '+573014241183'
-    },
-    // Número terciario (España)
-    [process.env.WHATSAPP_PHONE_NUMBER_ID_3!]: {
-      accessToken: process.env.WHATSAPP_ACCESS_TOKEN_3!,
-      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID_3!,
-      businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID_3!,
-      appId: process.env.WHATSAPP_APP_ID_3!,
-      appSecret: process.env.WHATSAPP_APP_SECRET_3!,
-      verifyToken: process.env.WHATSAPP_VERIFY_TOKEN_3!,
-      webhookUrl: process.env.WHATSAPP_WEBHOOK_URL_3!,
-      displayNumber: '+34661613025'
-    }
+  // Configuración simplificada para solo el número principal
+  const credentials = {
+    accessToken: process.env.WHATSAPP_ACCESS_TOKEN!,
+    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
+    businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID!,
+    appId: process.env.WHATSAPP_APP_ID!,
+    appSecret: process.env.WHATSAPP_APP_SECRET!,
+    verifyToken: process.env.WHATSAPP_VERIFY_TOKEN!,
+    webhookUrl: process.env.WHATSAPP_WEBHOOK_URL!,
+    displayNumber: '+34613881071'
   }
 
-  // Si se especifica un phoneNumberId, usar esa configuración
-  if (phoneNumberId && whatsappConfigs[phoneNumberId]) {
-    console.log(`📱 Usando configuración para número: ${whatsappConfigs[phoneNumberId].displayNumber}`)
-    return whatsappConfigs[phoneNumberId]
-  }
-
-  // Por defecto, usar la configuración principal
-  console.log(`📱 Usando configuración principal: ${whatsappConfigs[process.env.WHATSAPP_PHONE_NUMBER_ID!].displayNumber}`)
-  return whatsappConfigs[process.env.WHATSAPP_PHONE_NUMBER_ID!]
+  console.log(`📱 Usando configuración principal: ${credentials.displayNumber}`)
+  return credentials
 }
 
 // WhatsApp webhook verification
@@ -290,8 +258,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
       // Mensaje simple para números no autorizados
       await sendWhatsAppMessage(
         userPhone,
-        `❌ Tu número ${userPhone} no está autorizado para usar este servicio.\n\nContacta al administrador para obtener acceso.`,
-        phoneNumberId
+        `❌ Tu número ${userPhone} no está autorizado para usar este servicio.\n\nContacta al administrador para obtener acceso.`
       )
       return
     }
@@ -304,7 +271,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
     if (message.type === 'image' || message.type === 'document' || message.type === 'audio' || message.type === 'video') {
       console.log(`📎 Media message detected: ${message.type}`)
 
-      const credentials = getWhatsAppCredentials(phoneNumberId)
+      const credentials = getWhatsAppCredentials()
 
       // Get media details
       const mediaDetails = message[message.type as keyof WhatsAppMessage] as any
@@ -362,7 +329,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
           // Send initial confirmation message
           const initialMessage = `📥 Imagen recibida y procesando...\n\n📄 Archivo: ${mediaData.filename}\n📏 Tamaño: ${(mediaData.size / 1024).toFixed(1)} KB\n🤖 Analizando con IA...\n\nTe avisaré cuando esté listo.`
-          await sendWhatsAppMessage(message.from, initialMessage, phoneNumberId)
+          await sendWhatsAppMessage(message.from, initialMessage)
 
           // Store the media file in Supabase Storage
           const fileName = `whatsapp/${document.id}/${mediaData.filename}`
@@ -651,7 +618,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             }
 
             const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${documentTypeText}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}${paymentTypeText}\n💰 Guardado en ${locationText} (no se creó cliente)\n\n${dropboxStatus}\nEl documento aparecerá en la sección correspondiente.`
-            await sendWhatsAppMessage(message.from, successMessage, phoneNumberId)
+            await sendWhatsAppMessage(message.from, successMessage)
 
           } catch (aiError) {
             console.error('❌ Error en procesamiento AI:', aiError)
@@ -670,14 +637,14 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             // Send error message to WhatsApp
             const errorMessage = `❌ Error al procesar el documento\n\n🔍 Error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}\n\nEl documento se guardó pero no se pudo analizar. Revisa los logs para más detalles.`
-            await sendWhatsAppMessage(message.from, errorMessage, phoneNumberId)
+            await sendWhatsAppMessage(message.from, errorMessage)
           }
         }
       } else {
         console.error('❌ Failed to download media from WhatsApp')
         // Send error message to user
         const errorMessage = `❌ Error al descargar la imagen\n\n🔍 No se pudo descargar la imagen de WhatsApp. Inténtalo de nuevo.`
-        await sendWhatsAppMessage(message.from, errorMessage, phoneNumberId)
+        await sendWhatsAppMessage(message.from, errorMessage)
       }
     } else if (message.type === 'text') {
       console.log(`💬 Text message received: ${message.text?.body}`)

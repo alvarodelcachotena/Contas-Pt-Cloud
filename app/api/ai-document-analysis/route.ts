@@ -306,11 +306,20 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Erro geral na análise de documento:', error)
+    console.error('❌ Stack trace:', error.stack)
 
     let errorMessage = 'Erro interno do servidor'
     let errorType = 'UNKNOWN_ERROR'
     let statusCode = 500
     let userFriendlyMessage = 'Ocorreu um erro ao processar o documento. Tente novamente.'
+
+    // Log más detalles del error para debugging
+    if (error.message) {
+      console.error('❌ Error message:', error.message)
+    }
+    if (error.code) {
+      console.error('❌ Error code:', error.code)
+    }
 
     if (error.message?.includes('Ambas as APIs falharam')) {
       errorMessage = error.message
@@ -327,6 +336,16 @@ export async function POST(request: NextRequest) {
       errorType = 'QUOTA_EXCEEDED'
       userFriendlyMessage = 'Limite de uso da API atingido. Contacte o administrador.'
       statusCode = 429
+    } else if (error.message?.includes('Failed to fetch')) {
+      errorMessage = 'Erro de conexão com API'
+      errorType = 'CONNECTION_ERROR'
+      userFriendlyMessage = 'Erro de conexão. Verifique a configuração da API.'
+      statusCode = 502
+    } else if (error.message?.includes('Invalid API key')) {
+      errorMessage = 'API key inválida'
+      errorType = 'INVALID_API_KEY'
+      userFriendlyMessage = 'Configuração de API inválida. Contacte o administrador.'
+      statusCode = 401
     } else if (error.message) {
       errorMessage = error.message
       userFriendlyMessage = 'Erro no processamento do documento. Verifique o arquivo e tente novamente.'
@@ -338,7 +357,8 @@ export async function POST(request: NextRequest) {
         error: userFriendlyMessage,
         details: errorMessage,
         errorType: errorType,
-        timestamp: new Date().toISOString()
+        timestamp: new Date().toISOString(),
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
       },
       { status: statusCode }
     )
