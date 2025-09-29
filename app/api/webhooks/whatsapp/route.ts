@@ -285,9 +285,12 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
     if (authError || !authorizedUser) {
       console.log(`❌ Número no autorizado: ${userPhone}`)
+      console.log(`🔍 Error de autorización:`, authError)
+
+      // Mensaje simple para números no autorizados
       await sendWhatsAppMessage(
         userPhone,
-        `❌ Tu número ${userPhone} no está autorizado para usar este servicio.\n\nContacta al administrador para obtener acceso.\n\nNúmeros autorizados:\n• +34613881071 (Principal España)\n• +573014241183 (Colombia)\n• +34661613025 (Secundario España)`,
+        `❌ Tu número ${userPhone} no está autorizado para usar este servicio.\n\nContacta al administrador para obtener acceso.`,
         phoneNumberId
       )
       return

@@ -170,7 +170,13 @@ export default function AIAssistantPage() {
       'image/gif',
       'image/bmp',
       'image/webp',
-      'image/tiff'
+      'image/tiff',
+      'image/svg+xml',
+      'image/heic',
+      'image/heif',
+      'image/avif',
+      'image/x-icon',
+      'image/vnd.microsoft.icon'
     ]
 
     if (!allowedTypes.includes(file.type)) {
@@ -259,7 +265,7 @@ export default function AIAssistantPage() {
           responseMessage += `• **${t.aiAssistant.fields.invoiceNumber}:** ${extracted.invoiceNumber || 'N/A'}\n`
           responseMessage += `• **${t.aiAssistant.fields.date}:** ${extracted.issueDate || 'N/A'}\n`
           responseMessage += `• **${t.aiAssistant.fields.netAmount}:** €${extracted.netAmount || '0.00'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.vat}:** €${extracted.vatAmount || '0.00'} (${(extracted.vatRate * 100).toFixed(1)}%)\n`
+          responseMessage += `• **${t.aiAssistant.fields.vat}:** €${extracted.vatAmount || '0.00'} (${(extracted.vatRate * 100).toFixed(0)}%)\n`
           responseMessage += `• **${t.aiAssistant.fields.total}:** €${extracted.total || '0.00'}\n`
           responseMessage += `• **${t.aiAssistant.fields.category}:** ${extracted.category || 'N/A'}\n`
           responseMessage += `• **${t.aiAssistant.fields.description}:** ${extracted.description || 'N/A'}\n`
@@ -268,6 +274,9 @@ export default function AIAssistantPage() {
           if (extracted.extractionIssues && extracted.extractionIssues.length > 0) {
             responseMessage += `\n⚠️  **${t.aiAssistant.issuesDetected}:**\n${extracted.extractionIssues.map((issue: string) => `• ${issue}`).join('\n')}`
           }
+
+          // Guardar automáticamente como factura
+          responseMessage += `\n\n💾 **${t.aiAssistant.autoSave.title}**`
         }
 
         const assistantMessage: ChatMessage = {
@@ -279,6 +288,68 @@ export default function AIAssistantPage() {
         }
 
         setChatHistory(prev => [...prev, assistantMessage])
+
+        // Guardar automáticamente como factura si hay datos extraídos
+        if (data.extractedData) {
+          try {
+            // Generar nombre personalizado para la factura
+            const vendorName = data.extractedData.vendor || 'Factura'
+            const issueDate = data.extractedData.issueDate || new Date().toISOString().split('T')[0]
+            const date = new Date(issueDate)
+            const formattedDate = date.toLocaleDateString('pt-PT', {
+              day: '2-digit',
+              month: '2-digit',
+              year: 'numeric'
+            }).replace(/\//g, '-')
+
+            const customInvoiceNumber = `${vendorName.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim()} ${formattedDate}`
+
+            const invoiceResponse = await fetch('/api/invoices', {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json',
+              },
+              body: JSON.stringify({
+                customNumber: customInvoiceNumber,
+                clientName: data.extractedData.vendor,
+                clientEmail: '',
+                clientTaxId: data.extractedData.nif,
+                issueDate: issueDate,
+                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 días
+                amount: data.extractedData.netAmount || 0,
+                vatAmount: data.extractedData.vatAmount || 0,
+                vatRate: data.extractedData.vatRate || 0.23,
+                totalAmount: data.extractedData.total || 0,
+                status: 'pagado',
+                description: data.extractedData.description || 'Factura creada desde análisis de documento',
+                paymentTerms: '30 dias',
+                paymentType: 'tarjeta'
+              })
+            })
+
+            if (invoiceResponse.ok) {
+              const invoice = await invoiceResponse.json()
+              const successMessage: ChatMessage = {
+                id: Date.now() + 2,
+                type: 'assistant',
+                message: `✅ **${t.aiAssistant.autoSave.success}**\n\n📋 **${t.aiAssistant.invoiceDetails.number}:** ${invoice.number}\n🏪 **${t.aiAssistant.invoiceDetails.vendor}:** ${data.extractedData.vendor}\n💰 **${t.aiAssistant.invoiceDetails.total}:** €${invoice.total_amount}`,
+                timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
+              }
+              setChatHistory(prev => [...prev, successMessage])
+            } else {
+              throw new Error('Error al crear la factura')
+            }
+          } catch (error) {
+            console.error('Error saving invoice automatically:', error)
+            const errorMessage: ChatMessage = {
+              id: Date.now() + 2,
+              type: 'assistant',
+              message: `❌ **${t.aiAssistant.autoSave.error}**\n\n${error instanceof Error ? error.message : 'Error desconocido'}`,
+              timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
+            }
+            setChatHistory(prev => [...prev, errorMessage])
+          }
+        }
 
         // Guardar respuesta del análisis de archivo
         await saveChatMessage(userMessage.message, responseMessage, false, {
@@ -324,6 +395,7 @@ export default function AIAssistantPage() {
       sendMessage()
     }
   }
+
 
 
   return (
@@ -388,7 +460,7 @@ export default function AIAssistantPage() {
                 <input
                   ref={fileInputRef}
                   type="file"
-                  accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp,.tiff"
+                  accept=".pdf,.png,.jpg,.jpeg,.gif,.bmp,.webp,.tiff,.svg,.heic,.heif,.avif,.ico"
                   onChange={handleFileSelect}
                   className="hidden"
                 />

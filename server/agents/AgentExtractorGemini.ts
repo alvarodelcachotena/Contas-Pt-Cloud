@@ -18,7 +18,7 @@ export class AgentExtractorGemini {
     if (!value || value.trim() === '') {
       return '';
     }
-    
+
     const lowerValue = value.toLowerCase();
     for (const pattern of placeholderPatterns) {
       if (lowerValue.includes(pattern)) {
@@ -26,7 +26,7 @@ export class AgentExtractorGemini {
         return '';
       }
     }
-    
+
     return value;
   }
 
@@ -48,7 +48,7 @@ Extrai os seguintes campos de uma fatura/documento fiscal:
 7. Valor sem IVA
 8. Valor do IVA
 9. Valor total com IVA
-10. Taxa de IVA (6%, 13%, ou 23%)
+10. Taxa de IVA (0.06, 0.13, ou 0.23 como decimal)
 11. Cliente/Destinatário
 12. Número da fatura
 13. Categoria (alimentacao|transporte|material_escritorio|servicos|combustivel|alojamento|outras_despesas)
@@ -56,7 +56,7 @@ Extrai os seguintes campos de uma fatura/documento fiscal:
 REGRAS CRÍTICAS PARA NIF/VAT EU - OBRIGATÓRIO ADICIONAR PREFIXO DO PAÍS:
 - Portugal: PT + 9 dígitos (PT123456789)
 - Itália: IT + 11 dígitos (IT12345678901) - EXEMPLO: "03424760134" → "IT03424760134"
-- Espanha: ES + 8 dígitos + 1 letra (ES12345678A)
+- Espanha: NÃO adicionar prefixo ES automaticamente, manter formato original
 - França: FR + 11 dígitos (FR12345678901)
 - Alemanha: DE + 9 dígitos (DE123456789)
 - Holanda: NL + 12 dígitos (NL123456789B12)
@@ -72,11 +72,11 @@ REGRAS CRÍTICAS PARA NIF/VAT EU - OBRIGATÓRIO ADICIONAR PREFIXO DO PAÍS:
 - Grécia: EL + 9 dígitos (EL123456789)
 
 DETECÇÃO AUTOMÁTICA DE PAÍS (OBRIGATÓRIO):
-- Sufixos de empresa: .IT → Itália, .ES → Espanha, .DE → Alemanha, .FR → França
-- Tipos de empresa: S.R.L./S.P.A. → IT, S.A. → ES, GmbH → DE, SARL → FR, B.V. → NL
-- Códigos postais: 00000-99999 → IT, 28000-48999 → ES, 10000-99999 → DE
+- Sufixos de empresa: .IT → Itália, .DE → Alemanha, .FR → França
+- Tipos de empresa: S.R.L./S.P.A. → IT, GmbH → DE, SARL → FR, B.V. → NL
+- Códigos postais: 00000-99999 → IT, 10000-99999 → DE
 - Idiomas: alemão → DE, francês → FR, italiano → IT, holandês → NL
-- NUNCA extrair NIF/VAT sem prefixo do país
+- Para empresas espanholas: NÃO adicionar prefixo ES automaticamente, manter formato original
 
 INSTRUÇÕES CRÍTICAS PARA EXTRAÇÃO DE DADOS REAIS:
 OBRIGATÓRIO: Extraia APENAS dados reais visíveis no documento. NUNCA use placeholders, dados genéricos, ou valores inventados.
@@ -132,7 +132,7 @@ Responde APENAS em formato JSON válido:
   "total": valor_total_numerico,
   "netAmount": valor_sem_iva_numerico,
   "vatAmount": valor_iva_numerico,
-  "vatRate": taxa_iva_decimal,
+  "vatRate": taxa_iva_como_decimal_entre_0_e_1,
   "category": "categoria",
   "description": "descrição breve",
   "confidence": valor_confianca,
@@ -154,7 +154,7 @@ Responde APENAS em formato JSON válido:
       }
 
       const extracted = JSON.parse(jsonMatch[0]);
-      
+
       console.log('🤖 Gemini Raw Response:', {
         vendor: extracted.vendor,
         nif: extracted.nif,
@@ -172,27 +172,14 @@ Responde APENAS em formato JSON válido:
       // Post-process NIF to ensure country prefix is present
       let processedNif = extracted.nif || '';
       let processedNifCountry = extracted.nifCountry || '';
-      
-      // If NIF doesn't have country prefix, try to detect and add it
-      if (processedNif && !processedNif.match(/^[A-Z]{2}/)) {
-        const vendor = extracted.vendor || '';
-        if (vendor.includes('S.R.L.') || vendor.includes('S.P.A.') || vendor.includes('.IT')) {
-          processedNif = 'IT' + processedNif;
-          processedNifCountry = 'IT';
-        } else if (vendor.includes('S.A.') && !vendor.includes('S.A.R.L.')) {
-          processedNif = 'ES' + processedNif;
-          processedNifCountry = 'ES';
-        } else if (vendor.includes('GmbH')) {
-          processedNif = 'DE' + processedNif;
-          processedNifCountry = 'DE';
-        } else if (vendor.includes('SARL') || vendor.includes('S.A.R.L.')) {
-          processedNif = 'FR' + processedNif;
-          processedNifCountry = 'FR';
-        } else if (vendor.includes('B.V.')) {
-          processedNif = 'NL' + processedNif;
-          processedNifCountry = 'NL';
-        }
-        console.log(`🔧 Enhanced NIF from "${extracted.nif}" to "${processedNif}" (Country: ${processedNifCountry})`);
+
+      // Keep NIF exactly as extracted by AI without any automatic prefix addition
+      // This prevents unwanted prefixes like "ES" being added to Spanish NIFs
+      console.log(`🔧 NIF kept as extracted: "${extracted.nif}" → "${processedNif}"`);
+
+      // Only set country if NIF already has a prefix
+      if (processedNif.match(/^[A-Z]{2}/)) {
+        processedNifCountry = processedNif.substring(0, 2);
       }
 
       // Validate that no placeholder data is being returned - be more specific to avoid blocking legitimate names
@@ -216,7 +203,7 @@ Responde APENAS em formato JSON válido:
       // Track field-level provenance with detailed metadata
       const provenance: { [field: string]: any } = {};
       const timestamp = new Date();
-      
+
       for (const [field, value] of Object.entries(cleanData)) {
         provenance[field] = {
           model: "gemini-2.5-flash",
@@ -265,7 +252,7 @@ Responde APENAS em formato JSON válido:
     try {
       // First extract tables and line items
       const tableResult = await this.tableParser.extractTables(fileBuffer, "application/pdf", filename);
-      
+
       // Then extract header/metadata information
       const baseResult = await this.genAI.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -282,7 +269,7 @@ Responde APENAS em formato JSON válido:
 
       const textResponse = baseResult.text || "";
       const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-      
+
       if (!jsonMatch) {
         throw new Error("No JSON found in response");
       }
@@ -292,50 +279,20 @@ Responde APENAS em formato JSON válido:
       // Process NIF and clean data as before
       let processedNif = extracted.nif || '';
       let nifCountry = '';
-      
+
       if (processedNif && !processedNif.match(/^[A-Z]{2}/)) {
         const vendor = extracted.vendor || '';
-        
+
         // Auto-detect country based on business patterns
         if (vendor.includes('S.R.L.') || vendor.includes('S.P.A.') || vendor.includes('.IT')) {
           processedNif = 'IT' + processedNif;
           nifCountry = 'IT';
-        } else if (vendor.includes('S.A.') && !vendor.includes('S.A.R.L.')) {
-          processedNif = 'ES' + processedNif;
-          nifCountry = 'ES';
-        } else if (vendor.includes('GmbH') || vendor.includes('.DE')) {
-          processedNif = 'DE' + processedNif;
-          nifCountry = 'DE';
-        } else if (vendor.includes('SARL') || vendor.includes('S.A.R.L.') || vendor.includes('.FR')) {
-          processedNif = 'FR' + processedNif;
-          nifCountry = 'FR';
-        } else if (vendor.includes('B.V.') || vendor.includes('.NL')) {
-          processedNif = 'NL' + processedNif;
-          nifCountry = 'NL';
-        } else if (vendor.includes('AB') || vendor.includes('AG') || vendor.includes('.SE')) {
-          processedNif = 'SE' + processedNif;
-          nifCountry = 'SE';
-        } else if (vendor.includes('ApS') || vendor.includes('A/S') || vendor.includes('.DK')) {
-          processedNif = 'DK' + processedNif;
-          nifCountry = 'DK';
-        } else if (vendor.includes('Oy') || vendor.includes('.FI')) {
-          processedNif = 'FI' + processedNif;
-          nifCountry = 'FI';
-        } else if (vendor.includes('Sp.') || vendor.includes('.PL')) {
-          processedNif = 'PL' + processedNif;
-          nifCountry = 'PL';
-        } else if (vendor.includes('s.r.o.') || vendor.includes('.CZ')) {
-          processedNif = 'CZ' + processedNif;
-          nifCountry = 'CZ';
-        } else if (vendor.includes('.AT')) {
-          processedNif = 'AT' + processedNif;
-          nifCountry = 'AT';
-        } else if (vendor.includes('.BE')) {
-          processedNif = 'BE' + processedNif;
-          nifCountry = 'BE';
+          // For Spanish companies, don't automatically add ES prefix
+          // Let the AI extract the correct format
         }
-        
-        console.log(`🔧 Enhanced NIF processing: "${extracted.nif}" → "${processedNif}" (${nifCountry})`);
+        // Keep NIF exactly as extracted by AI without any automatic prefix addition
+        // This prevents unwanted prefixes like "ES" being added to Spanish NIFs
+        console.log(`🔧 NIF kept as extracted: "${extracted.nif}" → "${processedNif}"`);
       } else if (processedNif.match(/^[A-Z]{2}/)) {
         nifCountry = processedNif.substring(0, 2);
       }
@@ -447,7 +404,7 @@ Return ONLY valid JSON:
     try {
       // First extract tables and line items
       const tableResult = await this.tableParser.extractTables(fileBuffer, mimeType, filename);
-      
+
       // Then extract header/metadata information using existing image prompt
       const baseResult = await this.genAI.models.generateContent({
         model: 'gemini-2.5-flash',
@@ -464,7 +421,7 @@ Return ONLY valid JSON:
 
       const textResponse = baseResult.text || "";
       const jsonMatch = textResponse.match(/\{[\s\S]*\}/);
-      
+
       if (!jsonMatch) {
         throw new Error("No JSON found in response");
       }
@@ -590,7 +547,7 @@ Return ONLY valid JSON without markdown:
   ): { [field: string]: any } {
     const provenance: { [field: string]: any } = {};
     const timestamp = new Date();
-    
+
     for (const [field, value] of Object.entries(data)) {
       provenance[field] = {
         model: "gemini-2.5-flash",

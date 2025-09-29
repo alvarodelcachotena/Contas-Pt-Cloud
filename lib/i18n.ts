@@ -764,6 +764,17 @@ export interface Translations {
         }
         issuesDetected: string
         fileProcessingError: string
+        autoSave: {
+            title: string
+            success: string
+            error: string
+        }
+        invoiceDetails: {
+            number: string
+            total: string
+            date: string
+            vendor: string
+        }
     }
 
     // Cloud Drives
@@ -1707,6 +1718,17 @@ export const translations: Record<Language, Translations> = {
             externalCompany: '🏪 **EMPRESA EXTERNA**',
             issuesDetected: 'Problemas detectados:',
             fileProcessingError: '❌ Erro ao processar o arquivo. Verifique se é um PDF ou imagem válida e tente novamente.',
+            autoSave: {
+                title: 'Guardando automaticamente como fatura...',
+                success: 'Fatura criada automaticamente!',
+                error: 'Erro ao criar fatura automaticamente'
+            },
+            invoiceDetails: {
+                number: 'Número',
+                total: 'Total',
+                date: 'Data',
+                vendor: 'Fornecedor'
+            },
             fields: {
                 vendor: 'Fornecedor',
                 nif: 'NIF',
@@ -2613,6 +2635,17 @@ export const translations: Record<Language, Translations> = {
             externalCompany: '🏪 **EXTERNAL COMPANY**',
             issuesDetected: 'Issues detected:',
             fileProcessingError: '❌ Error processing file. Please verify it is a valid PDF or image and try again.',
+            autoSave: {
+                title: 'Saving automatically as invoice...',
+                success: 'Invoice created automatically!',
+                error: 'Error creating invoice automatically'
+            },
+            invoiceDetails: {
+                number: 'Number',
+                total: 'Total',
+                date: 'Date',
+                vendor: 'Vendor'
+            },
             fields: {
                 vendor: 'Vendor',
                 nif: 'NIF',
@@ -3519,6 +3552,17 @@ export const translations: Record<Language, Translations> = {
             externalCompany: '🏪 **ENTREPRISE EXTERNE**',
             issuesDetected: 'Problèmes détectés :',
             fileProcessingError: '❌ Erreur lors du traitement du fichier. Vérifiez qu\'il s\'agit d\'un PDF ou d\'une image valide et réessayez.',
+            autoSave: {
+                title: 'Sauvegarde automatique comme facture...',
+                success: 'Facture créée automatiquement !',
+                error: 'Erreur lors de la création automatique de la facture'
+            },
+            invoiceDetails: {
+                number: 'Numéro',
+                total: 'Total',
+                date: 'Date',
+                vendor: 'Fournisseur'
+            },
             fields: {
                 vendor: 'Fournisseur',
                 nif: 'NIF',
@@ -4343,7 +4387,18 @@ export const translations: Record<Language, Translations> = {
                 netAmount: "Importe Neto"
             },
             issuesDetected: "Problemas detectados",
-            fileProcessingError: "Error al procesar archivo"
+            fileProcessingError: "Error al procesar archivo",
+            autoSave: {
+                title: "Guardando automáticamente como factura...",
+                success: "¡Factura creada automáticamente!",
+                error: "Error al crear factura automáticamente"
+            },
+            invoiceDetails: {
+                number: "Número",
+                total: "Total",
+                date: "Fecha",
+                vendor: "Proveedor"
+            }
         },
         cloudDrives: {
             title: "Almacenamiento en la Nube",

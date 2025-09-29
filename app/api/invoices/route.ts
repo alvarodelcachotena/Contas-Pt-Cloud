@@ -60,24 +60,44 @@ export async function POST(request: NextRequest) {
     const body = await request.json()
     console.log('📝 Creating invoice for tenant: 1', body)
 
-    // Generate invoice number automatically
-    const { count: invoiceCount, error: countError } = await supabase
-      .from('invoices')
-      .select('*', { count: 'exact', head: true })
-      .eq('tenant_id', 1)
+    // Generate invoice number based on client name and date
+    let invoiceNumber = ''
 
-    if (countError) {
-      console.error('❌ Error counting invoices:', countError)
-      return NextResponse.json({ error: 'Failed to generate invoice number' }, { status: 500 })
+    if (body.customNumber) {
+      // Use custom number if provided (from AI assistant)
+      invoiceNumber = body.customNumber
+    } else if (body.clientName && body.issueDate) {
+      // Generate from client name and date
+      const clientName = body.clientName.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim()
+      const date = new Date(body.issueDate)
+      const formattedDate = date.toLocaleDateString('pt-PT', {
+        day: '2-digit',
+        month: '2-digit',
+        year: 'numeric'
+      }).replace(/\//g, '-')
+
+      invoiceNumber = `${clientName} ${formattedDate}`
+    } else {
+      // Fallback to automatic numbering
+      const { count: invoiceCount, error: countError } = await supabase
+        .from('invoices')
+        .select('*', { count: 'exact', head: true })
+        .eq('tenant_id', 1)
+
+      if (countError) {
+        console.error('❌ Error counting invoices:', countError)
+        return NextResponse.json({ error: 'Failed to generate invoice number' }, { status: 500 })
+      }
+
+      invoiceNumber = `FAT-${((invoiceCount || 0) + 1).toString().padStart(6, '0')}`
     }
 
-    const nextInvoiceNumber = `FAT-${((invoiceCount || 0) + 1).toString().padStart(6, '0')}`
-    console.log('📋 Generated invoice number:', nextInvoiceNumber)
+    console.log('📋 Generated invoice number:', invoiceNumber)
 
     // Prepare invoice data
     const invoiceData = {
       tenant_id: 1,
-      number: nextInvoiceNumber,
+      number: invoiceNumber,
       client_name: body.clientName,
       client_email: body.clientEmail,
       client_tax_id: body.clientTaxId,
@@ -89,7 +109,8 @@ export async function POST(request: NextRequest) {
       total_amount: body.totalAmount,
       status: body.status,
       description: body.description,
-      payment_terms: body.paymentTerms || '30 dias'
+      payment_terms: body.paymentTerms || '30 dias',
+      payment_type: body.paymentType || 'tarjeta'
     }
 
     console.log('📋 Invoice data to insert:', invoiceData)

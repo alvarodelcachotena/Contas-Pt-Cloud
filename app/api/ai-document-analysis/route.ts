@@ -29,24 +29,30 @@ const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
 const ALLOWED_TYPES = [
   'application/pdf',
   'image/jpeg',
-  'image/jpg', 
+  'image/jpg',
   'image/png',
   'image/gif',
   'image/bmp',
   'image/webp',
-  'image/tiff'
+  'image/tiff',
+  'image/svg+xml',
+  'image/heic',
+  'image/heif',
+  'image/avif',
+  'image/x-icon',
+  'image/vnd.microsoft.icon'
 ]
 
 export async function POST(request: NextRequest) {
   console.log('📎 Nova requisição de análise de documento recebida')
-  
+
   try {
     const formData = await request.formData()
     const file = formData.get('file') as File
-    
+
     if (!file) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'Nenhum arquivo foi enviado',
           errorType: 'NO_FILE'
@@ -59,9 +65,9 @@ export async function POST(request: NextRequest) {
     if (!ALLOWED_TYPES.includes(file.type)) {
       console.log(`❌ Tipo de arquivo não suportado: ${file.type}`)
       return NextResponse.json(
-        { 
+        {
           success: false,
-          error: `Tipo de arquivo não suportado: ${file.type}. Tipos permitidos: PDF, PNG, JPG, GIF, BMP, WebP, TIFF`,
+          error: `Tipo de arquivo não suportado: ${file.type}. Tipos permitidos: PDF, PNG, JPG, JPEG, GIF, BMP, WebP, TIFF, SVG, HEIC, HEIF, AVIF, ICO`,
           errorType: 'UNSUPPORTED_FILE_TYPE'
         },
         { status: 400 }
@@ -72,7 +78,7 @@ export async function POST(request: NextRequest) {
     if (file.size > MAX_FILE_SIZE) {
       console.log(`❌ Arquivo muito grande: ${file.size} bytes`)
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: `Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Tamanho máximo: 10MB`,
           errorType: 'FILE_TOO_LARGE'
@@ -89,7 +95,7 @@ export async function POST(request: NextRequest) {
 
     if (!googleAIKey && !openAIKey) {
       return NextResponse.json(
-        { 
+        {
           success: false,
           error: 'Nenhuma API de IA está configurada no servidor',
           errorType: 'NO_AI_API'
@@ -112,9 +118,9 @@ export async function POST(request: NextRequest) {
     if (googleAIKey) {
       try {
         console.log('🔄 Tentando extração com Google AI (Gemini)...')
-        
+
         const geminiExtractor = new AgentExtractorGemini(googleAIKey)
-        
+
         if (file.type === 'application/pdf') {
           // Processar PDF
           const result = await geminiExtractor.extractFromPDF(buffer, file.name)
@@ -150,7 +156,7 @@ export async function POST(request: NextRequest) {
             console.log('🏪 Empresa externa detectada')
           }
         } else {
-          extendedData = { 
+          extendedData = {
             ...extractedData,
             isMyCompany: false,
             companyType: 'EXTERNA'
@@ -160,14 +166,14 @@ export async function POST(request: NextRequest) {
       } catch (googleError: any) {
         console.error('❌ Erro na Google AI, tentando fallback para OpenAI:', googleError.message)
         fallbackUsed = true
-        
+
         // SEGUNDA TENTATIVA: OpenAI (Fallback)
         if (openAIKey) {
           try {
             console.log('🔄 Usando OpenAI como fallback...')
-            
+
             const openAIExtractor = new AgentExtractorOpenAI(openAIKey)
-            
+
             if (file.type === 'application/pdf') {
               // Para PDF, primeiro converter a OCR e depois processar
               // Por ahora, simplificamos usando solo el texto
@@ -182,7 +188,7 @@ export async function POST(request: NextRequest) {
               ocrText = 'Imagem processada via OpenAI Vision'
               usedModel = 'OpenAI (GPT-4o-Mini) - Fallback Image Vision'
             }
-            
+
             console.log('✅ Extração com OpenAI (fallback) concluída')
 
             // Adicionar detecção de empresa própria
@@ -204,13 +210,13 @@ export async function POST(request: NextRequest) {
                 console.log('🏪 Empresa externa detectada')
               }
             } else {
-              extendedData = { 
+              extendedData = {
                 ...extractedData,
                 isMyCompany: false,
                 companyType: 'EXTERNA'
               }
             }
-            
+
           } catch (openAIError: any) {
             console.error('❌ Erro também na OpenAI (fallback):', openAIError)
             throw new Error(`Ambas as APIs falharam - Google AI: ${googleError.message}, OpenAI: ${openAIError.message}`)
@@ -224,9 +230,9 @@ export async function POST(request: NextRequest) {
       if (openAIKey) {
         try {
           console.log('🔄 Google AI não configurada, usando OpenAI...')
-          
+
           const openAIExtractor = new AgentExtractorOpenAI(openAIKey)
-          
+
           if (file.type === 'application/pdf') {
             const result = await openAIExtractor.extract('Documento PDF - processamento limitado', file.name)
             extractedData = result.data
@@ -238,7 +244,7 @@ export async function POST(request: NextRequest) {
             ocrText = 'Imagem processada via OpenAI Vision'
             usedModel = 'OpenAI (GPT-4o-Mini) - Única disponível Image Vision'
           }
-          
+
           console.log('✅ Extração com OpenAI concluída')
 
           // Adicionar detecção de empresa própria
@@ -260,13 +266,13 @@ export async function POST(request: NextRequest) {
               console.log('🏪 Empresa externa detectada')
             }
           } else {
-            extendedData = { 
+            extendedData = {
               ...extractedData,
               isMyCompany: false,
               companyType: 'EXTERNA'
             }
           }
-          
+
         } catch (openAIError: any) {
           throw openAIError
         }
@@ -300,12 +306,12 @@ export async function POST(request: NextRequest) {
 
   } catch (error: any) {
     console.error('❌ Erro geral na análise de documento:', error)
-    
+
     let errorMessage = 'Erro interno do servidor'
     let errorType = 'UNKNOWN_ERROR'
     let statusCode = 500
     let userFriendlyMessage = 'Ocorreu um erro ao processar o documento. Tente novamente.'
-    
+
     if (error.message?.includes('Ambas as APIs falharam')) {
       errorMessage = error.message
       errorType = 'ALL_APIS_FAILED'
@@ -325,9 +331,9 @@ export async function POST(request: NextRequest) {
       errorMessage = error.message
       userFriendlyMessage = 'Erro no processamento do documento. Verifique o arquivo e tente novamente.'
     }
-    
+
     return NextResponse.json(
-      { 
+      {
         success: false,
         error: userFriendlyMessage,
         details: errorMessage,
