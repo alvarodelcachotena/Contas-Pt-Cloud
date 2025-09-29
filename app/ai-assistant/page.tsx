@@ -184,8 +184,8 @@ export default function AIAssistantPage() {
       return
     }
 
-    // Verificar tamanho do arquivo (máx 10MB)
-    if (file.size > 10 * 1024 * 1024) {
+    // Verificar tamanho do arquivo (máx 5MB)
+    if (file.size > 5 * 1024 * 1024) {
       alert(t.aiAssistant.fileErrors.tooLarge);
       return
     }

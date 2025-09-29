@@ -1755,7 +1755,7 @@ export const translations: Record<Language, Translations> = {
             },
             fileErrors: {
                 unsupportedType: 'Tipo de arquivo não suportado. Por favor, selecione um PDF ou imagem (PNG, JPG, GIF, BMP, WebP, TIFF).',
-                tooLarge: 'Arquivo muito grande. Tamanho máximo: 10MB.'
+                tooLarge: 'Arquivo muito grande. Tamanho máximo: 5MB.'
             },
             features: {
                 fastResponse: 'Resposta rápida',
@@ -2672,7 +2672,7 @@ export const translations: Record<Language, Translations> = {
             },
             fileErrors: {
                 unsupportedType: 'Unsupported file type. Please select a PDF or image (PNG, JPG, GIF, BMP, WebP, TIFF).',
-                tooLarge: 'File too large. Maximum size: 10MB.'
+                tooLarge: 'File too large. Maximum size: 5MB.'
             },
             features: {
                 fastResponse: 'Fast response',
@@ -3589,7 +3589,7 @@ export const translations: Record<Language, Translations> = {
             },
             fileErrors: {
                 unsupportedType: 'Type de fichier non supporté. Veuillez sélectionner un PDF ou une image (PNG, JPG, GIF, BMP, WebP, TIFF).',
-                tooLarge: 'Fichier trop volumineux. Taille maximale : 10MB.'
+                tooLarge: 'Fichier trop volumineux. Taille maximale : 5MB.'
             },
             features: {
                 fastResponse: 'Réponse rapide',

@@ -25,7 +25,7 @@ interface ExtendedExtractionData {
 }
 
 // Configuración de límites
-const MAX_FILE_SIZE = 10 * 1024 * 1024 // 10MB
+const MAX_FILE_SIZE = 5 * 1024 * 1024 // 5MB (reducido para Netlify)
 const ALLOWED_TYPES = [
   'application/pdf',
   'image/jpeg',
@@ -45,6 +45,11 @@ const ALLOWED_TYPES = [
 
 export async function POST(request: NextRequest) {
   console.log('📎 Nova requisição de análise de documento recebida')
+  console.log('🌍 Environment:', process.env.NODE_ENV)
+  console.log('🔑 API Keys disponibles:')
+  console.log('  - GOOGLE_AI_API_KEY:', process.env.GOOGLE_AI_API_KEY ? '✅ Set' : '❌ Not set')
+  console.log('  - OPENAI_API_KEY:', process.env.OPENAI_API_KEY ? '✅ Set' : '❌ Not set')
+  console.log('  - GEMINI_API_KEY:', process.env.GEMINI_API_KEY ? '✅ Set' : '❌ Not set')
 
   try {
     const formData = await request.formData()
@@ -80,7 +85,7 @@ export async function POST(request: NextRequest) {
       return NextResponse.json(
         {
           success: false,
-          error: `Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Tamanho máximo: 10MB`,
+          error: `Arquivo muito grande (${(file.size / 1024 / 1024).toFixed(1)}MB). Tamanho máximo: 5MB`,
           errorType: 'FILE_TOO_LARGE'
         },
         { status: 400 }
@@ -89,16 +94,22 @@ export async function POST(request: NextRequest) {
 
     console.log(`📄 Processando arquivo: ${file.name} (${file.type}, ${(file.size / 1024).toFixed(1)}KB)`)
 
-    // Verificar se pelo menos uma API está disponível
-    const googleAIKey = process.env.GOOGLE_AI_API_KEY
+    // Verificar se pelo menos una API está disponible
+    const googleAIKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY
     const openAIKey = process.env.OPENAI_API_KEY
 
+    console.log('🔍 Verificando APIs disponibles:')
+    console.log('  - Google AI Key:', googleAIKey ? `✅ ${googleAIKey.substring(0, 10)}...` : '❌ No disponible')
+    console.log('  - OpenAI Key:', openAIKey ? `✅ ${openAIKey.substring(0, 10)}...` : '❌ No disponible')
+
     if (!googleAIKey && !openAIKey) {
+      console.error('❌ No hay APIs de IA configuradas')
       return NextResponse.json(
         {
           success: false,
           error: 'Nenhuma API de IA está configurada no servidor',
-          errorType: 'NO_AI_API'
+          errorType: 'NO_AI_API',
+          details: 'Verifique as variáveis de ambiente GOOGLE_AI_API_KEY, GEMINI_API_KEY ou OPENAI_API_KEY'
         },
         { status: 500 }
       )
