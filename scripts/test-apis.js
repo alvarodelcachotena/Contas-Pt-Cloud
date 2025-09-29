@@ -23,7 +23,7 @@ async function testAPIs() {
 
         try {
             const genAI = new GoogleGenerativeAI(googleAIKey);
-            const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" });
+            const model = genAI.getGenerativeModel({ model: "gemini-1.5-pro" });
 
             console.log('🔄 Enviando teste para Google AI...');
 
