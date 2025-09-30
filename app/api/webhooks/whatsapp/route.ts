@@ -12,6 +12,9 @@ import {
 import { DocumentAIService } from '../../../../lib/gemini-ai-service'
 import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 
+// Cache simple en memoria para media IDs procesados
+const processedMediaIds = new Set<string>()
+
 // Función de verificación de API key
 function verifyApiKey() {
   // Cargar variables de entorno primero
@@ -289,8 +292,16 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         return
       }
 
-      // Procesar todas las facturas sin filtros de duplicados
-      console.log(`🔄 Procesando media: ${mediaDetails.id} - Sin verificación de duplicados`)
+      // Verificar si este media ID ya fue procesado (cache simple en memoria)
+      if (processedMediaIds.has(mediaDetails.id)) {
+        console.log(`⚠️ MEDIA YA PROCESADO: ${mediaDetails.id} - Saltando procesamiento`)
+        await sendWhatsAppMessage(message.from, `📄 **Imagen ya procesada**\n\nEsta imagen ya fue analizada anteriormente.\n\n✅ No se realizará un nuevo análisis.`)
+        return
+      }
+
+      // Marcar como procesado antes de continuar
+      processedMediaIds.add(mediaDetails.id)
+      console.log(`🔄 Procesando media: ${mediaDetails.id} - Nuevo archivo`)
 
       // Download media from WhatsApp
       const mediaData = await downloadWhatsAppMedia(mediaDetails.id, credentials.accessToken)
