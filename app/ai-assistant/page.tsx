@@ -298,6 +298,7 @@ export default function AIAssistantPage() {
           responseMessage += `• **${t.aiAssistant.fields.netAmount}:** €${extracted.netAmount || '0.00'}\n`
           // Calcular porcentaje como en WhatsApp
           const vatPercentage = extracted.vatRate ? (extracted.vatRate * 100).toFixed(0) : '0'
+          console.log('🔍 VAT Debug:', { vatRate: extracted.vatRate, vatPercentage, vatAmount: extracted.vatAmount })
           responseMessage += `• **${t.aiAssistant.fields.vat}:** €${extracted.vatAmount || '0.00'} (${vatPercentage}%)\n`
           responseMessage += `• **${t.aiAssistant.fields.total}:** €${extracted.total || '0.00'}\n`
           responseMessage += `• **${t.aiAssistant.fields.category}:** ${extracted.category || 'N/A'}\n`

@@ -48,7 +48,7 @@ Extrai os seguintes campos de uma fatura/documento fiscal:
 7. Valor sem IVA
 8. Valor do IVA
 9. Valor total com IVA
-10. Taxa de IVA (0.06, 0.13, ou 0.23 como decimal) - IMPORTANTE: 10% = 0.1, 23% = 0.23
+10. Taxa de IVA (6, 13, ou 23 como porcentaje) - IMPORTANTE: 10% = 10, 23% = 23
 11. Cliente/Destinatário
 12. Número da fatura
 13. Categoria (alimentacao|transporte|material_escritorio|servicos|combustivel|alojamento|outras_despesas)
@@ -133,7 +133,7 @@ Responde APENAS em formato JSON válido:
   "total": valor_total_numerico,
   "netAmount": valor_sem_iva_numerico,
   "vatAmount": valor_iva_numerico,
-  "vatRate": taxa_iva_como_decimal_entre_0_e_1 (ejemplo: 10% = 0.1, 23% = 0.23),
+  "vatRate": taxa_iva_como_porcentaje (ejemplo: 10% = 10, 23% = 23),
   "category": "categoria",
   "description": "descrição breve",
   "paymentType": "tarjeta",
