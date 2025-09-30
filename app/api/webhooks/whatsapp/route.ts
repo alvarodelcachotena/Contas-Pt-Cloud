@@ -612,19 +612,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             const locationText = analysisResult.document_type === 'invoice' ? 'Faturas Y Despesas' : 'Despesas'
 
             // Detectar tipo de pago para mostrar en el mensaje
-            let paymentTypeText = ''
-            if (analysisResult.extracted_data && 'payment_type' in analysisResult.extracted_data) {
-              const paymentType = analysisResult.extracted_data.payment_type
-              if (paymentType === 'bank_transfer') {
-                paymentTypeText = '\n💳 Tipo de pago: Transferência Bancária'
-              } else if (paymentType === 'card') {
-                paymentTypeText = '\n💳 Tipo de pago: Crédito (Tarjeta)'
-              } else if (paymentType === 'cash') {
-                paymentTypeText = '\n💳 Tipo de pago: Dinheiro'
-              } else {
-                paymentTypeText = '\n💳 Tipo de pago: Crédito'
-              }
-            }
+            // Siempre mostrar tarjeta como tipo de pago
+            const paymentTypeText = '\n💳 Tipo de pago: Tarjeta'
 
             const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${documentTypeText}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}${paymentTypeText}\n💰 Guardado en ${locationText} (no se creó cliente)\n\n${dropboxStatus}\nEl documento aparecerá en la sección correspondiente.`
             await sendWhatsAppMessage(message.from, successMessage)
@@ -1016,7 +1005,7 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
         status: 'paid', // Las facturas procesadas desde WhatsApp ya están pagadas
         description: invoiceData.description || `Factura procesada desde WhatsApp`,
         payment_terms: invoiceData.payment_terms || null,
-        payment_type: invoiceData.payment_type || 'card', // Use AI detected payment type (card = crédito)
+        payment_type: 'tarjeta', // Siempre tarjeta
         supplier_id: supplierId // Link to supplier if created
       })
       .select()
@@ -1285,7 +1274,7 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
           status: 'paid', // Las facturas procesadas desde WhatsApp ya están pagadas
           description: description,
           payment_terms: null,
-          payment_type: expenseData.payment_type || 'card',
+          payment_type: 'tarjeta', // Siempre tarjeta
           supplier_id: null // No crear proveedor automáticamente
         })
         .select()

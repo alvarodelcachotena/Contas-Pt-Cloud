@@ -14,6 +14,7 @@ interface StructuredInvoiceExtraction {
   vatRate: number;
   category: string;
   description: string;
+  paymentType: string; // Siempre "tarjeta"
   confidence: number;
   extractionIssues: string[];
 }
@@ -532,6 +533,7 @@ ${ocrText.substring(0, 6000)}`,
           extracted.description,
           placeholderPatterns,
         ),
+        paymentType: 'tarjeta', // Siempre tarjeta
       };
 
       return {

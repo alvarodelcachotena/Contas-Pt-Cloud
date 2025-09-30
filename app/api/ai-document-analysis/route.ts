@@ -80,18 +80,31 @@ export async function POST(request: NextRequest) {
     }
 
     // Usar base64 si está disponible, sino usar el archivo
-    let fileToProcess = file
+    let fileToProcess: any
     let fileBuffer: Buffer
+    let finalFileName: string
+    let finalFileType: string
 
     if (base64) {
       console.log('📄 Procesando archivo desde base64')
       fileBuffer = Buffer.from(base64, 'base64')
-      // Crear un objeto File simulado para compatibilidad
-      fileToProcess = new File([fileBuffer], fileName || 'document', { type: fileType || 'application/octet-stream' })
+      finalFileName = fileName || 'document'
+      finalFileType = fileType || 'application/octet-stream'
+
+      // Crear objeto simulado compatible con Node.js
+      fileToProcess = {
+        name: finalFileName,
+        type: finalFileType,
+        size: fileBuffer.length,
+        arrayBuffer: async () => fileBuffer.buffer.slice(fileBuffer.byteOffset, fileBuffer.byteOffset + fileBuffer.byteLength)
+      }
     } else {
       console.log('📄 Procesando archivo desde FormData')
       const fileArrayBuffer = await file.arrayBuffer()
       fileBuffer = Buffer.from(fileArrayBuffer)
+      finalFileName = file.name
+      finalFileType = file.type
+      fileToProcess = file
     }
 
     // Verificar tipo de arquivo
@@ -120,7 +133,7 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    console.log(`📄 Processando arquivo: ${fileToProcess.name} (${fileToProcess.type}, ${(fileToProcess.size / 1024).toFixed(1)}KB)`)
+    console.log(`📄 Processando arquivo: ${finalFileName} (${finalFileType}, ${(fileToProcess.size / 1024).toFixed(1)}KB)`)
 
     // Verificar se pelo menos una API está disponible
     const googleAIKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY
@@ -165,16 +178,16 @@ export async function POST(request: NextRequest) {
 
         const geminiExtractor = new AgentExtractorGemini(googleAIKey)
 
-        if (fileToProcess.type === 'application/pdf') {
+        if (finalFileType === 'application/pdf') {
           // Processar PDF
-          const result = await geminiExtractor.extractFromPDF(fileBuffer, fileToProcess.name)
+          const result = await geminiExtractor.extractFromPDF(fileBuffer, finalFileName)
           extractedData = result.data
           ocrText = 'PDF processado via Gemini Vision'
           usedModel = 'Google AI (Gemini-1.5-Pro) - PDF Vision'
           console.log('✅ Extração PDF com Google AI concluída')
         } else {
           // Processar imagem
-          const result = await geminiExtractor.extractFromImage(fileBuffer, fileToProcess.type, fileToProcess.name)
+          const result = await geminiExtractor.extractFromImage(fileBuffer, finalFileType, finalFileName)
           extractedData = result.data
           ocrText = 'Imagem processada via Gemini Vision'
           usedModel = 'Google AI (Gemini-1.5-Pro) - Image Vision'
@@ -224,16 +237,16 @@ export async function POST(request: NextRequest) {
 
             const openAIExtractor = new AgentExtractorOpenAI(openAIKey)
 
-            if (fileToProcess.type === 'application/pdf') {
+            if (finalFileType === 'application/pdf') {
               // Para PDF, primeiro converter a OCR e depois processar
               // Por ahora, simplificamos usando solo el texto
-              const result = await openAIExtractor.extract('Documento PDF - processamento limitado', fileToProcess.name)
+              const result = await openAIExtractor.extract('Documento PDF - processamento limitado', finalFileName)
               extractedData = result.data
               ocrText = 'PDF processado via OpenAI (limitado)'
               usedModel = 'OpenAI (GPT-4o-Mini) - Fallback PDF'
             } else {
               // Para imagem, usar GPT-4 Vision
-              const result = await openAIExtractor.extractFromImage(fileBuffer, fileToProcess.type, fileToProcess.name)
+              const result = await openAIExtractor.extractFromImage(fileBuffer, finalFileType, finalFileName)
               extractedData = result.data
               ocrText = 'Imagem processada via OpenAI Vision'
               usedModel = 'OpenAI (GPT-4o-Mini) - Fallback Image Vision'
@@ -289,13 +302,13 @@ export async function POST(request: NextRequest) {
 
           const openAIExtractor = new AgentExtractorOpenAI(openAIKey)
 
-          if (fileToProcess.type === 'application/pdf') {
-            const result = await openAIExtractor.extract('Documento PDF - processamento limitado', fileToProcess.name)
+          if (finalFileType === 'application/pdf') {
+            const result = await openAIExtractor.extract('Documento PDF - processamento limitado', finalFileName)
             extractedData = result.data
             ocrText = 'PDF processado via OpenAI (limitado)'
             usedModel = 'OpenAI (GPT-4o-Mini) - Única disponível PDF'
           } else {
-            const result = await openAIExtractor.extractFromImage(fileBuffer, fileToProcess.type, fileToProcess.name)
+            const result = await openAIExtractor.extractFromImage(fileBuffer, finalFileType, finalFileName)
             extractedData = result.data
             ocrText = 'Imagem processada via OpenAI Vision'
             usedModel = 'OpenAI (GPT-4o-Mini) - Única disponível Image Vision'

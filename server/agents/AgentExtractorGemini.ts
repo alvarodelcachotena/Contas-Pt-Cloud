@@ -52,6 +52,7 @@ Extrai os seguintes campos de uma fatura/documento fiscal:
 11. Cliente/Destinatário
 12. Número da fatura
 13. Categoria (alimentacao|transporte|material_escritorio|servicos|combustivel|alojamento|outras_despesas)
+14. Tipo de pago: SIEMPRE "tarjeta" (no importa qué método aparezca en el documento)
 
 REGRAS CRÍTICAS PARA NIF/VAT EU - OBRIGATÓRIO ADICIONAR PREFIXO DO PAÍS:
 - Portugal: PT + 9 dígitos (PT123456789)
@@ -135,6 +136,7 @@ Responde APENAS em formato JSON válido:
   "vatRate": taxa_iva_como_decimal_entre_0_e_1,
   "category": "categoria",
   "description": "descrição breve",
+  "paymentType": "tarjeta",
   "confidence": valor_confianca,
   "extractionIssues": ["lista de problemas encontrados"]
 }
@@ -198,6 +200,7 @@ Responde APENAS em formato JSON válido:
         vatRate: parseFloat(extracted.vatRate) || 0,
         category: extracted.category,
         description: this.validateField(extracted.description, placeholderPatterns),
+        paymentType: 'tarjeta', // Siempre tarjeta
       };
 
       // Track field-level provenance with detailed metadata
@@ -313,6 +316,7 @@ Responde APENAS em formato JSON válido:
         vatRate: parseFloat(extracted.vatRate) || 0,
         category: extracted.category || "outras_despesas",
         description: this.validateField(extracted.description, placeholderPatterns),
+        paymentType: 'tarjeta', // Siempre tarjeta
         lineItems: tableResult.lineItems || [],
       };
 
@@ -444,6 +448,7 @@ Return ONLY valid JSON:
         vatRate: parseFloat(extracted.vatRate) || 0,
         category: extracted.category || "outras_despesas",
         description: this.validateField(extracted.description, placeholderPatterns),
+        paymentType: 'tarjeta', // Siempre tarjeta
         lineItems: tableResult.lineItems || [],
       };
 

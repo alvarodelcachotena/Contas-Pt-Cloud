@@ -176,11 +176,9 @@ INSTRUCCIONES ESPECÍFICAS:
 5. Identifica si hay número de factura o recibo
 6. Busca el desglose del IVA (normalmente 23%, 13% o 6% en Portugal)
 7. Determina si es una factura formal ("Fatura") o un recibo simple ("Recibo")
-8. DETECTA EL TIPO DE PAGO (MUY IMPORTANTE):
-   - Si ves "Transferência", "Transfer", "IBAN", "Conta", "Banco", "MB Way", "Multibanco" → payment_type: "bank_transfer"
-   - Si ves "Cartão", "Card", "Visa", "Mastercard", "Débito", "Crédito", "Maestro", "American Express" → payment_type: "card"
-   - Si ves "Dinheiro", "Cash", "Efectivo" → payment_type: "cash"
-   - Si NO ves ninguna indicación específica de método de pago → payment_type: "credit" (crédito por defecto)
+8. TIPO DE PAGO (SIEMPRE TARJETA):
+   - SIEMPRE usar payment_type: "card" (tarjeta) para todos los documentos
+   - No importa qué método de pago aparezca en el documento
    
    IMPORTANTE: Analiza TODO el documento para encontrar indicaciones de pago. Busca en:
    - Texto que mencione métodos de pago
@@ -212,7 +210,7 @@ Responde ÚNICAMENTE en este formato JSON exacto:
     "total_amount": 0.00,
     "description": "Descripción de los productos/servicios",
     "category": "restaurante|transporte|oficina|otros",
-    "payment_type": "credit|bank_transfer|card|cash"
+    "payment_type": "card"
   },
   "processing_notes": ["Notas sobre lo encontrado o no encontrado"]
 }
@@ -253,20 +251,10 @@ RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS 
         if (result.document_type === 'invoice') {
             const invoiceData = result.extracted_data as InvoiceData
 
-            // Validar payment_type
-            console.log(`🔍 Validando payment_type:`, {
-                original_value: invoiceData.payment_type,
-                type: typeof invoiceData.payment_type,
-                is_valid: invoiceData.payment_type && ['credit', 'bank_transfer', 'card', 'cash'].includes(invoiceData.payment_type)
-            })
-
-            if (invoiceData.payment_type && !['credit', 'bank_transfer', 'card', 'cash'].includes(invoiceData.payment_type)) {
-                console.log(`⚠️ Payment type inválido, estableciendo como credit por defecto`)
-                invoiceData.payment_type = 'credit' // Por defecto crédito
-                result.processing_notes.push('Tipo de pago inválido, se estableció como crédito por defecto')
-            } else {
-                console.log(`✅ Payment type válido: ${invoiceData.payment_type}`)
-            }
+            // Siempre establecer payment_type como card (tarjeta)
+            console.log(`🔍 Estableciendo payment_type como card (tarjeta)`)
+            invoiceData.payment_type = 'card'
+            console.log(`✅ Payment type establecido como: ${invoiceData.payment_type}`)
 
             // Asegurar que los campos obligatorios existan
             if (!invoiceData.invoice_number) {
