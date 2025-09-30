@@ -68,61 +68,91 @@ export class DocumentAIService {
     }
 
     async analyzeDocument(fileBuffer: Buffer, filename: string, mimeType?: string): Promise<DocumentAnalysisResult> {
-        try {
-            console.log(`🔍 Analizando documento con Gemini AI: ${filename}`)
-            console.log(`📊 Tamaño del buffer: ${fileBuffer.length} bytes`)
+        const maxRetries = 3
+        const retryDelay = 2000 // 2 segundos
+        const models = ["gemini-2.5-flash", "gemini-1.5-flash", "gemini-1.0-pro"]
 
-            // Convertir buffer a base64
-            const base64Data = fileBuffer.toString('base64')
+        for (let attempt = 1; attempt <= maxRetries; attempt++) {
+            for (const modelName of models) {
+                try {
+                    console.log(`🔍 Analizando documento con Gemini AI (Intento ${attempt}/${maxRetries}): ${filename}`)
+                    console.log(`🤖 Modelo: ${modelName}`)
+                    console.log(`📊 Tamaño del buffer: ${fileBuffer.length} bytes`)
 
-            // Determinar el tipo MIME - usar el proporcionado o detectar por extensión
-            const detectedMimeType = mimeType || this.getMimeType(filename)
-            console.log(`📄 Tipo MIME detectado: ${detectedMimeType}`)
-            console.log(`📄 MIME type proporcionado: ${mimeType || 'No proporcionado'}`)
-            console.log(`📄 MIME type por extensión: ${this.getMimeType(filename)}`)
+                    // Convertir buffer a base64
+                    const base64Data = fileBuffer.toString('base64')
 
-            // Crear el modelo Gemini
-            const model = this.genAI.getGenerativeModel({
-                model: "gemini-2.5-flash",
-                generationConfig: {
-                    temperature: 0.1,
-                    topK: 32,
-                    topP: 1,
-                    maxOutputTokens: 4096,
-                }
-            })
+                    // Determinar el tipo MIME - usar el proporcionado o detectar por extensión
+                    const detectedMimeType = mimeType || this.getMimeType(filename)
+                    console.log(`📄 Tipo MIME detectado: ${detectedMimeType}`)
+                    console.log(`📄 MIME type proporcionado: ${mimeType || 'No proporcionado'}`)
+                    console.log(`📄 MIME type por extensión: ${this.getMimeType(filename)}`)
 
-            // Preparar el prompt
-            const prompt = this.getPrompt()
+                    // Crear el modelo Gemini
+                    const model = this.genAI.getGenerativeModel({
+                        model: modelName,
+                        generationConfig: {
+                            temperature: 0.1,
+                            topK: 32,
+                            topP: 1,
+                            maxOutputTokens: 4096,
+                        }
+                    })
 
-            // Crear la parte de la imagen/archivo
-            const fileData = {
-                inlineData: {
-                    data: base64Data,
-                    mimeType: detectedMimeType
+                    // Preparar el prompt
+                    const prompt = this.getPrompt()
+
+                    // Crear la parte de la imagen/archivo
+                    const fileData = {
+                        inlineData: {
+                            data: base64Data,
+                            mimeType: detectedMimeType
+                        }
+                    }
+
+                    console.log(`🤖 Enviando documento a Gemini AI...`)
+
+                    // Generar contenido
+                    const result = await model.generateContent([prompt, fileData])
+                    const response = await result.response
+                    const text = response.text()
+
+                    console.log(`✅ Respuesta de Gemini AI recibida con modelo ${modelName}`)
+                    console.log(`📝 Longitud de respuesta: ${text.length} caracteres`)
+
+                    return this.processResponse(text)
+
+                } catch (error) {
+                    console.error(`❌ Error con modelo ${modelName} (Intento ${attempt}):`, error)
+
+                    // Si es un error 503 (Service Unavailable) o 429 (Too Many Requests), intentar con el siguiente modelo
+                    if (error instanceof Error && (
+                        error.message.includes('503') ||
+                        error.message.includes('Service Unavailable') ||
+                        error.message.includes('429') ||
+                        error.message.includes('overloaded')
+                    )) {
+                        console.log(`⚠️ Modelo ${modelName} sobrecargado, intentando con el siguiente modelo...`)
+                        continue // Intentar con el siguiente modelo
+                    }
+
+                    // Si es el último intento del último modelo, lanzar el error
+                    if (attempt === maxRetries && modelName === models[models.length - 1]) {
+                        console.error('❌ Todos los modelos fallaron después de todos los intentos')
+                        throw error
+                    }
+
+                    // Si no es el último intento, esperar antes de reintentar
+                    if (attempt < maxRetries) {
+                        console.log(`⏳ Esperando ${retryDelay}ms antes del siguiente intento...`)
+                        await new Promise(resolve => setTimeout(resolve, retryDelay))
+                    }
                 }
             }
-
-            console.log(`🤖 Enviando documento a Gemini AI...`)
-
-            // Generar contenido
-            const result = await model.generateContent([prompt, fileData])
-            const response = await result.response
-            const text = response.text()
-
-            console.log('✅ Respuesta de Gemini AI recibida')
-            console.log(`📝 Longitud de respuesta: ${text.length} caracteres`)
-
-            return this.processResponse(text)
-
-        } catch (error) {
-            console.error('❌ Error en análisis con Gemini AI:', error)
-            if (error instanceof Error) {
-                console.error('Mensaje:', error.message)
-                console.error('Stack:', error.stack)
-            }
-            throw error
         }
+
+        // Si llegamos aquí, todos los intentos fallaron
+        throw new Error('Todos los modelos de Gemini AI fallaron después de múltiples intentos')
     }
 
     private processResponse(text: string): DocumentAnalysisResult {

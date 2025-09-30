@@ -668,8 +668,29 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               })
               .eq('id', document.id)
 
-            // Send error message to WhatsApp
-            const errorMessage = `❌ Error al procesar el documento\n\n🔍 Error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}\n\nEl documento se guardó pero no se pudo analizar. Revisa los logs para más detalles.`
+            // Send error message to WhatsApp with better handling
+            let errorMessage = `❌ Error al procesar el documento\n\n`
+
+            if (aiError instanceof Error) {
+              if (aiError.message.includes('503') || aiError.message.includes('Service Unavailable') || aiError.message.includes('overloaded')) {
+                errorMessage += `⚠️ El servicio de IA está temporalmente sobrecargado.\n\n`
+                errorMessage += `🔄 Se intentó con múltiples modelos pero todos están ocupados.\n\n`
+                errorMessage += `⏰ Por favor, inténtalo de nuevo en unos minutos.\n\n`
+                errorMessage += `📄 El documento se guardó correctamente y se procesará cuando el servicio esté disponible.`
+              } else if (aiError.message.includes('Todos los modelos de Gemini AI fallaron')) {
+                errorMessage += `⚠️ Todos los modelos de IA están temporalmente no disponibles.\n\n`
+                errorMessage += `🔄 Se intentó con 3 modelos diferentes sin éxito.\n\n`
+                errorMessage += `⏰ Por favor, inténtalo de nuevo más tarde.\n\n`
+                errorMessage += `📄 El documento se guardó correctamente.`
+              } else {
+                errorMessage += `🔍 Error: ${aiError.message}\n\n`
+                errorMessage += `📄 El documento se guardó pero no se pudo analizar. Revisa los logs para más detalles.`
+              }
+            } else {
+              errorMessage += `🔍 Error desconocido\n\n`
+              errorMessage += `📄 El documento se guardó pero no se pudo analizar. Revisa los logs para más detalles.`
+            }
+
             await sendWhatsAppMessage(message.from, errorMessage)
           }
         }
