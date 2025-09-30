@@ -9,7 +9,7 @@ export class AgentExtractorGemini {
   private consensusEngine: ConsensusEngine;
 
   constructor(apiKey: string) {
-    this.genAI = new GoogleGenAI({ apiKey });
+    this.genAI = new GoogleGenAI({ apiKey, apiVersion: 'v1' });
     this.tableParser = new TableParser(apiKey);
     this.consensusEngine = new ConsensusEngine();
   }
