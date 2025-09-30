@@ -83,7 +83,7 @@ export class DocumentAIService {
 
             // Crear el modelo Gemini
             const model = this.genAI.getGenerativeModel({
-                model: "gemini-1.5-pro",
+                model: "gemini-1.5-flash",
                 generationConfig: {
                     temperature: 0.1,
                     topK: 32,

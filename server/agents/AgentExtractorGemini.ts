@@ -144,7 +144,7 @@ Responde APENAS em formato JSON válido:
 
     try {
       const response = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-pro',
+        model: 'gemini-1.5-flash',
         contents: [{ text: prompt }]
       });
       const textResponse = response.text || "";
@@ -233,7 +233,7 @@ Responde APENAS em formato JSON válido:
         issues: extracted.extractionIssues || [],
         agentResults: {
           extractor: {
-            model: "gemini-1.5-pro",
+            model: "gemini-1.5-flash",
             method: "genai_api",
             rawResponse: textResponse.substring(0, 200),
             provenance: provenance,
@@ -258,7 +258,7 @@ Responde APENAS em formato JSON válido:
 
       // Then extract header/metadata information
       const baseResult = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-pro',
+        model: 'gemini-1.5-flash',
         contents: [
           {
             inlineData: {
@@ -327,7 +327,7 @@ Responde APENAS em formato JSON válido:
         issues: extracted.extractionIssues || [],
         agentResults: {
           extractor: {
-            model: "gemini-1.5-pro",
+            model: "gemini-1.5-flash",
             method: "genai_pdf_vision",
             rawResponse: textResponse.substring(0, 200),
             provenance: this.buildProvenance(cleanData, "genai_pdf_vision", 0.85),
@@ -342,7 +342,7 @@ Responde APENAS em formato JSON válido:
         issues: tableResult.extractionIssues,
         agentResults: {
           extractor: {
-            model: "gemini-1.5-pro",
+            model: "gemini-1.5-flash",
             method: "genai_table_vision",
             rawResponse: "Table extraction result",
             provenance: this.buildProvenance(cleanData, "genai_table_vision", tableResult.tableConfidence),
@@ -411,7 +411,7 @@ Return ONLY valid JSON:
 
       // Then extract header/metadata information using existing image prompt
       const baseResult = await this.genAI.models.generateContent({
-        model: 'gemini-1.5-pro',
+        model: 'gemini-1.5-flash',
         contents: [
           { text: this.buildImageExtractionPrompt() },
           {
@@ -457,13 +457,13 @@ Return ONLY valid JSON:
       for (const [field, value] of Object.entries(cleanData)) {
         if (field === 'lineItems') {
           provenance[field] = {
-            model: "gemini-1.5-pro",
+            model: "gemini-1.5-flash",
             confidence: tableResult.tableConfidence,
             method: "genai_table_vision"
           };
         } else {
           provenance[field] = {
-            model: "gemini-1.5-pro",
+            model: "gemini-1.5-flash",
             confidence: value ? 0.8 : 0.3,
             method: "genai_image_vision"
           };
@@ -476,7 +476,7 @@ Return ONLY valid JSON:
         issues: [...(extracted.extractionIssues || []), ...tableResult.extractionIssues],
         agentResults: {
           extractor: {
-            model: "gemini-1.5-pro",
+            model: "gemini-1.5-flash",
             method: "genai_image_vision",
             rawResponse: textResponse.substring(0, 200),
             provenance: provenance,

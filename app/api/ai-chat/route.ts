@@ -966,7 +966,7 @@ INSTRUÇÕES PARA A IA:
 
         const fullPrompt = `${systemPrompt}\n\nPergunta do utilizador: ${message.trim()}`
 
-        const model = googleAI.getGenerativeModel({ model: 'gemini-1.5-pro' })
+        const model = googleAI.getGenerativeModel({ model: 'gemini-1.5-flash' })
         const result = await model.generateContent(fullPrompt)
         response = result.response.text() || ''
 
