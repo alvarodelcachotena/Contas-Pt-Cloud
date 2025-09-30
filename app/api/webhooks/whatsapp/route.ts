@@ -291,12 +291,30 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
       // Check if this media has already been processed
       console.log(`🔍 Verificando si el media ya fue procesado: ${mediaDetails.id}`)
-      const { data: existingDocument, error: existingError } = await supabase
+
+      // Buscar documentos que contengan este ID de mensaje de WhatsApp
+      const { data: existingDocuments, error: existingError } = await supabase
         .from('documents')
-        .select('id, filename, processing_status, created_at')
+        .select('id, filename, processing_status, created_at, extracted_data')
         .eq('tenant_id', tenantId)
-        .contains('extracted_data', { whatsapp_message: { id: mediaDetails.id } })
-        .single()
+        .not('extracted_data', 'is', null)
+
+      if (existingError) {
+        console.log(`⚠️ Error verificando documentos existentes:`, existingError)
+      }
+
+      // Verificar si alguno de los documentos tiene este ID de mensaje
+      let existingDocument = null
+      if (existingDocuments) {
+        for (const doc of existingDocuments) {
+          if (doc.extracted_data &&
+            doc.extracted_data.whatsapp_message &&
+            doc.extracted_data.whatsapp_message.id === mediaDetails.id) {
+            existingDocument = doc
+            break
+          }
+        }
+      }
 
       if (existingDocument) {
         console.log(`⚠️ MEDIA YA PROCESADO: Este archivo ya fue analizado anteriormente`)
