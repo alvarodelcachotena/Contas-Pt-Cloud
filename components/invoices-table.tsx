@@ -334,6 +334,8 @@ export default function InvoicesTable() {
 
   const handleDeleteInvoice = async (invoiceId: number, invoiceNumber: string) => {
     try {
+      console.log(`🗑️ Attempting to delete invoice ${invoiceId} (${invoiceNumber})`)
+
       const response = await fetch(`/api/invoices/${invoiceId}`, {
         method: 'DELETE',
         headers: {
@@ -341,11 +343,21 @@ export default function InvoicesTable() {
         },
       })
 
+      console.log(`📡 Delete response status: ${response.status}`)
+
       if (response.ok) {
+        const result = await response.json()
+        console.log(`✅ Invoice deleted successfully:`, result)
         await refetchInvoices()
+        console.log(`🔄 Invoice list refreshed`)
+      } else {
+        const errorText = await response.text()
+        console.error(`❌ Delete failed: ${response.status} - ${errorText}`)
+        setError(`Error al eliminar factura: ${response.status}`)
       }
     } catch (error) {
-      console.error('Error deleting invoice:', error)
+      console.error('❌ Error deleting invoice:', error)
+      setError(`Error al eliminar factura: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
 
@@ -502,20 +514,6 @@ export default function InvoicesTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => console.log(`Ver detalhes da fatura ${invoice.number}`)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => console.log(`Gerar PDF da fatura ${invoice.number}`)}
-                      >
-                        PDF
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

@@ -48,7 +48,7 @@ Extrai os seguintes campos de uma fatura/documento fiscal:
 7. Valor sem IVA
 8. Valor do IVA
 9. Valor total com IVA
-10. Taxa de IVA (0.06, 0.13, ou 0.23 como decimal)
+10. Taxa de IVA (0.06, 0.13, ou 0.23 como decimal) - IMPORTANTE: 10% = 0.1, 23% = 0.23
 11. Cliente/Destinatário
 12. Número da fatura
 13. Categoria (alimentacao|transporte|material_escritorio|servicos|combustivel|alojamento|outras_despesas)
@@ -133,7 +133,7 @@ Responde APENAS em formato JSON válido:
   "total": valor_total_numerico,
   "netAmount": valor_sem_iva_numerico,
   "vatAmount": valor_iva_numerico,
-  "vatRate": taxa_iva_como_decimal_entre_0_e_1,
+  "vatRate": taxa_iva_como_decimal_entre_0_e_1 (ejemplo: 10% = 0.1, 23% = 0.23),
   "category": "categoria",
   "description": "descrição breve",
   "paymentType": "tarjeta",
@@ -197,7 +197,7 @@ Responde APENAS em formato JSON válido:
         total: parseFloat(extracted.total) || 0,
         netAmount: parseFloat(extracted.netAmount) || 0,
         vatAmount: parseFloat(extracted.vatAmount) || 0,
-        vatRate: parseFloat(extracted.vatRate) || 0,
+        vatRate: (parseFloat(extracted.vatRate) || 0) / 100, // Convertir porcentaje a decimal
         category: extracted.category,
         description: this.validateField(extracted.description, placeholderPatterns),
         paymentType: 'tarjeta', // Siempre tarjeta
@@ -313,7 +313,7 @@ Responde APENAS em formato JSON válido:
         total: parseFloat(extracted.total) || 0,
         netAmount: parseFloat(extracted.netAmount) || 0,
         vatAmount: parseFloat(extracted.vatAmount) || 0,
-        vatRate: parseFloat(extracted.vatRate) || 0,
+        vatRate: (parseFloat(extracted.vatRate) || 0) / 100, // Convertir porcentaje a decimal
         category: extracted.category || "outras_despesas",
         description: this.validateField(extracted.description, placeholderPatterns),
         paymentType: 'tarjeta', // Siempre tarjeta
@@ -445,7 +445,7 @@ Return ONLY valid JSON:
         total: parseFloat(extracted.total) || 0,
         netAmount: parseFloat(extracted.netAmount) || 0,
         vatAmount: parseFloat(extracted.vatAmount) || 0,
-        vatRate: parseFloat(extracted.vatRate) || 0,
+        vatRate: (parseFloat(extracted.vatRate) || 0) / 100, // Convertir porcentaje a decimal
         category: extracted.category || "outras_despesas",
         description: this.validateField(extracted.description, placeholderPatterns),
         paymentType: 'tarjeta', // Siempre tarjeta

@@ -226,6 +226,8 @@ export default function ExpensesTable() {
 
   const handleDeleteExpense = async (expenseId: number, vendor: string) => {
     try {
+      console.log(`🗑️ Attempting to delete expense ${expenseId} (${vendor})`)
+
       const response = await fetch(`/api/expenses/${expenseId}`, {
         method: 'DELETE',
         headers: {
@@ -233,11 +235,21 @@ export default function ExpensesTable() {
         },
       })
 
+      console.log(`📡 Delete response status: ${response.status}`)
+
       if (response.ok) {
+        const result = await response.json()
+        console.log(`✅ Expense deleted successfully:`, result)
         await refetchExpenses()
+        console.log(`🔄 Expense list refreshed`)
+      } else {
+        const errorText = await response.text()
+        console.error(`❌ Delete failed: ${response.status} - ${errorText}`)
+        setError(`Error al eliminar gasto: ${response.status}`)
       }
     } catch (error) {
-      console.error('Error deleting expense:', error)
+      console.error('❌ Error deleting expense:', error)
+      setError(`Error al eliminar gasto: ${error instanceof Error ? error.message : 'Error desconocido'}`)
     }
   }
 
@@ -370,13 +382,6 @@ export default function ExpensesTable() {
                   </TableCell>
                   <TableCell>
                     <div className="flex items-center space-x-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => console.log(`Ver detalhes da despesa: ${expense.vendor}`)}
-                      >
-                        <Eye className="w-4 h-4" />
-                      </Button>
                       <Button
                         variant="ghost"
                         size="sm"

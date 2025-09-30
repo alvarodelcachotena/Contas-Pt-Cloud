@@ -288,13 +288,17 @@ export default function AIAssistantPage() {
           }
 
           responseMessage += `• **${t.aiAssistant.fields.vendor}:** ${extracted.vendor || 'N/A'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.nif}:** ${extracted.nif || 'N/A'}\n`
+          // Limpiar NIF: quitar prefijo ES si existe
+          const cleanNif = extracted.nif ? extracted.nif.replace(/^ES/, '') : 'N/A'
+          responseMessage += `• **${t.aiAssistant.fields.nif}:** ${cleanNif}\n`
           responseMessage += `• **${t.aiAssistant.fields.country}:** ${extracted.nifCountry || 'N/A'}\n`
           responseMessage += `• **${t.aiAssistant.fields.address}:** ${extracted.vendorAddress || 'N/A'}\n`
           responseMessage += `• **${t.aiAssistant.fields.invoiceNumber}:** ${extracted.invoiceNumber || 'N/A'}\n`
           responseMessage += `• **${t.aiAssistant.fields.date}:** ${extracted.issueDate || 'N/A'}\n`
           responseMessage += `• **${t.aiAssistant.fields.netAmount}:** €${extracted.netAmount || '0.00'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.vat}:** €${extracted.vatAmount || '0.00'} (${(extracted.vatRate * 100).toFixed(0)}%)\n`
+          // Calcular porcentaje como en WhatsApp
+          const vatPercentage = extracted.vatRate ? (extracted.vatRate * 100).toFixed(0) : '0'
+          responseMessage += `• **${t.aiAssistant.fields.vat}:** €${extracted.vatAmount || '0.00'} (${vatPercentage}%)\n`
           responseMessage += `• **${t.aiAssistant.fields.total}:** €${extracted.total || '0.00'}\n`
           responseMessage += `• **${t.aiAssistant.fields.category}:** ${extracted.category || 'N/A'}\n`
           responseMessage += `• **${t.aiAssistant.fields.description}:** ${extracted.description || 'N/A'}\n`
@@ -342,14 +346,14 @@ export default function AIAssistantPage() {
                 customNumber: customInvoiceNumber,
                 clientName: data.extractedData.vendor,
                 clientEmail: '',
-                clientTaxId: data.extractedData.nif,
+                clientTaxId: data.extractedData.nif ? data.extractedData.nif.replace(/^ES/, '') : '',
                 issueDate: issueDate,
                 dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 días
                 amount: data.extractedData.netAmount || 0,
                 vatAmount: data.extractedData.vatAmount || 0,
                 vatRate: data.extractedData.vatRate || 0.23,
                 totalAmount: data.extractedData.total || 0,
-                status: 'pagado',
+                status: 'paid',
                 description: data.extractedData.description || 'Factura creada desde análisis de documento',
                 paymentTerms: '30 dias',
                 paymentType: 'tarjeta'

@@ -36,6 +36,23 @@ export async function DELETE(
             )
         }
 
+        // First, delete related records that reference this invoice
+        console.log('🗑️ Deleting related records for invoice:', invoiceId)
+
+        // Delete whatsapp_vat_data records
+        const { error: vatDataError } = await supabase
+            .from('whatsapp_vat_data')
+            .delete()
+            .eq('invoice_id', invoiceId)
+
+        if (vatDataError) {
+            console.error('❌ Error deleting whatsapp_vat_data:', vatDataError)
+            return NextResponse.json(
+                { error: 'Error al eliminar datos relacionados' },
+                { status: 500 }
+            )
+        }
+
         // Eliminar la factura
         const { error: deleteError } = await supabase
             .from('invoices')

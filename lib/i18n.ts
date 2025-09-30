@@ -1059,7 +1059,7 @@ export const translations: Record<Language, Translations> = {
             paymentTypes: {
                 bankTransfer: 'Transferência Bancária',
                 card: 'Cartão',
-                supplierCredit: 'Crédito de Fornecedor'
+                supplierCredit: 'Tarjeta'
             },
 
             errors: {
@@ -1976,7 +1976,7 @@ export const translations: Record<Language, Translations> = {
             paymentTypes: {
                 bankTransfer: 'Bank Transfer',
                 card: 'Card',
-                supplierCredit: 'Supplier Credit'
+                supplierCredit: 'Card'
             },
 
             errors: {
@@ -2893,7 +2893,7 @@ export const translations: Record<Language, Translations> = {
             paymentTypes: {
                 bankTransfer: 'Virement Bancaire',
                 card: 'Carte',
-                supplierCredit: 'Crédit Fournisseur'
+                supplierCredit: 'Carte'
             },
 
             errors: {
@@ -3803,7 +3803,7 @@ export const translations: Record<Language, Translations> = {
             paymentTypes: {
                 bankTransfer: "Transferencia Bancaria",
                 card: "Tarjeta",
-                supplierCredit: "Crédito de Proveedor"
+                supplierCredit: "Tarjeta"
             },
             errors: {
                 clientNameRequired: "El nombre del cliente es obligatorio",

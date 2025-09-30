@@ -200,7 +200,7 @@ Responde ÚNICAMENTE en este formato JSON exacto:
   "confidence": 0.95,
   "extracted_data": {
     "vendor_name": "Nombre exacto del establecimiento (NO DIAMOND NXT TRADING LDA)",
-    "vendor_nif": "Número fiscal encontrado (NO 517124548)",
+    "vendor_nif": "Número fiscal encontrado con letra inicial si existe (ej: B72493646, NO 517124548)",
     "invoice_number": "Número de factura si existe",
     "number": "Mismo número de factura",
     "invoice_date": "YYYY-MM-DD",
@@ -268,9 +268,17 @@ RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS 
                 result.processing_notes.push('Nombre del proveedor no detectado')
             }
 
-            // Limpiar NIF (solo números)
+            // Limpiar NIF (mantener letra inicial si existe)
             if (invoiceData.vendor_nif && typeof invoiceData.vendor_nif === 'string') {
-                invoiceData.vendor_nif = invoiceData.vendor_nif.replace(/\D/g, '')
+                // Si empieza con letra, mantenerla y limpiar el resto
+                if (/^[A-Z]/.test(invoiceData.vendor_nif)) {
+                    const letter = invoiceData.vendor_nif.charAt(0)
+                    const numbers = invoiceData.vendor_nif.slice(1).replace(/\D/g, '')
+                    invoiceData.vendor_nif = letter + numbers
+                } else {
+                    // Si no empieza con letra, solo números
+                    invoiceData.vendor_nif = invoiceData.vendor_nif.replace(/\D/g, '')
+                }
             } else {
                 invoiceData.vendor_nif = '000000000'
                 result.processing_notes.push('NIF no detectado, se usó valor por defecto')
@@ -329,9 +337,17 @@ RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS 
                 result.processing_notes.push('Proveedor no detectado')
             }
 
-            // Limpiar NIF
+            // Limpiar NIF (mantener letra inicial si existe)
             if (expenseData.vendor_nif && typeof expenseData.vendor_nif === 'string') {
-                expenseData.vendor_nif = expenseData.vendor_nif.replace(/\D/g, '')
+                // Si empieza con letra, mantenerla y limpiar el resto
+                if (/^[A-Z]/.test(expenseData.vendor_nif)) {
+                    const letter = expenseData.vendor_nif.charAt(0)
+                    const numbers = expenseData.vendor_nif.slice(1).replace(/\D/g, '')
+                    expenseData.vendor_nif = letter + numbers
+                } else {
+                    // Si no empieza con letra, solo números
+                    expenseData.vendor_nif = expenseData.vendor_nif.replace(/\D/g, '')
+                }
             }
 
             // Asegurar que los montos sean números válidos

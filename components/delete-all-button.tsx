@@ -2,7 +2,7 @@
 
 import { useState } from 'react'
 import { Button } from '@/components/ui/button'
-import { 
+import {
   Dialog,
   DialogContent,
   DialogHeader,
@@ -19,20 +19,22 @@ interface DeleteAllButtonProps {
   className?: string
 }
 
-export default function DeleteAllButton({ 
-  entityName, 
-  entityNamePlural, 
-  apiEndpoint, 
+export default function DeleteAllButton({
+  entityName,
+  entityNamePlural,
+  apiEndpoint,
   onSuccess,
-  className 
+  className
 }: DeleteAllButtonProps) {
   const [showDialog, setShowDialog] = useState(false)
   const [loading, setLoading] = useState(false)
 
   const handleDeleteAll = async () => {
     setLoading(true)
-    
+
     try {
+      console.log(`🗑️ Attempting to delete all ${entityNamePlural} from ${apiEndpoint}`)
+
       const response = await fetch(apiEndpoint, {
         method: 'DELETE',
         headers: {
@@ -40,26 +42,29 @@ export default function DeleteAllButton({
         },
       })
 
+      console.log(`📡 Response status: ${response.status}`)
+
       if (!response.ok) {
-        throw new Error(`Failed to delete all ${entityNamePlural}`)
+        const errorText = await response.text()
+        console.error(`❌ HTTP Error ${response.status}:`, errorText)
+        throw new Error(`HTTP ${response.status}: ${errorText}`)
       }
 
       const result = await response.json()
-      
+      console.log(`📄 Response data:`, result)
+
       if (result.success) {
         setShowDialog(false)
         if (onSuccess) {
           onSuccess()
         }
-        // You might want to show a success notification here
         console.log(`✅ All ${entityNamePlural} deleted successfully`)
       } else {
         throw new Error(result.error || `Failed to delete all ${entityNamePlural}`)
       }
-      
+
     } catch (error) {
       console.error(`❌ Error deleting all ${entityNamePlural}:`, error)
-      // You might want to show an error notification here
     } finally {
       setLoading(false)
     }
@@ -85,18 +90,18 @@ export default function DeleteAllButton({
               <span>Confirmar Eliminação</span>
             </DialogTitle>
           </DialogHeader>
-          
+
           <div className="space-y-4">
             <div className="bg-red-50 border border-red-200 rounded-lg p-4">
               <p className="text-red-800 font-medium mb-2">
                 ⚠️ Atenção: Esta ação não pode ser desfeita!
               </p>
               <p className="text-red-700">
-                Tem certeza de que deseja eliminar <strong>todos os {entityNamePlural}</strong>? 
+                Tem certeza de que deseja eliminar <strong>todos os {entityNamePlural}</strong>?
                 Esta ação irá remover permanentemente todos os registros da base de dados.
               </p>
             </div>
-            
+
             <div className="text-sm text-gray-600">
               <p><strong>O que será eliminado:</strong></p>
               <ul className="list-disc list-inside mt-2 space-y-1">
@@ -108,14 +113,14 @@ export default function DeleteAllButton({
           </div>
 
           <DialogFooter>
-            <Button 
-              variant="outline" 
+            <Button
+              variant="outline"
               onClick={() => setShowDialog(false)}
               disabled={loading}
             >
               Cancelar
             </Button>
-            <Button 
+            <Button
               variant="destructive"
               onClick={handleDeleteAll}
               disabled={loading}
