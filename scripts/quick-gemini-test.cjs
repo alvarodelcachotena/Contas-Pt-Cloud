@@ -9,7 +9,7 @@ console.log(`API Key: ${apiKey.substring(0, 10)}...`)
 
 try {
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash" })
+    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" })
 
     console.log('✅ Gemini AI inicializado correctamente')
     console.log('🎉 ¡La configuración está lista!')
