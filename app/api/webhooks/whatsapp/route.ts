@@ -289,6 +289,24 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         return
       }
 
+      // Check if this media has already been processed
+      console.log(`🔍 Verificando si el media ya fue procesado: ${mediaDetails.id}`)
+      const { data: existingDocument, error: existingError } = await supabase
+        .from('documents')
+        .select('id, filename, processing_status, created_at')
+        .eq('tenant_id', tenantId)
+        .contains('extracted_data', { whatsapp_message: { id: mediaDetails.id } })
+        .single()
+
+      if (existingDocument) {
+        console.log(`⚠️ MEDIA YA PROCESADO: Este archivo ya fue analizado anteriormente`)
+        console.log(`📋 Documento existente:`, existingDocument)
+        await sendWhatsAppMessage(message.from, `⚠️ **Archivo ya procesado**\n\n📄 Este archivo ya fue analizado anteriormente.\n\n📋 Documento: ${existingDocument.filename}\n📅 Fecha: ${new Date(existingDocument.created_at).toLocaleDateString('pt-PT')}\n\n✅ No se realizará un nuevo análisis para evitar duplicados.`)
+        return
+      }
+
+      console.log(`✅ Media no procesado anteriormente, procediendo con el análisis`)
+
       // Download media from WhatsApp
       const mediaData = await downloadWhatsAppMedia(mediaDetails.id, credentials.accessToken)
 
@@ -316,6 +334,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             processing_method: 'whatsapp_webhook',
             extracted_data: {
               whatsapp_message: {
+                id: mediaDetails.id,
                 from: message.from,
                 timestamp: message.timestamp,
                 type: message.type
@@ -495,6 +514,14 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
                 savedAsInvoice = true
               } catch (error) {
                 console.error(`❌ Error en processInvoice:`, error instanceof Error ? error.message : 'Unknown error')
+
+                // Check if it's a duplicate error
+                if (error instanceof Error && error.message.includes('DUPLICATE_INVOICE')) {
+                  console.log(`⚠️ DUPLICADO DETECTADO: No se guardará la factura duplicada`)
+                  await sendWhatsAppMessage(message.from, `⚠️ **Factura duplicada detectada**\n\n📋 Ya existe una factura con el mismo nombre y fecha.\n\n✅ El documento fue analizado pero no se guardó para evitar duplicados.\n\n💡 Si necesitas guardar esta factura, verifica que la fecha sea diferente.`)
+                  return // Exit early, don't try to save as expense
+                }
+
                 console.log(`🔄 Intentando guardar como EXPENSE como fallback`)
               }
             }
@@ -507,6 +534,14 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
                 console.log(`✅ processExpense completado exitosamente`)
               } catch (error) {
                 console.error(`❌ Error en processExpense:`, error instanceof Error ? error.message : 'Unknown error')
+
+                // Check if it's a duplicate error
+                if (error instanceof Error && error.message.includes('DUPLICATE_EXPENSE')) {
+                  console.log(`⚠️ DUPLICADO DETECTADO: No se guardará el gasto duplicado`)
+                  await sendWhatsAppMessage(message.from, `⚠️ **Gasto duplicado detectado**\n\n📋 Ya existe un gasto para el mismo proveedor y fecha.\n\n✅ El documento fue analizado pero no se guardó para evitar duplicados.\n\n💡 Si necesitas guardar este gasto, verifica que la fecha sea diferente.`)
+                  return // Exit early, don't try to create minimal expense
+                }
+
                 console.log(`⚠️ FALLO TOTAL: No se pudo guardar ni como invoice ni como expense`)
 
                 // Crear un registro mínimo en expenses como último recurso
@@ -966,6 +1001,23 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
 
     console.log(`📋 Número de factura generado: ${invoiceNumber}`)
 
+    // Check for duplicate invoice by number
+    console.log(`🔍 Verificando duplicados para: ${invoiceNumber}`)
+    const { data: existingInvoice, error: duplicateError } = await supabase
+      .from('invoices')
+      .select('id, number, client_name, created_at')
+      .eq('tenant_id', tenantId)
+      .eq('number', invoiceNumber)
+      .single()
+
+    if (existingInvoice) {
+      console.log(`⚠️ DUPLICADO DETECTADO: Ya existe una factura con el número ${invoiceNumber}`)
+      console.log(`📋 Factura existente:`, existingInvoice)
+      throw new Error(`DUPLICATE_INVOICE: Ya existe una factura con el nombre "${invoiceNumber}". No se guardará duplicado.`)
+    }
+
+    console.log(`✅ No se encontraron duplicados, procediendo con el guardado`)
+
     // Validación de datos críticos
     console.log(`🔍 VALIDACIÓN DE DATOS CRÍTICOS:`)
     console.log(`   - clientName: "${clientName}"`)
@@ -1194,6 +1246,28 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     const description = expenseData.description || `Gasto procesado desde WhatsApp - ${vendorName}`
     const expenseDate = expenseData.expense_date || expenseData.invoice_date || expenseData.date || new Date().toISOString().split('T')[0]
     const receiptNumber = expenseData.invoice_number || expenseData.receipt_number || `WHATSAPP-${Date.now()}`
+
+    // Generate expense identifier for duplicate checking
+    const expenseIdentifier = `${vendorName.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim()} ${expenseDate}`
+    console.log(`🔍 Identificador de gasto: ${expenseIdentifier}`)
+
+    // Check for duplicate expense by vendor and date
+    console.log(`🔍 Verificando duplicados para: ${expenseIdentifier}`)
+    const { data: existingExpense, error: duplicateError } = await supabase
+      .from('expenses')
+      .select('id, vendor, expense_date, created_at')
+      .eq('tenant_id', tenantId)
+      .eq('vendor', vendorName)
+      .eq('expense_date', expenseDate)
+      .single()
+
+    if (existingExpense) {
+      console.log(`⚠️ DUPLICADO DETECTADO: Ya existe un gasto para ${vendorName} en la fecha ${expenseDate}`)
+      console.log(`📋 Gasto existente:`, existingExpense)
+      throw new Error(`DUPLICATE_EXPENSE: Ya existe un gasto para "${vendorName}" en la fecha "${expenseDate}". No se guardará duplicado.`)
+    }
+
+    console.log(`✅ No se encontraron duplicados, procediendo con el guardado`)
 
     // Validación de datos críticos
     console.log(`🔍 VALIDACIÓN DE DATOS:`)
