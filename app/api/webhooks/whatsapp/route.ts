@@ -1001,18 +1001,21 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
 
     console.log(`📋 Número de factura generado: ${invoiceNumber}`)
 
-    // Check for duplicate invoice by number
+    // Check for duplicate invoice by number (more robust check)
     console.log(`🔍 Verificando duplicados para: ${invoiceNumber}`)
-    const { data: existingInvoice, error: duplicateError } = await supabase
+    const { data: existingInvoices, error: duplicateError } = await supabase
       .from('invoices')
       .select('id, number, client_name, created_at')
       .eq('tenant_id', tenantId)
       .eq('number', invoiceNumber)
-      .single()
 
-    if (existingInvoice) {
-      console.log(`⚠️ DUPLICADO DETECTADO: Ya existe una factura con el número ${invoiceNumber}`)
-      console.log(`📋 Factura existente:`, existingInvoice)
+    if (duplicateError) {
+      console.log(`⚠️ Error verificando duplicados:`, duplicateError)
+    }
+
+    if (existingInvoices && existingInvoices.length > 0) {
+      console.log(`⚠️ DUPLICADO DETECTADO: Ya existe ${existingInvoices.length} factura(s) con el número ${invoiceNumber}`)
+      console.log(`📋 Facturas existentes:`, existingInvoices)
       throw new Error(`DUPLICATE_INVOICE: Ya existe una factura con el nombre "${invoiceNumber}". No se guardará duplicado.`)
     }
 
@@ -1251,19 +1254,22 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     const expenseIdentifier = `${vendorName.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim()} ${expenseDate}`
     console.log(`🔍 Identificador de gasto: ${expenseIdentifier}`)
 
-    // Check for duplicate expense by vendor and date
+    // Check for duplicate expense by vendor and date (more robust check)
     console.log(`🔍 Verificando duplicados para: ${expenseIdentifier}`)
-    const { data: existingExpense, error: duplicateError } = await supabase
+    const { data: existingExpenses, error: duplicateError } = await supabase
       .from('expenses')
       .select('id, vendor, expense_date, created_at')
       .eq('tenant_id', tenantId)
       .eq('vendor', vendorName)
       .eq('expense_date', expenseDate)
-      .single()
 
-    if (existingExpense) {
-      console.log(`⚠️ DUPLICADO DETECTADO: Ya existe un gasto para ${vendorName} en la fecha ${expenseDate}`)
-      console.log(`📋 Gasto existente:`, existingExpense)
+    if (duplicateError) {
+      console.log(`⚠️ Error verificando duplicados:`, duplicateError)
+    }
+
+    if (existingExpenses && existingExpenses.length > 0) {
+      console.log(`⚠️ DUPLICADO DETECTADO: Ya existe ${existingExpenses.length} gasto(s) para ${vendorName} en la fecha ${expenseDate}`)
+      console.log(`📋 Gastos existentes:`, existingExpenses)
       throw new Error(`DUPLICATE_EXPENSE: Ya existe un gasto para "${vendorName}" en la fecha "${expenseDate}". No se guardará duplicado.`)
     }
 
