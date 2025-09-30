@@ -227,8 +227,24 @@ export default function AIAssistantPage() {
     })
 
     try {
+      // Convertir archivo a base64
+      const base64 = await new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.onload = () => {
+          const result = reader.result as string
+          // Remover el prefijo data:image/...;base64,
+          const base64Data = result.split(',')[1]
+          resolve(base64Data)
+        }
+        reader.onerror = reject
+        reader.readAsDataURL(selectedFile)
+      })
+
       const formData = new FormData()
       formData.append('file', selectedFile)
+      formData.append('base64', base64)
+      formData.append('fileName', selectedFile.name)
+      formData.append('fileType', selectedFile.type)
 
       const response = await fetch('/api/ai-document-analysis', {
         method: 'POST',
