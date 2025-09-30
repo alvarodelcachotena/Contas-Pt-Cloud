@@ -207,10 +207,17 @@ export default function AIAssistantPage() {
     setIsProcessingFile(true)
     setIsTyping(true)
 
-    // Convertir archivo a base64 para vista previa
-    const filePreview = await new Promise<string>((resolve, reject) => {
+    // Convertir archivo a base64 UNA SOLA VEZ para vista previa y envío
+    const { filePreview, base64 } = await new Promise<{ filePreview: string, base64: string }>((resolve, reject) => {
       const reader = new FileReader()
-      reader.onload = () => resolve(reader.result as string)
+      reader.onload = () => {
+        const result = reader.result as string
+        const base64Data = result.split(',')[1]
+        resolve({
+          filePreview: result,
+          base64: base64Data
+        })
+      }
       reader.onerror = reject
       reader.readAsDataURL(selectedFile)
     })
@@ -229,26 +236,14 @@ export default function AIAssistantPage() {
 
     setChatHistory(prev => [...prev, userMessage])
 
-    // Guardar mensaje del usuario con archivo
-    await saveChatMessage(userMessage.message, null, true, {
+    // Guardar mensaje del usuario con archivo (en paralelo)
+    const saveMessagePromise = saveChatMessage(userMessage.message, null, true, {
       fileName: selectedFile.name,
       fileType: selectedFile.type,
       fileSize: selectedFile.size
     })
 
     try {
-      // Convertir archivo a base64
-      const base64 = await new Promise<string>((resolve, reject) => {
-        const reader = new FileReader()
-        reader.onload = () => {
-          const result = reader.result as string
-          // Remover el prefijo data:image/...;base64,
-          const base64Data = result.split(',')[1]
-          resolve(base64Data)
-        }
-        reader.onerror = reject
-        reader.readAsDataURL(selectedFile)
-      })
 
       const formData = new FormData()
       formData.append('file', selectedFile)
@@ -256,10 +251,14 @@ export default function AIAssistantPage() {
       formData.append('fileName', selectedFile.name)
       formData.append('fileType', selectedFile.type)
 
-      const response = await fetch('/api/ai-document-analysis', {
-        method: 'POST',
-        body: formData,
-      })
+      // Enviar análisis y guardar mensaje en paralelo
+      const [response] = await Promise.all([
+        fetch('/api/ai-document-analysis', {
+          method: 'POST',
+          body: formData,
+        }),
+        saveMessagePromise // Esperar que se guarde el mensaje
+      ])
 
       if (!response.ok) {
         const errorText = await response.text()
@@ -323,66 +322,67 @@ export default function AIAssistantPage() {
 
         setChatHistory(prev => [...prev, assistantMessage])
 
-        // Guardar automáticamente como factura si hay datos extraídos
+        // Guardar automáticamente como factura si hay datos extraídos (en paralelo)
         if (data.extractedData) {
-          try {
-            // Generar nombre personalizado para la factura
-            const vendorName = data.extractedData.vendor || 'Factura'
-            const issueDate = data.extractedData.issueDate || new Date().toISOString().split('T')[0]
-            const date = new Date(issueDate)
-            const formattedDate = date.toLocaleDateString('pt-PT', {
-              day: '2-digit',
-              month: '2-digit',
-              year: 'numeric'
-            }).replace(/\//g, '-')
+          // Generar nombre personalizado para la factura
+          const vendorName = data.extractedData.vendor || 'Factura'
+          const issueDate = data.extractedData.issueDate || new Date().toISOString().split('T')[0]
+          const date = new Date(issueDate)
+          const formattedDate = date.toLocaleDateString('pt-PT', {
+            day: '2-digit',
+            month: '2-digit',
+            year: 'numeric'
+          }).replace(/\//g, '-')
 
-            const customInvoiceNumber = `${vendorName.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim()} ${formattedDate}`
+          const customInvoiceNumber = `${vendorName.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim()} ${formattedDate}`
 
-            const invoiceResponse = await fetch('/api/invoices', {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-              },
-              body: JSON.stringify({
-                customNumber: customInvoiceNumber,
-                clientName: data.extractedData.vendor,
-                clientEmail: '',
-                clientTaxId: data.extractedData.nif ? data.extractedData.nif.replace(/^ES/, '') : '',
-                issueDate: issueDate,
-                dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 días
-                amount: data.extractedData.netAmount || 0,
-                vatAmount: data.extractedData.vatAmount || 0,
-                vatRate: data.extractedData.vatRate || 0.23,
-                totalAmount: data.extractedData.total || 0,
-                status: 'paid',
-                description: data.extractedData.description || 'Factura creada desde análisis de documento',
-                paymentTerms: '30 dias',
-                paymentType: 'tarjeta'
-              })
+          // Crear factura en paralelo (no esperar)
+          fetch('/api/invoices', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              customNumber: customInvoiceNumber,
+              clientName: data.extractedData.vendor,
+              clientEmail: '',
+              clientTaxId: data.extractedData.nif ? data.extractedData.nif.replace(/^ES/, '') : '',
+              issueDate: issueDate,
+              dueDate: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000).toISOString().split('T')[0], // 30 días
+              amount: data.extractedData.netAmount || 0,
+              vatAmount: data.extractedData.vatAmount || 0,
+              vatRate: data.extractedData.vatRate || 0.23,
+              totalAmount: data.extractedData.total || 0,
+              status: 'paid',
+              description: data.extractedData.description || 'Factura creada desde análisis de documento',
+              paymentTerms: '30 dias',
+              paymentType: 'tarjeta'
             })
-
-            if (invoiceResponse.ok) {
-              const invoice = await invoiceResponse.json()
-              const successMessage: ChatMessage = {
+          })
+            .then(async (invoiceResponse) => {
+              if (invoiceResponse.ok) {
+                const invoice = await invoiceResponse.json()
+                const successMessage: ChatMessage = {
+                  id: Date.now() + 2,
+                  type: 'assistant',
+                  message: `✅ **${t.aiAssistant.autoSave.success}**\n\n📋 **${t.aiAssistant.invoiceDetails.number}:** ${invoice.number}\n🏪 **${t.aiAssistant.invoiceDetails.vendor}:** ${data.extractedData.vendor}\n💰 **${t.aiAssistant.invoiceDetails.total}:** €${invoice.total_amount}`,
+                  timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
+                }
+                setChatHistory(prev => [...prev, successMessage])
+              } else {
+                throw new Error('Error al crear la factura')
+              }
+            })
+            .catch((error) => {
+              console.error('Error saving invoice automatically:', error)
+              const errorMessage: ChatMessage = {
                 id: Date.now() + 2,
                 type: 'assistant',
-                message: `✅ **${t.aiAssistant.autoSave.success}**\n\n📋 **${t.aiAssistant.invoiceDetails.number}:** ${invoice.number}\n🏪 **${t.aiAssistant.invoiceDetails.vendor}:** ${data.extractedData.vendor}\n💰 **${t.aiAssistant.invoiceDetails.total}:** €${invoice.total_amount}`,
+                message: `❌ **${t.aiAssistant.autoSave.error}**\n\n${error instanceof Error ? error.message : 'Error desconocido'}`,
                 timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
               }
-              setChatHistory(prev => [...prev, successMessage])
-            } else {
-              throw new Error('Error al crear la factura')
-            }
-          } catch (error) {
-            console.error('Error saving invoice automatically:', error)
-            const errorMessage: ChatMessage = {
-              id: Date.now() + 2,
-              type: 'assistant',
-              message: `❌ **${t.aiAssistant.autoSave.error}**\n\n${error instanceof Error ? error.message : 'Error desconocido'}`,
-              timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
-            }
-            setChatHistory(prev => [...prev, errorMessage])
-          }
+              setChatHistory(prev => [...prev, errorMessage])
+            })
         }
 
         // Guardar respuesta del análisis de archivo

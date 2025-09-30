@@ -289,41 +289,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         return
       }
 
-      // Check if this media has already been processed
-      console.log(`🔍 Verificando si el media ya fue procesado: ${mediaDetails.id}`)
-
-      // Buscar documentos que contengan este ID de mensaje de WhatsApp
-      const { data: existingDocuments, error: existingError } = await supabase
-        .from('documents')
-        .select('id, filename, processing_status, created_at, extracted_data')
-        .eq('tenant_id', tenantId)
-        .not('extracted_data', 'is', null)
-
-      if (existingError) {
-        console.log(`⚠️ Error verificando documentos existentes:`, existingError)
-      }
-
-      // Verificar si alguno de los documentos tiene este ID de mensaje
-      let existingDocument = null
-      if (existingDocuments) {
-        for (const doc of existingDocuments) {
-          if (doc.extracted_data &&
-            doc.extracted_data.whatsapp_message &&
-            doc.extracted_data.whatsapp_message.id === mediaDetails.id) {
-            existingDocument = doc
-            break
-          }
-        }
-      }
-
-      if (existingDocument) {
-        console.log(`⚠️ MEDIA YA PROCESADO: Este archivo ya fue analizado anteriormente`)
-        console.log(`📋 Documento existente:`, existingDocument)
-        await sendWhatsAppMessage(message.from, `⚠️ **Archivo ya procesado**\n\n📄 Este archivo ya fue analizado anteriormente.\n\n📋 Documento: ${existingDocument.filename}\n📅 Fecha: ${new Date(existingDocument.created_at).toLocaleDateString('pt-PT')}\n\n✅ No se realizará un nuevo análisis para evitar duplicados.`)
-        return
-      }
-
-      console.log(`✅ Media no procesado anteriormente, procediendo con el análisis`)
+      // Procesar todas las facturas sin filtros de duplicados
+      console.log(`🔄 Procesando media: ${mediaDetails.id} - Sin verificación de duplicados`)
 
       // Download media from WhatsApp
       const mediaData = await downloadWhatsAppMedia(mediaDetails.id, credentials.accessToken)
@@ -533,12 +500,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               } catch (error) {
                 console.error(`❌ Error en processInvoice:`, error instanceof Error ? error.message : 'Unknown error')
 
-                // Check if it's a duplicate error
-                if (error instanceof Error && error.message.includes('DUPLICATE_INVOICE')) {
-                  console.log(`⚠️ DUPLICADO DETECTADO: No se guardará la factura duplicada`)
-                  await sendWhatsAppMessage(message.from, `⚠️ **Factura duplicada detectada**\n\n📋 Ya existe una factura con el mismo nombre y fecha.\n\n✅ El documento fue analizado pero no se guardó para evitar duplicados.\n\n💡 Si necesitas guardar esta factura, verifica que la fecha sea diferente.`)
-                  return // Exit early, don't try to save as expense
-                }
+                // Error en processInvoice - continuar con expense
+                console.log(`⚠️ Error en processInvoice, continuando con expense`)
 
                 console.log(`🔄 Intentando guardar como EXPENSE como fallback`)
               }
@@ -553,12 +516,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               } catch (error) {
                 console.error(`❌ Error en processExpense:`, error instanceof Error ? error.message : 'Unknown error')
 
-                // Check if it's a duplicate error
-                if (error instanceof Error && error.message.includes('DUPLICATE_EXPENSE')) {
-                  console.log(`⚠️ DUPLICADO DETECTADO: No se guardará el gasto duplicado`)
-                  await sendWhatsAppMessage(message.from, `⚠️ **Gasto duplicado detectado**\n\n📋 Ya existe un gasto para el mismo proveedor y fecha.\n\n✅ El documento fue analizado pero no se guardó para evitar duplicados.\n\n💡 Si necesitas guardar este gasto, verifica que la fecha sea diferente.`)
-                  return // Exit early, don't try to create minimal expense
-                }
+                // Error en processExpense - continuar con registro mínimo
+                console.log(`⚠️ Error en processExpense, continuando con registro mínimo`)
 
                 console.log(`⚠️ FALLO TOTAL: No se pudo guardar ni como invoice ni como expense`)
 
@@ -1019,25 +978,8 @@ async function processInvoice(invoiceData: any, documentId: number, supabase: an
 
     console.log(`📋 Número de factura generado: ${invoiceNumber}`)
 
-    // Check for duplicate invoice by number (more robust check)
-    console.log(`🔍 Verificando duplicados para: ${invoiceNumber}`)
-    const { data: existingInvoices, error: duplicateError } = await supabase
-      .from('invoices')
-      .select('id, number, client_name, created_at')
-      .eq('tenant_id', tenantId)
-      .eq('number', invoiceNumber)
-
-    if (duplicateError) {
-      console.log(`⚠️ Error verificando duplicados:`, duplicateError)
-    }
-
-    if (existingInvoices && existingInvoices.length > 0) {
-      console.log(`⚠️ DUPLICADO DETECTADO: Ya existe ${existingInvoices.length} factura(s) con el número ${invoiceNumber}`)
-      console.log(`📋 Facturas existentes:`, existingInvoices)
-      throw new Error(`DUPLICATE_INVOICE: Ya existe una factura con el nombre "${invoiceNumber}". No se guardará duplicado.`)
-    }
-
-    console.log(`✅ No se encontraron duplicados, procediendo con el guardado`)
+    // Procesar todas las facturas sin verificación de duplicados
+    console.log(`✅ Procesando factura: ${invoiceNumber} - Sin verificación de duplicados`)
 
     // Validación de datos críticos
     console.log(`🔍 VALIDACIÓN DE DATOS CRÍTICOS:`)
@@ -1268,30 +1210,8 @@ async function processExpense(expenseData: any, documentId: number, supabase: an
     const expenseDate = expenseData.expense_date || expenseData.invoice_date || expenseData.date || new Date().toISOString().split('T')[0]
     const receiptNumber = expenseData.invoice_number || expenseData.receipt_number || `WHATSAPP-${Date.now()}`
 
-    // Generate expense identifier for duplicate checking
-    const expenseIdentifier = `${vendorName.toUpperCase().replace(/[^A-Z0-9\s]/g, '').trim()} ${expenseDate}`
-    console.log(`🔍 Identificador de gasto: ${expenseIdentifier}`)
-
-    // Check for duplicate expense by vendor and date (more robust check)
-    console.log(`🔍 Verificando duplicados para: ${expenseIdentifier}`)
-    const { data: existingExpenses, error: duplicateError } = await supabase
-      .from('expenses')
-      .select('id, vendor, expense_date, created_at')
-      .eq('tenant_id', tenantId)
-      .eq('vendor', vendorName)
-      .eq('expense_date', expenseDate)
-
-    if (duplicateError) {
-      console.log(`⚠️ Error verificando duplicados:`, duplicateError)
-    }
-
-    if (existingExpenses && existingExpenses.length > 0) {
-      console.log(`⚠️ DUPLICADO DETECTADO: Ya existe ${existingExpenses.length} gasto(s) para ${vendorName} en la fecha ${expenseDate}`)
-      console.log(`📋 Gastos existentes:`, existingExpenses)
-      throw new Error(`DUPLICATE_EXPENSE: Ya existe un gasto para "${vendorName}" en la fecha "${expenseDate}". No se guardará duplicado.`)
-    }
-
-    console.log(`✅ No se encontraron duplicados, procediendo con el guardado`)
+    // Procesar todos los gastos sin verificación de duplicados
+    console.log(`✅ Procesando gasto: ${vendorName} - ${expenseDate} - Sin verificación de duplicados`)
 
     // Validación de datos críticos
     console.log(`🔍 VALIDACIÓN DE DATOS:`)
