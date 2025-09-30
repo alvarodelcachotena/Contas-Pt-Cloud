@@ -19,6 +19,7 @@ interface ChatMessage {
   hasFile?: boolean
   fileName?: string
   fileType?: string
+  filePreview?: string
   extractedData?: any
 }
 
@@ -206,6 +207,14 @@ export default function AIAssistantPage() {
     setIsProcessingFile(true)
     setIsTyping(true)
 
+    // Convertir archivo a base64 para vista previa
+    const filePreview = await new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = reject
+      reader.readAsDataURL(selectedFile)
+    })
+
     // Añadir mensaje del usuario mostrando el archivo
     const userMessage: ChatMessage = {
       id: Date.now(),
@@ -214,7 +223,8 @@ export default function AIAssistantPage() {
       timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : '',
       hasFile: true,
       fileName: selectedFile.name,
-      fileType: selectedFile.type
+      fileType: selectedFile.type,
+      filePreview: filePreview
     }
 
     setChatHistory(prev => [...prev, userMessage])
@@ -252,10 +262,13 @@ export default function AIAssistantPage() {
       })
 
       if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`)
+        const errorText = await response.text()
+        console.error('❌ Error response:', errorText)
+        throw new Error(`HTTP error! status: ${response.status} - ${errorText}`)
       }
 
       const data = await response.json()
+      console.log('✅ Response data:', data)
 
       if (data.success) {
         // Crear mensaje de respuesta con datos extraídos
@@ -379,12 +392,17 @@ export default function AIAssistantPage() {
         throw new Error(data.error || 'Erro desconhecido')
       }
     } catch (error) {
-      console.error('Erro ao processar arquivo:', error)
+      console.error('❌ Erro ao processar arquivo:', error)
+      console.error('❌ Error details:', {
+        name: error instanceof Error ? error.name : 'Unknown',
+        message: error instanceof Error ? error.message : String(error),
+        stack: error instanceof Error ? error.stack : undefined
+      })
 
       const errorMessage: ChatMessage = {
         id: Date.now() + 1,
         type: 'assistant',
-        message: t.aiAssistant.fileProcessingError,
+        message: `${t.aiAssistant.fileProcessingError}\n\n🔍 Error: ${error instanceof Error ? error.message : String(error)}`,
         timestamp: isMounted ? new Date().toLocaleTimeString('pt-PT', { hour: '2-digit', minute: '2-digit' }) : ''
       }
 
@@ -450,6 +468,17 @@ export default function AIAssistantPage() {
                       ? 'bg-blue-600 text-white'
                       : 'bg-gray-100 text-gray-900'
                       }`}>
+                      {/* Mostrar vista previa de imagen si existe */}
+                      {chat.hasFile && chat.filePreview && chat.fileType?.startsWith('image/') && (
+                        <div className="mb-2">
+                          <img
+                            src={chat.filePreview}
+                            alt={chat.fileName || 'Archivo'}
+                            className="max-w-full h-auto rounded border"
+                            style={{ maxHeight: '200px' }}
+                          />
+                        </div>
+                      )}
                       <div className="text-sm whitespace-pre-wrap">{chat.message}</div>
                       <div className={`text-xs mt-1 ${chat.type === 'user' ? 'text-blue-100' : 'text-gray-500'
                         }`}>

@@ -414,7 +414,13 @@ export async function POST(request: NextRequest) {
         details: errorMessage,
         errorType: errorType,
         timestamp: new Date().toISOString(),
-        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined
+        stack: process.env.NODE_ENV === 'development' ? error.stack : undefined,
+        debugInfo: {
+          platform: process.env.VERCEL ? 'Vercel' : process.env.NETLIFY ? 'Netlify' : 'Local',
+          nodeEnv: process.env.NODE_ENV,
+          hasGoogleAI: !!(process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY),
+          hasOpenAI: !!process.env.OPENAI_API_KEY
+        }
       },
       { status: statusCode }
     )
