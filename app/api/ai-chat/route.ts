@@ -966,12 +966,12 @@ INSTRUÇÕES PARA A IA:
 
         const fullPrompt = `${systemPrompt}\n\nPergunta do utilizador: ${message.trim()}`
 
-        const model = googleAI.getGenerativeModel({ model: 'gemini-1.0-pro' })
+        const model = googleAI.getGenerativeModel({ model: 'gemini-2.5-flash' })
         const result = await model.generateContent(fullPrompt)
         response = result.response.text() || ''
 
         if (response.trim()) {
-          usedModel = 'Google AI (Gemini-1.0-Pro)'
+          usedModel = 'Google AI (Gemini-2.5-Flash)'
           console.log('✅ Resposta da Google AI recebida:', response.substring(0, 100) + '...')
         } else {
           throw new Error('Resposta vazia da Google AI')

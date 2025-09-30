@@ -12,7 +12,7 @@ console.log(`Longitud: ${apiKey.length} caracteres`)
 try {
     // Inicializar Gemini
     const genAI = new GoogleGenerativeAI(apiKey)
-    const model = genAI.getGenerativeModel({ model: "gemini-1.0-pro" })
+    const model = genAI.getGenerativeModel({ model: "gemini-2.5-flash" })
 
     console.log('✅ Gemini AI inicializado correctamente')
 
