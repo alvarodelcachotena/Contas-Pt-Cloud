@@ -430,26 +430,19 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
           console.log(`✅ Media uploaded successfully: ${fileName}`)
 
-          // Process with Gemini AI with timeout
+          // Process with Gemini AI
           try {
-            console.log(`🤖 Procesando con Gemini AI v1.5-flash (optimizado)...`)
+            console.log(`🤖 Procesando con Gemini AI...`)
             console.log(`📄 Archivo: ${mediaData.filename}`)
             console.log(`📄 MIME type: ${mediaData.mime_type}`)
             console.log(`📄 Buffer size: ${mediaData.buffer.length} bytes`)
 
             const aiService = new DocumentAIService()
-
-            // Agregar timeout adicional de 45 segundos para evitar bucles infinitos
-            const analysisResult = await Promise.race([
-              aiService.analyzeDocument(
-                Buffer.from(mediaData.buffer),
-                mediaData.filename,
-                mediaData.mime_type
-              ),
-              new Promise<never>((_, reject) =>
-                setTimeout(() => reject(new Error('Timeout: Análisis de IA tardó más de 45 segundos')), 45000)
-              )
-            ])
+            const analysisResult = await aiService.analyzeDocument(
+              Buffer.from(mediaData.buffer),
+              mediaData.filename,
+              mediaData.mime_type
+            )
 
             console.log(`📊 Resultado del análisis:`, analysisResult)
 
@@ -723,71 +716,21 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
           } catch (aiError) {
             console.error('❌ Error en procesamiento AI:', aiError)
 
-            // Si es timeout, crear documento mínimo
-            if (aiError instanceof Error && (aiError.message.includes('Timeout') || aiError.message.includes('timeout'))) {
-              console.log('⏰ Creando documento mínimo por timeout...')
+            // Update document status to failed
+            await supabase
+              .from('documents')
+              .update({
+                processing_status: 'failed',
+                extracted_data: {
+                  ...document.extracted_data,
+                  ai_error: aiError instanceof Error ? aiError.message : 'Unknown AI error'
+                }
+              })
+              .eq('id', document.id)
 
-              const minimalData = {
-                vendor_name: 'Sin detectar (timeout)',
-                vendor_nif: 'Sin detectar',
-                invoice_number: `TIMEOUT-${Date.now()}`,
-                invoice_date: new Date().toISOString().split('T')[0],
-                subtotal: 0,
-                vat_rate: 23,
-                vat_amount: 0,
-                total_amount: 0,
-                description: 'Documento recibido pero procesamiento timeout',
-                category: 'otros',
-                payment_type: 'card'
-              }
-
-              // Update document with minimal data
-              await supabase
-                .from('documents')
-                .update({
-                  processing_status: 'completed',
-                  confidence_score: 0.5,
-                  extracted_data: {
-                    ...document.extracted_data,
-                    ai_analysis: {
-                      document_type: 'receipt',
-                      confidence: 0.5,
-                      extracted_data: minimalData,
-                      processing_notes: ['Timeout en procesamiento IA']
-                    },
-                    ai_error: 'Timeout en análisis'
-                  }
-                })
-                .eq('id', document.id)
-
-              // Crear expense mínimo
-              try {
-                await createMinimalExpense(minimalData, document.id, supabase, tenantId)
-              } catch (minimalError) {
-                console.error('❌ Error creando expense mínimo:', minimalError)
-              }
-
-              // Send timeout message
-              const timeoutMessage = `⚠️ Documento recibido pero procesamiento timeout\n\n📄 Archivo: ${mediaData.filename}\n🕐 Procesamiento demasiado lento - datos básicos guardados\n\n✅ Documento guardado como: ${minimalData.invoice_number}`
-              await sendWhatsAppMessage(message.from, timeoutMessage)
-
-            } else {
-              // Errores regulares
-              await supabase
-                .from('documents')
-                .update({
-                  processing_status: 'failed',
-                  extracted_data: {
-                    ...document.extracted_data,
-                    ai_error: aiError instanceof Error ? aiError.message : 'Unknown AI error'
-                  }
-                })
-                .eq('id', document.id)
-
-              // Send error message to WhatsApp
-              const errorMessage = `❌ Error al procesar el documento\n\n🔍 Error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}\n\nEl documento se guardó pero no se pudo analizar.`
-              await sendWhatsAppMessage(message.from, errorMessage)
-            }
+            // Send error message to WhatsApp
+            const errorMessage = `❌ Error al procesar el documento\n\n🔍 Error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}\n\nEl documento se guardó pero no se pudo analizar. Revisa los logs para más detalles.`
+            await sendWhatsAppMessage(message.from, errorMessage)
           }
         }
       } else {

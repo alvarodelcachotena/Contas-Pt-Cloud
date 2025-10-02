@@ -81,14 +81,14 @@ export class DocumentAIService {
             console.log(`📄 MIME type proporcionado: ${mimeType || 'No proporcionado'}`)
             console.log(`📄 MIME type por extensión: ${this.getMimeType(filename)}`)
 
-            // Crear el modelo Gemini (usando v1 stable)
+            // Crear el modelo Gemini
             const model = this.genAI.getGenerativeModel({
-                model: "gemini-1.5-flash",
+                model: "gemini-2.5-flash",
                 generationConfig: {
                     temperature: 0.1,
                     topK: 32,
                     topP: 1,
-                    maxOutputTokens: 2048, // Reducido para evitar timeouts
+                    maxOutputTokens: 4096,
                 }
             })
 
@@ -103,16 +103,10 @@ export class DocumentAIService {
                 }
             }
 
-            console.log(`🤖 Enviando documento a Gemini AI v1.5-flash...`)
+            console.log(`🤖 Enviando documento a Gemini AI...`)
 
-            // Generar contenido con timeout
-            const result = await Promise.race([
-                model.generateContent([prompt, fileData]),
-                new Promise((_, reject) =>
-                    setTimeout(() => reject(new Error('Timeout: Gemini API tardó más de 30 segundos')), 30000)
-                )
-            ]) as any
-
+            // Generar contenido
+            const result = await model.generateContent([prompt, fileData])
             const response = await result.response
             const text = response.text()
 
@@ -126,29 +120,6 @@ export class DocumentAIService {
             if (error instanceof Error) {
                 console.error('Mensaje:', error.message)
                 console.error('Stack:', error.stack)
-
-                // Si es un error de timeout, crear respuesta mínima
-                if (error.message.includes('Timeout') || error.message.includes('timeout')) {
-                    console.log('⏰ Creando respuesta mínima por timeout...')
-                    return {
-                        document_type: 'receipt',
-                        confidence: 0.5,
-                        extracted_data: {
-                            vendor_name: 'Sin detectar (timeout)',
-                            vendor_nif: 'Sin detectar',
-                            invoice_number: `TIME-${Date.now()}`,
-                            invoice_date: new Date().toISOString().split('T')[0],
-                            subtotal: 0,
-                            vat_rate: 23,
-                            vat_amount: 0,
-                            total_amount: 0,
-                            description: 'Documento procesado con errores (timeout de IA)',
-                            category: 'otros',
-                            payment_type: 'card'
-                        },
-                        processing_notes: ['Timeout en análisis de IA, datos mínimos proporcionados']
-                    }
-                }
             }
             throw error
         }
@@ -189,38 +160,62 @@ export class DocumentAIService {
     }
 
     private getPrompt(): string {
-        return `Analiza este documento comercial y extrae los datos principales.
+        return `
+Analiza detalladamente este documento comercial (factura, recibo o gasto) y extrae TODOS los datos que encuentres.
 
-EXTRACCIÓN SIMPLE Y RÁPIDA:
-1. Nombre del establecimiento/empresa
-2. NIF/VAT (si existe)
-3. Número de factura/recibo
-4. Fecha
-5. Total/subtotal/VAT
+INFORMACIÓN IMPORTANTE SOBRE LA EMPRESA PRINCIPAL:
+- La empresa principal es: DIAMOND NXT TRADING LDA
+- NIF de la empresa principal: 517124548
+- Cuando encuentres DOS nombres/NIFs en el documento, SIEMPRE extrae los datos del OTRO (no de DIAMOND NXT TRADING LDA)
 
-SIEMPRE usar payment_type: "card"
+INSTRUCCIONES ESPECÍFICAS:
+1. Busca y extrae TODOS los números que parezcan importes
+2. Identifica específicamente el NIF/CIF/VAT number (suele empezar con letras como PT)
+3. Busca la fecha (puede estar en varios formatos)
+4. Encuentra el nombre del establecimiento/empresa (SIEMPRE el que NO sea DIAMOND NXT TRADING LDA)
+5. Identifica si hay número de factura o recibo
+6. Busca el desglose del IVA (normalmente 23%, 13% o 6% en Portugal)
+7. Determina si es una factura formal ("Fatura") o un recibo simple ("Recibo")
+8. TIPO DE PAGO (SIEMPRE TARJETA):
+   - SIEMPRE usar payment_type: "card" (tarjeta) para todos los documentos
+   - No importa qué método de pago aparezca en el documento
+   
+   IMPORTANTE: Analiza TODO el documento para encontrar indicaciones de pago. Busca en:
+   - Texto que mencione métodos de pago
+   - Logos de bancos o tarjetas
+   - Referencias a transferencias o pagos con tarjeta
+   - Cualquier indicación de cómo se realizó el pago
 
-NO extraer datos de DIAMOND NXT TRADING LDA (NIF: 517124548)
+IMPORTANTE:
+- NO INVENTES DATOS. Si no encuentras algo, déjalo vacío o null
+- Busca el NIF en TODA la imagen (suele estar arriba o abajo)
+- Los importes deben ser números (convierte strings a números)
+- Si ves "Total", "Subtotal", "IVA" - EXTRÁELOS
+- Extrae CUALQUIER texto que parezca relevante
+- SIEMPRE extrae los datos del proveedor/cliente, NO de DIAMOND NXT TRADING LDA
 
-Responde SOLO en formato JSON:
+Responde ÚNICAMENTE en este formato JSON exacto:
 {
   "document_type": "invoice|expense|receipt|other",
   "confidence": 0.95,
   "extracted_data": {
-    "vendor_name": "Nombre del establecimiento",
-    "vendor_nif": "NIF si existe",
-    "invoice_number": "Número si existe",
+    "vendor_name": "Nombre exacto del establecimiento (NO DIAMOND NXT TRADING LDA)",
+    "vendor_nif": "Número fiscal encontrado con letra inicial si existe (ej: B72493646, NO 517124548)",
+    "invoice_number": "Número de factura si existe",
+    "number": "Mismo número de factura",
     "invoice_date": "YYYY-MM-DD",
     "subtotal": 0.00,
     "vat_rate": 23,
     "vat_amount": 0.00,
     "total_amount": 0.00,
-    "description": "Descripción corta",
-    "category": "otros",
+    "description": "Descripción de los productos/servicios",
+    "category": "restaurante|transporte|oficina|otros",
     "payment_type": "card"
   },
-  "processing_notes": ["Sin notas"]
-}`
+  "processing_notes": ["Notas sobre lo encontrado o no encontrado"]
+}
+
+RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS INFORMACIÓN. SIEMPRE extrae los datos del OTRO proveedor/cliente, no de DIAMOND NXT TRADING LDA.`
     }
 
     private getMimeType(filename: string): string {
