@@ -248,7 +248,7 @@ MANDATORY: Extract ONLY authentic data visible in the document. NEVER use placeh
    - Never invent or calculate missing values
 
 3. For dates:
-   - Search for actual dates in DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD formats
+   - Search for actual dates in DD/MM/YYYY, DD-MM-YYYY formats
    - Look near "Data:", "Date:", "Issued:", "Emitido em:", timestamps, document headers
    - If no date is visible, leave empty and report as extraction issue
    - NEVER use current date or invented dates

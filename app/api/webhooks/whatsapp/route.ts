@@ -11,6 +11,7 @@ import {
 } from '../../../../lib/whatsapp-config'
 import { DocumentAIService } from '../../../../lib/gemini-ai-service'
 import { DropboxApiClient } from '../../../../server/dropbox-api-client'
+import { continuousLearningService } from '../../../../lib/continuous-learning-service'
 
 // Cache simple en memoria para media IDs procesados
 const processedMediaIds = new Set<string>()
@@ -38,9 +39,9 @@ function verifyApiKey() {
 }
 
 // Función para enviar mensajes de WhatsApp
-async function sendWhatsAppMessage(phoneNumber: string, message: string) {
+async function sendWhatsAppMessage(phoneNumber: string, message: string, fromPhoneNumberId?: string) {
   try {
-    const credentials = getWhatsAppCredentials()
+    const credentials = getWhatsAppCredentials(fromPhoneNumberId)
     console.log('📤 Enviando mensaje a WhatsApp:', {
       phoneNumber,
       messageLength: message.length,
@@ -92,35 +93,62 @@ function createSupabaseClient() {
   })
 }
 
-// Get WhatsApp credentials from environment variables
-function getWhatsAppCredentials() {
+// Get WhatsApp credentials from environment variables for multiple numbers
+function getWhatsAppCredentials(phoneNumber?: string) {
   // Debug: Log all environment variables
   console.log('🔍 Environment variables:')
   console.log('  - WHATSAPP_ACCESS_TOKEN:', process.env.WHATSAPP_ACCESS_TOKEN ? '✅ Set' : '❌ Not set')
   console.log('  - WHATSAPP_PHONE_NUMBER_ID:', process.env.WHATSAPP_PHONE_NUMBER_ID ? '✅ Set' : '❌ Not set')
-  console.log('  - WHATSAPP_BUSINESS_ACCOUNT_ID:', process.env.WHATSAPP_BUSINESS_ACCOUNT_ID ? '✅ Set' : '❌ Not set')
-  console.log('  - WHATSAPP_APP_ID:', process.env.WHATSAPP_APP_ID ? '✅ Set' : '❌ Not set')
-  console.log('  - WHATSAPP_APP_SECRET:', process.env.WHATSAPP_APP_SECRET ? '✅ Set' : '❌ Not set')
-  console.log('  - WHATSAPP_VERIFY_TOKEN:', process.env.WHATSAPP_VERIFY_TOKEN ? '✅ Set' : '❌ Not set')
-  console.log('  - WHATSAPP_WEBHOOK_URL:', process.env.WHATSAPP_WEBHOOK_URL ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_ACCESS_TOKEN_2:', process.env.WHATSAPP_ACCESS_TOKEN_2 ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_PHONE_NUMBER_ID_2:', process.env.WHATSAPP_PHONE_NUMBER_ID_2 ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_ACCESS_TOKEN_3:', process.env.WHATSAPP_ACCESS_TOKEN_3 ? '✅ Set' : '❌ Not set')
+  console.log('  - WHATSAPP_PHONE_NUMBER_ID_3:', process.env.WHATSAPP_PHONE_NUMBER_ID_3 ? '✅ Set' : '❌ Not set')
 
-  // Debug: Show actual verify token value
-  console.log('  - Verify Token value:', process.env.WHATSAPP_VERIFY_TOKEN)
-
-  // Configuración simplificada para solo el número principal
-  const credentials = {
-    accessToken: process.env.WHATSAPP_ACCESS_TOKEN!,
-    phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID!,
-    businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID!,
-    appId: process.env.WHATSAPP_APP_ID!,
-    appSecret: process.env.WHATSAPP_APP_SECRET!,
-    verifyToken: process.env.WHATSAPP_VERIFY_TOKEN!,
-    webhookUrl: process.env.WHATSAPP_WEBHOOK_URL!,
-    displayNumber: '+34613881071'
+  // Definir configuración para múltiples números
+  const whatsappConfigs: Record<string, any> = {
+    '+34613881071': { // Número principal España
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN,
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID,
+      businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID,
+      appId: process.env.WHATSAPP_APP_ID,
+      appSecret: process.env.WHATSAPP_APP_SECRET,
+      verifyToken: process.env.WHATSAPP_VERIFY_TOKEN,
+      webhookUrl: process.env.WHATSAPP_WEBHOOK_URL,
+      displayNumber: '+34613881071'
+    },
+    '+573014241183': { // Número Colombia
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN_2,
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID_2,
+      businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID_2,
+      appId: process.env.WHATSAPP_APP_ID_2,
+      appSecret: process.env.WHATSAPP_APP_SECRET_2,
+      verifyToken: process.env.WHATSAPP_VERIFY_TOKEN_2,
+      webhookUrl: process.env.WHATSAPP_WEBHOOK_URL_2,
+      displayNumber: '+573014241183'
+    },
+    '+34661613025': { // Número secundario España
+      accessToken: process.env.WHATSAPP_ACCESS_TOKEN_3,
+      phoneNumberId: process.env.WHATSAPP_PHONE_NUMBER_ID_3,
+      businessAccountId: process.env.WHATSAPP_BUSINESS_ACCOUNT_ID_3,
+      appId: process.env.WHATSAPP_APP_ID_3,
+      appSecret: process.env.WHATSAPP_APP_SECRET_3,
+      verifyToken: process.env.WHATSAPP_VERIFY_TOKEN_3,
+      webhookUrl: process.env.WHATSAPP_WEBHOOK_URL_3,
+      displayNumber: '+34661613025'
+    }
   }
 
-  console.log(`📱 Usando configuración principal: ${credentials.displayNumber}`)
-  return credentials
+  // Si se proporciona un número específico, usar su configuración
+  if (phoneNumber && whatsappConfigs[phoneNumber]) {
+    const config = whatsappConfigs[phoneNumber]
+    console.log(`📱 Usando configuración para ${phoneNumber}: ${config.displayNumber}`)
+    return config
+  }
+
+  // Por defecto, usar el número principal
+  const defaultConfig = whatsappConfigs['+34613881071']
+  console.log(`📱 Usando configuración principal por defecto: ${defaultConfig.displayNumber}`)
+  return defaultConfig
 }
 
 // WhatsApp webhook verification
@@ -130,24 +158,34 @@ export async function GET(request: NextRequest) {
   const token = searchParams.get('hub.verify_token')
   const challenge = searchParams.get('hub.challenge')
 
-  const credentials = getWhatsAppCredentials()
-  const expectedToken = credentials.verifyToken
+  // Try all possible configurations for multiple numbers
+  const verifyTokens = [
+    process.env.WHATSAPP_VERIFY_TOKEN,
+    process.env.WHATSAPP_VERIFY_TOKEN_2,
+    process.env.WHATSAPP_VERIFY_TOKEN_3
+  ]
 
-  // Debug: Log the tokens to see what's happening
-  console.log('🔍 Debug webhook verification:')
+  // Debug: Log the verification attempt
+  console.log('🔍 Debug webhook verification para múltiples números:')
   console.log('  - Mode:', mode)
   console.log('  - Received token:', token)
-  console.log('  - Expected token:', expectedToken)
-  console.log('  - Tokens match:', mode === 'subscribe' && token === expectedToken)
+  console.log('  - Expected tokens disponibles:', verifyTokens.filter(t => t !== undefined).length)
 
-  if (mode === 'subscribe' && token === expectedToken) {
-    console.log('✅ WhatsApp webhook verified successfully')
+  // Check if any token matches
+  const isValidToken = verifyTokens.some(expectedToken =>
+    expectedToken && expectedToken === token
+  )
+
+  if (mode === 'subscribe' && isValidToken) {
+    console.log('✅ WhatsApp webhook verified successfully para múltiples números')
     return new Response(challenge, {
       status: 200,
       headers: { 'Content-Type': 'text/plain' }
     })
   } else {
     console.error('❌ WhatsApp webhook verification failed')
+    console.error('  - Expected tokens:', verifyTokens.filter(t => t !== undefined))
+    console.error('  - Received token:', token)
     return NextResponse.json({ error: 'Verification failed' }, { status: 403 })
   }
 }
@@ -248,10 +286,14 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
     // Verificar si el número está autorizado
     console.log(`🔍 Verificando autorización para número: ${userPhone}`)
 
-    // Solo número principal autorizado (con y sin prefijo +)
+    // Números autorizados para múltiples chatbots (con y sin prefijo +)
     const authorizedNumbers = [
-      '+34613881071', // Número principal con prefijo
-      '34613881071'   // Número principal sin prefijo
+      '+34613881071', // Número principal España con prefijo
+      '34613881071',  // Número principal España sin prefijo
+      '+573014241183', // Número Colombia con prefijo
+      '573014241183',  // Número Colombia sin prefijo
+      '+34661613025', // Número secundario España con prefijo
+      '34661613025'    // Número secundario España sin prefijo
     ]
 
     const isAuthorized = authorizedNumbers.includes(userPhone)
@@ -283,7 +325,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
     if (message.type === 'image' || message.type === 'document' || message.type === 'audio' || message.type === 'video') {
       console.log(`📎 Media message detected: ${message.type}`)
 
-      const credentials = getWhatsAppCredentials()
+      const credentials = getWhatsAppCredentials(phoneNumberId)
 
       // Get media details
       const mediaDetails = message[message.type as keyof WhatsAppMessage] as any
@@ -640,6 +682,36 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${documentTypeText}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}${paymentTypeText}\n💰 Guardado en ${locationText} (no se creó cliente)\n\n${dropboxStatus}\nEl documento aparecerá en la sección correspondiente.`
             await sendWhatsAppMessage(message.from, successMessage)
+
+            // Store interaction for continuous learning
+            try {
+              await continuousLearningService.storeInteraction({
+                tenantId: 1, // Default tenant
+                interactionType: 'document_analysis',
+                userInput: `Documento: ${mediaData.filename}`,
+                context: `WhatsApp media processing - ${documentTypeText}`,
+                documentId: document.id,
+                extractedData: analysisResult.extracted_data,
+                aiResponse: successMessage,
+                confidence: analysisResult.confidence,
+                model: 'gemini-2.5-flash',
+                learningValue: 0.9, // High learning value for document analysis
+                timestamp: new Date(),
+                source: 'whatsapp',
+                metadata: {
+                  filename: mediaData.filename,
+                  fileSize: mediaData.size,
+                  mimeType: mediaData.mime_type,
+                  savedAsInvoice: savedAsInvoice,
+                  savedAsExpense: !savedAsInvoice,
+                  dropboxUploaded: !!dropboxStatus
+                }
+              })
+              console.log('🧠 Interacción de análisis de documento almacenada para aprendizaje continuo')
+            } catch (learningError) {
+              console.error('❌ Error almacenando interacción para aprendizaje:', learningError)
+              // Don't fail the request if learning storage fails
+            }
 
           } catch (aiError) {
             console.error('❌ Error en procesamiento AI:', aiError)

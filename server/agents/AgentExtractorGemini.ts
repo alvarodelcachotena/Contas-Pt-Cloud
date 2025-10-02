@@ -44,7 +44,7 @@ Extrai os seguintes campos de uma fatura/documento fiscal:
 3. País do emissor (PT, IT, ES, DE, FR, etc.)
 4. Endereço completo do emissor (rua, cidade, código postal, país)
 5. Telefone do emissor (com código do país se disponível)
-6. Data da fatura (formato YYYY-MM-DD)
+6. Data da fatura (formato DD-MM-YYYY)
 7. Valor sem IVA
 8. Valor do IVA
 9. Valor total com IVA
@@ -95,7 +95,7 @@ OBRIGATÓRIO: Extraia APENAS dados reais visíveis no documento. NUNCA use place
    - Se valores não estão claramente visíveis, deixe como 0 e reporte o problema
 
 3. Para datas:
-   - Procure formatos DD/MM/YYYY, DD-MM-YYYY, YYYY-MM-DD
+   - Procure formatos DD/MM/YYYY, DD-MM-YYYY
    - Examine cabeçalhos, rodapés, campos de data específicos
    - Procure por "Data:", "Date:", "Emitido em:", "Fatura de:", timestamps
    - NUNCA invente datas - se não encontrar, deixe vazio e reporte o problema
@@ -129,7 +129,7 @@ Responde APENAS em formato JSON válido:
   "vendorAddress": "endereço completo do emissor",
   "vendorPhone": "telefone do emissor",
   "invoiceNumber": "número da fatura",
-  "issueDate": "YYYY-MM-DD",
+  "issueDate": "DD-MM-YYYY",
   "total": valor_total_numerico,
   "netAmount": valor_sem_iva_numerico,
   "vatAmount": valor_iva_numerico,
@@ -374,7 +374,7 @@ CRITICAL RULES:
 REQUIRED FIELDS:
 1. Vendor name
 2. Tax ID/NIF (with country prefix)
-3. Invoice date (YYYY-MM-DD)
+3. Invoice date (DD-MM-YYYY)
 4. Net amount (without VAT)
 5. VAT amount
 6. Total amount (with VAT)
@@ -388,7 +388,7 @@ Return ONLY valid JSON:
   "vendor": "company name",
   "nif": "tax ID with country prefix",
   "invoiceNumber": "number if visible",
-  "issueDate": "YYYY-MM-DD",
+  "issueDate": "DD-MM-YYYY",
   "total": 0.00,
   "netAmount": 0.00,
   "vatAmount": 0.00,
@@ -533,7 +533,7 @@ Return ONLY valid JSON without markdown:
   "vendor": "exact company name from image",
   "nif": "tax ID with country prefix if visible",
   "invoiceNumber": "invoice number if visible",
-  "issueDate": "YYYY-MM-DD if visible",
+  "issueDate": "DD-MM-YYYY if visible",
   "total": 0.00,
   "netAmount": 0.00,
   "vatAmount": 0.00,

@@ -1,0 +1,84 @@
+# ===========================================
+# CONFIGURACIÓN DE WHATSAPP PARA MÚLTIPLES CHATBOTS
+# ===========================================
+# Copia este archivo A .env.local y configura tus valores reales
+
+# ===========================================
+# CHATBOT 1: NÚMERO PRINCIPAL (España) - +34613881071
+# ===========================================
+WHATSAPP_ACCESS_TOKEN=tu_access_token_principal_aqui
+WHATSAPP_PHONE_NUMBER_ID=tu_phone_number_id_principal_aqui
+WHATSAPP_BUSINESS_ACCOUNT_ID=tu_business_account_id_principal_aqui
+WHATSAPP_APP_ID=tu_app_id_principal_aqui
+WHATSAPP_APP_SECRET=tu_app_secret_principal_aqui
+WHATSAPP_VERIFY_TOKEN=1c7eba0ef1c438301a9b0f369d6e1708
+WHATSAPP_WEBHOOK_URL=https://contas-pt.netlify.app/api/webhooks/whatsapp
+
+# ===========================================
+# CHATBOT 2: NÚMERO COLOMBIA - +573014241183
+# ===========================================
+WHATSAPP_ACCESS_TOKEN_2=tu_access_token_colombia_aqui
+WHATSAPP_PHONE_NUMBER_ID_2=tu_phone_number_id_colombia_aqui
+WHATSAPP_BUSINESS_ACCOUNT_ID_2=tu_business_account_id_colombia_aqui
+WHATSAPP_APP_ID_2=tu_app_id_colombia_aquier
+WHATSAPP_APP_SECRET_2=tu_app_secret_colombia_aqui
+WHATSAPP_VERIFY_TOKEN_2=1c7eba0ef1c438301a9b0f369d6e1709
+WHATSAPP_WEBHOOK_URL_2=https://contas-pt.netlify.app/api/webhooks/whatsapp
+
+# ===========================================
+# CHATBOT 3: NÚMERO SECUNDARIO (España) - +34661613025
+# ===========================================
+WHATSAPP_ACCESS_TOKEN_3=tu_access_token_espana_2_aqui
+WHATSAPP_PHONE_NUMBER_ID_3=tu_phone_number_id_espana_2_aqui
+WHATSAPP_BUSINESS_ACCOUNT_ID_3=tu_business_account_id_espana_2_aqui
+WHATSAPP_APP_ID_3=tu_app_id_espana_2_aqui
+WHATSAPP_APP_SECRET_3=tu_app_secret_espana_2_aqui
+WHATSAPP_VERIFY_TOKEN_3=1c7eba0ef1c438301a9b0f369d6e1710
+WHATSAPP_WEBHOOK_URL_3=https://contas-pt.netlify.app/api/webhooks/whatsapp
+
+# ===========================================
+# CONFIGURACIÓN COMPARTIDA (para todos los chatbots)
+# ===========================================
+# Estas variables son compartidas por todos los números
+GEMINI_API_KEY=tu_gemini_api_key_aqui
+SUPABASE_URL=tu_supabase_url_aqui
+SUPABASE_ANON_KEY=tu_supabase_anon_key_aqui
+SUPABASE_SERVICE_ROLE_KEY=tu_supabase_service_role_key_aqui
+
+# ===========================================
+# INSTRUCCIONES DE CONFIGURACIÓN COMPLETA
+# ===========================================
+# PASO 1: Crear aplicaciones en Facebook Developers
+# 1. Ve a: https://developers.facebook.com/
+# 2. Crea UNA aplicación para CADA número de WhatsApp Business
+# 3. Total necesitas: 3 aplicaciones (una para cada chatbot)
+
+# PASO 2: Configurar WhatsApp en cada aplicación
+# Para CADA aplicación:
+# 1. Ve a: Tu App > Add Product > WhatsApp
+# 2. Configura tu número de teléfono WhatsApp Business
+# 3. Obtén todos los tokens necesarios
+
+# PASO 3: Configurar webhooks para TODOS los números
+# Para CADA aplicación, configura el webhook apuntando a:
+# URL: https://contas-pt.netlify.app/api/webhooks/whatsapp
+# Cada aplicación debe usar SU PROPIO Verify Token
+
+# PASO 4: Copiar credenciales
+# Reemplaza todos los valores "tu_*_aqui" con los valores reales de cada aplicación
+
+# PASO 5: Configurar base de datos
+# Ejecuta el script: scripts/setup-whatsapp-multiple-chatbots.sql
+
+# PASO 6: Reiniciar aplicación
+# Reinicia la aplicación para cargar las nuevas configuraciones
+
+# ===========================================
+# VERIFICACIÓN DE CONFIGURACIÓN COMPLETA
+# ===========================================
+# Para verificar que los 3 chatbots funcionan correctamente:
+# 1. Envía un mensaje de prueba al número principal (+34613881071)
+# 2. Envía un mensaje de prueba al número Colombia (+573014241183)
+# 3. Envía un mensaje de prueba al número secundario (+34661613025)
+# 4. Revisa los logs de la aplicación para confirmar que cada número usa su configuración
+# 5. Verifica que los números no autorizados reciban el mensaje de error apropiado

@@ -4,6 +4,7 @@ import OpenAI from 'openai'
 import { db } from '../../../server/db'
 import { sql } from 'drizzle-orm'
 import { createTransporter, generateInvoicePDF } from '@/lib/email-config'
+import { continuousLearningService } from '@/lib/continuous-learning-service'
 
 // Initialize both AI clients
 const googleAI = process.env.GOOGLE_AI_API_KEY ? new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY) : null
@@ -1089,6 +1090,33 @@ As APIs de IA estão indisponíveis, mas aqui estão os seus dados atuais.`
 
     if (!response.trim()) {
       response = 'Desculpe, não consegui processar a sua pergunta.'
+    }
+
+    // Store interaction for continuous learning
+    try {
+      await continuousLearningService.storeInteraction({
+        tenantId: 1, // Default tenant
+        interactionType: 'question',
+        userInput: message,
+        context: businessData ? 'with_business_data' : 'no_business_data',
+        aiResponse: response,
+        confidence: 0.8, // Default confidence
+        model: usedModel,
+        learningValue: 0.7, // High learning value for chat interactions
+        timestamp: new Date(),
+        source: 'ai_assistant',
+        metadata: {
+          fallbackUsed,
+          databaseDataUsed: !!businessData,
+          clientCreated: !!clientCreationResult?.success,
+          invoiceCreated: !!invoiceCreationResult?.success,
+          clientFound: !!searchResult?.success
+        }
+      })
+      console.log('🧠 Interacción almacenada para aprendizaje continuo')
+    } catch (learningError) {
+      console.error('❌ Error almacenando interacción para aprendizaje:', learningError)
+      // Don't fail the request if learning storage fails
     }
 
     return NextResponse.json({
