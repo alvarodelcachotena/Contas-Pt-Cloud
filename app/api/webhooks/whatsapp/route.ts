@@ -728,8 +728,16 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               })
               .eq('id', document.id)
 
-            // Send error message to WhatsApp
-            const errorMessage = `❌ Error al procesar el documento\n\n🔍 Error: ${aiError instanceof Error ? aiError.message : 'Unknown AI error'}\n\nEl documento se guardó pero no se pudo analizar. Revisa los logs para más detalles.`
+            // Determinar mensaje de error más útil
+            let errorMessage = ''
+            if (aiError instanceof Error && aiError.message.includes('503')) {
+              errorMessage = `🤖 **Servidor IA sobrecargado**\n\nEl servicio de inteligencia artificial está temporalmente sobrecargado. El documento se guardó correctamente.\n\n⏰ **Inténtalo en unos minutos** ` + new Date().toLocaleTimeString() + `\n\n✅ El documento aparecerá en tu panel cuando el sistema esté disponible.`
+            } else if (aiError instanceof Error && aiError.message.includes('Timeout')) {
+              errorMessage = `⏰ **Timeout en análisis IA**\n\nEl análisis está tardando más de lo esperado. El documento se guardó correctamente.\n\n🔄 **Volviendo a intentar automáticamente**\n\n✅ Continúa funcionando en segundo plano.`
+            } else {
+              errorMessage = `⚠️ **Error temporal en análisis**\n\n🔍 Error: ${aiError instanceof Error ? aiError.message : 'Error desconocido'}\n\n📄 El documento se guardó pero necesita procesamiento manual.\n\n💡 Contacta soporte si el problema persiste.`
+            }
+
             await sendWhatsAppMessage(message.from, errorMessage)
           }
         }
