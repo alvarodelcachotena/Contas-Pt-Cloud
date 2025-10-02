@@ -731,11 +731,11 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             // Determinar mensaje de error más útil
             let errorMessage = ''
             if (aiError instanceof Error && aiError.message.includes('503')) {
-              errorMessage = `🤖 **Servidor IA sobrecargado**\n\nEl servicio de inteligencia artificial está temporalmente sobrecargado. El documento se guardó correctamente.\n\n⏰ **Inténtalo en unos minutos** ` + new Date().toLocaleTimeString() + `\n\n✅ El documento aparecerá en tu panel cuando el sistema esté disponible.`
+              errorMessage = `📥 **Procesamiento Continuará**\n\n🤖 Los servidores de IA están temporalmente sobrecargados. El documento se guardó correctamente.\n\n🔄 **El sistema seguirá intentando automáticamente**\n\n✅ Recibirás los resultados cuando la IA esté disponible.\n\n📊 **Mientras tanto**, el documento está disponible en tu panel para revisión manual.`
             } else if (aiError instanceof Error && aiError.message.includes('Timeout')) {
-              errorMessage = `⏰ **Timeout en análisis IA**\n\nEl análisis está tardando más de lo esperado. El documento se guardó correctamente.\n\n🔄 **Volviendo a intentar automáticamente**\n\n✅ Continúa funcionando en segundo plano.`
+              errorMessage = `⏰ **Procesamiento Continuará**\n\nEl análisis está tardando más de lo esperado. El documento se guardó correctamente.\n\n🔄 **El sistema seguirá intentando automáticamente**\n\n✅ Recibirás los resultados cuando esté listo.\n\n📊 **Mientras tanto**, el documento está disponible en tu panel.`
             } else {
-              errorMessage = `⚠️ **Error temporal en análisis**\n\n🔍 Error: ${aiError instanceof Error ? aiError.message : 'Error desconocido'}\n\n📄 El documento se guardó pero necesita procesamiento manual.\n\n💡 Contacta soporte si el problema persiste.`
+              errorMessage = `⚠️ **Procesamiento Continuará**\n\n🔍 Error temporal en análisis: ${aiError instanceof Error ? aiError.message : 'Error desconocido'}\n\n📄 El documento se guardó y el análisis continuará automáticamente.\n\n✅ Recibirás los resultados cuando esté listo.`
             }
 
             await sendWhatsAppMessage(message.from, errorMessage)
