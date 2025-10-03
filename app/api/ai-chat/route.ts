@@ -29,10 +29,23 @@ async function getBusinessData(tenantId: number = 1) {
           total_revenue: 0,
           total_expenses_amount: 0,
           profit: 0,
+          profitMargin: "0%",
           payment_type_stats: {}
         },
         recentInvoices: [],
-        recentExpenses: []
+        recentExpenses: [],
+        clients: [],
+        tenantId: tenantId || 1,
+        ragMetrics: {
+          totalQueries: 0,
+          cacheHitRate: 0,
+          avgResponseTime: 0,
+          totalDocuments: 0,
+          totalBankTransactions: 0,
+          totalBankAccounts: 0,
+          multiAgentResultsCount: 0,
+          averageConfidence: 0
+        }
       };
     }
 
