@@ -815,18 +815,8 @@ async function handleTextQuery(senderPhone: string, queryText: string, credentia
     console.log(`💬 Procesando consulta de texto desde ${senderPhone}: "${queryText}"`)
 
     // Analizar intención primero SIN enviar mensaje de procesamiento
-    console.log(`🔍 [DEBUG] Analizando consulta: "${queryText}"`)
     const userIntent = analyzeUserIntent(queryText)
-    console.log(`🎯 [DEBUG] Intención detectada: ${userIntent}`)
-    console.log(`🔍 [DEBUG] Query en minúsculas: "${queryText.toLowerCase().trim()}"`)
-
-    // Debug específico para casos de fecha
-    if (queryText.toLowerCase().includes('dia') || queryText.toLowerCase().includes('fecha')) {
-      console.log(`📅 [DEBUG] Consulta contiene palabras de fecha`)
-      const dateQueries = ['que dia es hoy', 'qué día es hoy', 'que fecha es hoy', 'qué fecha es hoy', 'fecha actual', 'hoy qué día es']
-      const matches = dateQueries.filter(dateQuery => queryText.toLowerCase().includes(dateQuery))
-      console.log(`📅 [DEBUG] Coincidencias de fecha encontradas: ${matches.join(', ')}`)
-    }
+    console.log(`🎯 Intención del usuario detectada: ${userIntent}`)
 
     // Para saludos y consultas simples, responder inmediatamente
     if (userIntent === 'date_query') {
@@ -1067,24 +1057,11 @@ async function getBusinessData(tenantId: number = 1) {
 function analyzeUserIntent(queryText: string): string {
   const query = queryText.toLowerCase().trim()
 
-  console.log(`🔬 [DEBUG] analyzeUserIntent llamada con: "${queryText}"`)
-  console.log(`🔬 [DEBUG] query procesada: "${query}"`)
-
   // PRIMERO detectar consultas específicas que necesitan respuestas inmediatas
 
   // Consultas de fecha específicas - estas necesitan respuesta inmediata
   const dateQueries = ['que dia es hoy', 'qué día es hoy', 'que fecha es hoy', 'qué fecha es hoy', 'fecha actual', 'hoy qué día es']
-  console.log(`📅 [DEBUG] Verificando dateQueries...`)
-  const dateMatch = dateQueries.some(dateQuery => {
-    const matches = query.includes(dateQuery)
-    if (matches) {
-      console.log(`📅 [DEBUG] MATCH encontrado con: "${dateQuery}"`)
-    }
-    return matches
-  })
-
-  if (dateMatch) {
-    console.log(`📅 [DEBUG] Retornando 'date_query'`)
+  if (dateQueries.some(dateQuery => query.includes(dateQuery))) {
     return 'date_query'
   }
 
