@@ -13,8 +13,15 @@ import { DocumentAIService } from '../../../../lib/gemini-ai-service'
 import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 import { continuousLearningService } from '../../../../lib/continuous-learning-service'
 
-// Cache simple en memoria para media IDs procesados
-const processedMediaIds = new Set<string>()
+// Cache simple en memoria para media IDs procesados con timestamp
+interface ProcessedMedia {
+  id: string
+  processed_at: number
+  document_id?: number
+}
+
+const processedMediaCache = new Map<string, ProcessedMedia>()
+const PROCESSING_TIMEOUT = 5 * 60 * 1000 // 5 minutos
 
 // Función de verificación de API key
 function verifyApiKey() {
@@ -334,15 +341,30 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         return
       }
 
-      // Verificar si este media ID ya fue procesado (cache simple en memoria)
-      if (processedMediaIds.has(mediaDetails.id)) {
-        console.log(`⚠️ MEDIA YA PROCESADO: ${mediaDetails.id} - Saltando procesamiento`)
-        await sendWhatsAppMessage(message.from, `📄 **Imagen ya procesada**\n\nEsta imagen ya fue analizada anteriormente.\n\n✅ No se realizará un nuevo análisis.`)
-        return
+      // Verificar si este media ID ya foi procesado y cleanup del cache
+      const now = Date.now()
+      for (const [mediaId, data] of processedMediaCache.entries()) {
+        if (now - data.processed_at > PROCESSING_TIMEOUT) {
+          processedMediaCache.delete(mediaId)
+          console.log(`🧹 Limpiando cache de media antiguo: ${mediaId}`)
+        }
       }
 
-      // Marcar como procesado antes de continuar
-      processedMediaIds.add(mediaDetails.id)
+      const cachedMedia = processedMediaCache.get(mediaDetails.id)
+      if (cachedMedia) {
+        const timeSinceProcessed = now - cachedMedia.processed_at
+        if (timeSinceProcessed < PROCESSING_TIMEOUT) {
+          console.log(`⚠️ MEDIA YA PROCESADO RECIENTEMENTE: ${mediaDetails.id} - ${Math.round(timeSinceProcessed / 1000)}s atrás`)
+          await sendWhatsAppMessage(message.from, `📄 **Imagen ya procesada recientemente**\n\nEsta imagen fue analizada hace ${Math.round(timeSinceProcessed / 1000)} segundos.\n\n✅ No se realizará un nuevo análisis para evitar duplicados.`)
+          return
+        }
+      }
+
+      // Marcar como procesando ANTES de continuar
+      processedMediaCache.set(mediaDetails.id, {
+        id: mediaDetails.id,
+        processed_at: now
+      })
       console.log(`🔄 Procesando media: ${mediaDetails.id} - Nuevo archivo`)
 
       // Download media from WhatsApp
@@ -730,7 +752,9 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             // Determinar mensaje de error más útil
             let errorMessage = ''
-            if (aiError instanceof Error && aiError.message.includes('503')) {
+            if (aiError instanceof Error && aiError.message.includes('TOTAL_ZERO_DETECTED')) {
+              errorMessage = `💰 **Total no detectado - Reintentando**\n\n⚠️ El análisis detectó un total de €0.00, lo cual no es válido.\n\n🔄 **Reintentando automáticamente** con mejor precisión\n\n✅ Recibirás el análisis completo cuando esté listo.\n\n💡 El documento está guardado mientras tanto.`
+            } else if (aiError instanceof Error && aiError.message.includes('503')) {
               errorMessage = `📥 **Procesamiento Continuará**\n\n🤖 Los servidores de IA están temporalmente sobrecargados. El documento se guardó correctamente.\n\n🔄 **El sistema seguirá intentando automáticamente**\n\n✅ Recibirás los resultados cuando la IA esté disponible.\n\n📊 **Mientras tanto**, el documento está disponible en tu panel para revisión manual.`
             } else if (aiError instanceof Error && aiError.message.includes('Timeout')) {
               errorMessage = `⏰ **Procesamiento Continuará**\n\nEl análisis está tardando más de lo esperado. El documento se guardó correctamente.\n\n🔄 **El sistema seguirá intentando automáticamente**\n\n✅ Recibirás los resultados cuando esté listo.\n\n📊 **Mientras tanto**, el documento está disponible en tu panel.`

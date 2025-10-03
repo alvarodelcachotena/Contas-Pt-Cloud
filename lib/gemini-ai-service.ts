@@ -75,6 +75,7 @@ export class DocumentAIService {
         ]
 
         let lastError: Error | null = null
+        let successfulResult: DocumentAnalysisResult | null = null
 
         for (let i = 0; i < modelsToTry.length; i++) {
             const modelName = modelsToTry[i]
@@ -134,20 +135,39 @@ export class DocumentAIService {
                 console.log(`🤖 Enviando documento a Gemini AI con modelo ${modelName}...`)
 
                 // Generar contenido con timeout personalizado
-                const result = await Promise.race([
+                const generateResult = await Promise.race([
                     model.generateContent([prompt, fileData]),
                     new Promise<never>((_, reject) =>
                         setTimeout(() => reject(new Error(`Timeout después de 45 segundos con modelo ${modelName}`)), 45000)
                     )
                 ])
 
-                const response = await result.response
+                const response = await generateResult.response
                 const text = response.text()
 
                 console.log(`✅ Respuesta de Gemini AI recibida con modelo ${modelName}`)
                 console.log(`📝 Longitud de respuesta: ${text.length} caracteres`)
 
-                return this.processResponse(text)
+                // Procesar respuesta y verificar si es válida
+                const analysisResult = this.processResponse(text)
+
+                // Verificar que el total no sea 0 (requiere reintento)
+                if (analysisResult.extracted_data && (analysisResult.extracted_data.total_amount === 0 || analysisResult.extracted_data.amount === 0)) {
+                    console.log(`⚠️ Total detectado como 0 en modelo ${modelName}, marcando como reintento necesario`)
+
+                    // Si es el último modelo y el total sigue siendo 0, lanzar error especial
+                    if (i === modelsToTry.length - 1) {
+                        throw new Error('TOTAL_ZERO_DETECTED - El análisis detectó total=0, necesita reintento')
+                    }
+
+                    // Continuar con el siguiente modelo
+                    lastError = new Error('Total cero detectado, probando siguiente modelo')
+                    continue
+                }
+
+                successfulResult = analysisResult
+                console.log(`🎉 Análisis exitoso con modelo ${modelName}, no se necesitan más intentos`)
+                break // Salir del bucle ya que obtuvimos un resultado válido
 
             } catch (error) {
                 console.error(`❌ Error con modelo ${modelName}:`, error instanceof Error ? error.message : 'Error desconocido')
@@ -176,6 +196,12 @@ export class DocumentAIService {
                 console.log(`🔄 Esperando 2 segundos antes de probar con el siguiente modelo...`)
                 await new Promise(resolve => setTimeout(resolve, 2000))
             }
+        }
+
+        // Si obtuvimos un resultado exitoso, usarlo
+        if (successfulResult) {
+            console.log('🎉 Retornando resultado exitoso obtenido')
+            return successfulResult
         }
 
         // Si todos los modelos fallaron, usar procesamiento offline como respaldo
