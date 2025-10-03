@@ -822,7 +822,14 @@ async function handleTextQuery(senderPhone: string, queryText: string, credentia
     const businessData = await getBusinessData(1) // Tenant ID por defecto
 
     // Crear prompt con datos financieros
-    const systemPrompt = `Eres un asistente financiero que responde consultas sobre documentos financieros. Los datos que tienes disponibles son:
+    const systemPrompt = `Eres un asistente financiero que responde consultas sobre documentos financieros.
+
+IMPORTANTE: 
+- Solo analiza si el usuario está haciendo una consulta financiera REAL (con pregunta específica)
+- Si es solo un saludo como "hola", responde amigablemente preguntando en qué puedes ayudar
+- Si la consulta es muy vaga (ej: solo "gastos"), pide más especificidad
+
+Los datos que tienes disponibles son:
 
 DATOS FINANCIEROS DEL USUARIO:
 • Total de Facturas: ${businessData.stats?.total_invoices || 0}
@@ -847,23 +854,35 @@ INSTRUCCIONES:
 3. Si preguntan sobre datos específicos, da números exactos
 4. Sé conciso y útil
 5. Usa emojis apropiados para hacer la respuesta atractiva
-6. Si preguntan por datos del día actual, calcula basado en fecha_actual`
+6. Si preguntan por datos del día actual, calcula basado en fecha_actual
+7. Si la consulta no está clara, pregunta qué información específica necesita`
 
     // Crear prompt para el usuario
     const userPrompt = `Consulta del usuario: "${queryText}"\n\nFecha actual: ${new Date().toLocaleDateString('es-ES')}\n\nResponde basándose en los datos financieros proporcionados.`
 
-    // Usar Gemini AI para generar respuesta
-    let aiResponse = ''
-    try {
-      console.log('🤖 Iniciando generación de respuesta IA...')
-      aiResponse = await generateAIResponse(systemPrompt, userPrompt)
-      console.log('✅ Respuesta AI generada exitosamente:', aiResponse.substring(0, 100) + '...')
-    } catch (aiError) {
-      console.error('❌ Error generando respuesta AI:', aiError)
-      console.error('❌ Detalles del error:', aiError instanceof Error ? aiError.message : 'Error desconocido')
+    // Analizar intención primero
+    const userIntent = analyzeUserIntent(queryText)
+    console.log(`🎯 Intención del usuario detectada: ${userIntent}`)
 
-      // Generar respuesta inteligente manual basada en la consulta
-      aiResponse = await generateManualResponse(queryText, businessData)
+    // Para saludos, responder directamente sin IA
+    if (userIntent === 'greeting') {
+      aiResponse = `👋 **Hola! ¿En qué puedo ayudarte?**\n\n💡 Puedes preguntarme:\n• ¿Cuántas facturas tienes?\n• ¿Cuántos gastos llevas?\n• Resume mis finanzas\n• Muestra las últimos gastos\n\n📱 ¡Escríbeme tu consulta financiera!`
+    } else if (userIntent === 'ambiguous') {
+      aiResponse = `🤔 **¿Qué información necesitas?**\n\n💡 Puedo ayudarte con:\n• Gastos de este mes\n• Gastos de octubre\n• Últimos gastos\n• Total de gastos\n\n📝 Por favor, sé más específico con tu pregunta.`
+    } else if (userIntent === 'general') {
+      aiResponse = `🤖 **¿Cómo puedo ayudarte?**\n\n💡 Soy tu asistente financiero y puedo:\n• Mostrar datos de gastos\n• Información de facturas\n• Resumen financiero\n• Estadísticas de ingresos\n\n📱 Escribe tu consulta específica.`
+    } else {
+      // Para consultas financieras, usar IA con datos o respuesta manual
+      try {
+        console.log('🤖 Generando respuesta financiera...')
+        aiResponse = await generateAIResponse(systemPrompt, userPrompt)
+        console.log('✅ Respuesta IA generada:', aiResponse.substring(0, 100) + '...')
+      } catch (aiError) {
+        console.error('❌ Error generando respuesta IA:', aiError)
+
+        // Generar respuesta inteligente manual basada en la consulta
+        aiResponse = await generateManualResponse(queryText, businessData)
+      }
     }
 
     // Enviar respuesta al usuario
@@ -995,11 +1014,83 @@ async function getBusinessData(tenantId: number = 1) {
   }
 }
 
+// Función para detectar la intención del usuario
+function analyzeUserIntent(queryText: string): string {
+  const query = queryText.toLowerCase().trim()
+
+  // Detectar saludos
+  const greetings = ['hola', 'hello', 'hi', 'buenos días', 'buenas tardes', 'buenas noches', 'saludos', 'hey']
+  if (greetings.some(greeting => query === greeting || query.includes(greeting))) {
+    return 'greeting'
+  }
+
+  // Detectar consultas financieras específicas
+  const financialKeywords = [
+    'factura', 'facturas', 'gasto', 'gastos', 'invoice', 'invoices',
+    'cuántos', 'cuántas', 'cuanto', 'cuanta', 'totales', 'total',
+    'ingreso', 'ingresos', 'revenue', 'beneficio', 'beneficios',
+    'cliente', 'clientes', 'resumen', 'summary', 'estadística',
+    'últimos', 'ultimos', 'recientes', 'show', 'mostrar',
+    'dinero', 'euros', '€', '$', 'pesos'
+  ]
+
+  // Debe tener múltiples palabras para ser una consulta real
+  const words = query.split(' ').filter(word => word.length > 2)
+  const financialWords = words.filter(word => financialKeywords.some(keyword =>
+    word.includes(keyword) || keyword.includes(word)
+  ))
+
+  // Si tiene saludo + pregunta financiera, es consulta
+  if (greetings.some(greeting => query.includes(greeting)) && financialWords.length > 0) {
+    return 'financial_query'
+  }
+
+  // Si solo tiene saludo, es saludo
+  if (greetings.some(greeting => query === greeting)) {
+    return 'greeting'
+  }
+
+  // Si tiene palabras financieras y es una pregunta real
+  if (financialWords.length >= 1 && (query.includes('¿') || query.includes('?') || words.length >= 2)) {
+    return 'financial_query'
+  }
+
+  // Si tiene palabras financieras pero es muy corto/simple, podría ser saludo
+  if (financialWords.length === 1 && words.length <= 3 && !query.includes('¿') && !query.includes('?')) {
+    const possibleGreetings = ['gastos', 'facturas', 'dinero']
+    if (possibleGreetings.some(g => query.includes(g)) && words.length <= 2) {
+      return 'ambiguous'
+    }
+  }
+
+  // Default a consulta financiera si hay palabras relacionadas
+  return financialWords.length > 0 ? 'financial_query' : 'general'
+}
+
 // Función para generar respuesta manual cuando IA falla
 async function generateManualResponse(queryText: string, businessData: any): Promise<string> {
   try {
     console.log('🔧 Generando respuesta manual inteligente...')
 
+    const intent = analyzeUserIntent(queryText)
+    console.log(`🎯 Intención detectada: ${intent}`)
+
+    // Manejar saludos
+    if (intent === 'greeting') {
+      return `👋 **Hola! ¿En qué puedo ayudarte?**\n\n💡 Puedes preguntarme:\n• ¿Cuántas facturas tienes?\n• ¿Cuántos gastos llevas?\n• Resume mis finanzas\n• Muestra las últimos gastos\n\n📱 ¡Escríbeme tu consulta financiera!`
+    }
+
+    // Manejar consultas ambiguas (ej: solo "gastos")
+    if (intent === 'ambiguous') {
+      return `🤔 **¿Qué información necesitas?**\n\n💡 Puedo ayudarte con:\n• Gastos de este mes\n• Gastos de octubre\n• Últimos gastos\n• Total de gastos\n\n📝 Por favor, sé más específico con tu pregunta.`
+    }
+
+    // Para consultas generales sin contexto financiero claro
+    if (intent === 'general') {
+      return `🤖 **¿Cómo puedo ayudarte?**\n\n💡 Soy tu asistente financiero y puedo:\n• Mostrar datos de gastos\n• Información de facturas\n• Resumen financiero\n• Estadísticas de ingresos\n\n📱 Escribe tu consulta específica.`
+    }
+
+    // Solo procesar consultas financieras reales
     const query = queryText.toLowerCase()
     const stats = businessData.stats
 
