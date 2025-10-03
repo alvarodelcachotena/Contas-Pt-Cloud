@@ -13,15 +13,35 @@ import { DocumentAIService } from '../../../../lib/gemini-ai-service'
 import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 import { continuousLearningService } from '../../../../lib/continuous-learning-service'
 
-// Cache simple en memoria para media IDs procesados con timestamp
+// Cache más robusto para evitar duplicados
 interface ProcessedMedia {
   id: string
   processed_at: number
   document_id?: number
+  status: 'processing' | 'completed' | 'error'
+  message_id?: string
 }
 
 const processedMediaCache = new Map<string, ProcessedMedia>()
-const PROCESSING_TIMEOUT = 5 * 60 * 1000 // 5 minutos
+const PROCESSING_TIMEOUT = 10 * 60 * 1000 // 10 minutos
+const PROCESSING_LOCK_TIMEOUT = 30 * 1000 // 30 segundos para obtener lock
+
+// Limpieza automática de cache cada 5 minutos
+setInterval(() => {
+  const now = Date.now()
+  let cleanedCount = 0
+
+  for (const [key, data] of processedMediaCache.entries()) {
+    if (now - data.processed_at > PROCESSING_TIMEOUT) {
+      processedMediaCache.delete(key)
+      cleanedCount++
+    }
+  }
+
+  if (cleanedCount > 0) {
+    console.log(`🧹 Cache limpiado automáticamente: ${cleanedCount} entradas eliminadas`)
+  }
+}, PROCESSING_TIMEOUT / 2) // Cada 5 minutos
 
 // Función de verificación de API key
 function verifyApiKey() {
@@ -341,41 +361,71 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         return
       }
 
-      // Crear cache permanente para evitar duplicados completamente
+      // Sistema robusto anti-duplicado
       const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
+      const messageId = message.id || `${mediaDetails.id}_${Date.now()}`
+      const now = Date.now()
 
-      // Verificar si este media ID ya fue procesado alguna vez desde este número
+      console.log(`🔍 Verificando procesamiento para media: ${mediaDetails.id}, mensaje: ${messageId}`)
+
+      // 1. Verificar si ya está siendo procesado (lock activo)
+      const cachedItem = processedMediaCache.get(mediaCacheKey)
+      if (cachedItem) {
+        const timeSinceStart = now - cachedItem.processed_at
+
+        if (cachedItem.status === 'processing') {
+          if (timeSinceStart < PROCESSING_LOCK_TIMEOUT) {
+            console.log(`⏳ MEDIA YA EN PROCESO: ${mediaDetails.id} - ${timeSinceStart}ms desde inicio`)
+            return // No hacer nada si ya está procesando
+          } else {
+            console.log(`⚠️ PROCESAMIENTO TIMEOUT: ${mediaDetails.id} - liberando lock`)
+            processedMediaCache.delete(mediaCacheKey)
+          }
+        } else if (cachedItem.status === 'completed') {
+          if (timeSinceStart < PROCESSING_TIMEOUT) {
+            console.log(`✅ MEDIA YA PROCESADO: ${mediaDetails.id} - ${Math.round(timeSinceStart / 1000)}s atrás`)
+            return
+          }
+        }
+      }
+
+      // 2. Verificar en base de datos si ya existe
       const { data: existingDocs } = await supabase
         .from('documents')
-        .select('id, processing_status, extracted_data')
+        .select('id, processing_status, extracted_data, created_at')
         .eq('extracted_data->whatsapp_message->id', mediaDetails.id)
         .eq('extracted_data->sender_phone', message.from)
+        .order('created_at', { ascending: false })
         .limit(1)
 
       if (existingDocs && existingDocs.length > 0) {
-        const timeSinceProcessed = new Date().getTime() - new Date(existingDocs[0].extracted_data?.whatsapp_message?.timestamp * 1000).getTime()
-        console.log(`⚠️ MEDIA YA PROCESADO PREVIAMENTE: ${mediaDetails.id} - ${Math.round(timeSinceProcessed / 1000)}s atrás`)
+        const doc = existingDocs[0]
+        const timeSinceProcessed = new Date().getTime() - new Date(doc.created_at).getTime()
 
-        // Solo enviar mensaje si fue hace menos de 10 minutos (para evitar spam)
-        if (timeSinceProcessed < 600000) {
-          await sendWhatsAppMessage(message.from, `📄 **Imagen ya procesada**\n\nEsta imagen ya fue analizada anteriormente.\n\n✅ Ya aparece en tu panel de control.`)
+        if (timeSinceProcessed < PROCESSING_TIMEOUT) {
+          console.log(`📄 DOCUMENTO YA EXISTE EN DB: ${doc.id} - ${Math.round(timeSinceProcessed / 1000)}s atrás`)
+
+          // Actualizar cache para evitar futuras consultas
+          processedMediaCache.set(mediaCacheKey, {
+            id: mediaDetails.id,
+            processed_at: new Date(doc.created_at).getTime(),
+            document_id: doc.id,
+            status: 'completed',
+            message_id: messageId
+          })
+
+          return
         }
-        return
       }
 
-      // Verificar si ya está en proceso en memoria
-      if (processedMediaCache.has(mediaCacheKey)) {
-        console.log(`⚠️ MEDIA YA EN PROCESO: ${mediaDetails.id}`)
-        return // No enviar mensaje adicional
-      }
-
-      // Marcar como procesando INMEDIATAMENTE para evitar duplicados
-      const now = Date.now()
+      // 3. Establecer lock de procesamiento
+      console.log(`🔒 ESTABLECIENDO LOCK: ${mediaDetails.id} - Comenzando procesamiento`)
       processedMediaCache.set(mediaCacheKey, {
         id: mediaDetails.id,
-        processed_at: now
+        processed_at: now,
+        status: 'processing',
+        message_id: messageId
       })
-      console.log(`🔄 Procesando media: ${mediaDetails.id} - Nuevo archivo`)
 
       // Download media from WhatsApp
       const mediaData = await downloadWhatsAppMedia(mediaDetails.id, credentials.accessToken)
@@ -715,10 +765,16 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             const successMessage = `✅ **Documento procesado**\n\n📄 ${extractedData?.vendor_name || 'Proveedor'}\n💰 Total: €${extractedData?.total_amount || extractedData?.amount || 0}\n🎯 Confidencia: ${(analysisResult.confidence * 100).toFixed(1)}%\n\n✅ Ya está disponible en tu panel.`
             await sendWhatsAppMessage(message.from, successMessage)
 
-            // Limpiar cache después de completar procesamiento
+            // Marcar como completado en cache
             const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
-            processedMediaCache.delete(mediaCacheKey)
-            console.log(`🧹 Cache limpiado para media: ${mediaDetails.id}`)
+            processedMediaCache.set(mediaCacheKey, {
+              id: mediaDetails.id,
+              processed_at: now,
+              document_id: document.id,
+              status: 'completed',
+              message_id: messageId
+            })
+            console.log(`✅ Cache actualizado como COMPLETADO para media: ${mediaDetails.id}`)
 
             // Store interaction for continuous learning
             try {
@@ -774,14 +830,30 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             await sendWhatsAppMessage(message.from, errorMessage)
 
-            // Limpiar cache después de error también
+            // Marcar como error en cache
             const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
-            processedMediaCache.delete(mediaCacheKey)
-            console.log(`🧹 Cache limpiado después de error para media: ${mediaDetails.id}`)
+            processedMediaCache.set(mediaCacheKey, {
+              id: mediaDetails.id,
+              processed_at: now,
+              status: 'error',
+              message_id: messageId
+            })
+            console.log(`⚠️ Cache actualizado como ERROR para media: ${mediaDetails.id}`)
           }
         }
       } else {
         console.error('❌ Failed to download media from WhatsApp')
+
+        // Marcar como error de descarga en cache
+        const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
+        processedMediaCache.set(mediaCacheKey, {
+          id: mediaDetails.id,
+          processed_at: now,
+          status: 'error',
+          message_id: messageId
+        })
+        console.log(`❌ Cache actualizado como ERROR DE DESCARGA para media: ${mediaDetails.id}`)
+
         // Send error message to user
         const errorMessage = `❌ Error al descargar la imagen\n\n🔍 No se pudo descargar la imagen de WhatsApp. Inténtalo de nuevo.`
         await sendWhatsAppMessage(message.from, errorMessage)
