@@ -936,15 +936,17 @@ async function getBusinessData(tenantId: number = 1) {
       paymentTypeStats[paymentType] = (paymentTypeStats[paymentType] || 0) + 1
     })
 
-    // Gastos recientes (últimos 10)
+    // Gastos recientes con datos válidos (últimos 20 para tener más opciones)
     const recentExpenses = expensesData
+      .filter((exp: any) => exp.amount && parseFloat(exp.amount) > 0) // Solo gastos válidos
       .sort((a: any, b: any) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime())
-      .slice(0, 10)
+      .slice(0, 20)
 
-    // Faturas recientes (últimos 10)
+    // Faturas recientes con datos completos (últimos 20)
     const recentInvoices = invoicesData
+      .filter((inv: any) => inv.total_amount && parseFloat(inv.total_amount) > 0) // Solo invoices válidas
       .sort((a: any, b: any) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime())
-      .slice(0, 10)
+      .slice(0, 20)
 
     const businessData = {
       stats: {
@@ -1017,15 +1019,52 @@ async function generateManualResponse(queryText: string, businessData: any): Pro
 
     if (query.includes('gasto') || query.includes('gastos')) {
       if (query.includes('cuántos') || query.includes('cuantas')) {
-        const today = new Date().toISOString().split('T')[0]
-        const todayExpenses = businessData.recentExpenses?.filter((exp: any) =>
-          exp.expense_date && exp.expense_date.includes(today)
-        ) || []
+        // Verificar si especifican mes
+        let expensesFiltered = businessData.recentExpenses || []
+        let timeFilter = 'total'
+        const currentYear = new Date().getFullYear()
 
-        return `💸 **Tienes ${stats.total_expenses} gastos en total**\n\n📅 Hoy: ${todayExpenses.length} gastos\n💰 Total gastado: €${stats.total_expenses_amount.toFixed(2)}\n📊 Categorías principales disponibles`
+        if (query.includes('octubre') || query.includes('october')) {
+          expensesFiltered = businessData.recentExpenses?.filter((exp: any) =>
+            exp.expense_date && exp.expense_date.includes(`${currentYear}-10`)
+          ) || []
+          timeFilter = `octubre ${currentYear}`
+        } else if (query.includes('noviembre') || query.includes('november')) {
+          expensesFiltered = businessData.recentExpenses?.filter((exp: any) =>
+            exp.expense_date && exp.expense_date.includes(`${currentYear}-11`)
+          ) || []
+          timeFilter = `noviembre ${currentYear}`
+        } else if (query.includes('diciembre') || query.includes('december')) {
+          expensesFiltered = businessData.recentExpenses?.filter((exp: any) =>
+            exp.expense_date && exp.expense_date.includes(`${currentYear}-12`)
+          ) || []
+          timeFilter = `diciembre ${currentYear}`
+        } else {
+          const today = new Date().toISOString().split('T')[0]
+          expensesFiltered = businessData.recentExpenses?.filter((exp: any) =>
+            exp.expense_date && exp.expense_date.includes(today.split('-')[0] + '-' + today.split('-')[1])
+          ) || []
+          timeFilter = 'este mes'
+        }
+
+        const totalMonthExpenses = expensesFiltered.reduce((sum: number, exp: any) => sum + (parseFloat(exp.amount) || 0), 0)
+        const validExpenses = expensesFiltered.filter((exp: any) => parseFloat(exp.amount) > 0).slice(0, 3)
+
+        return `💸 **Gastos de ${timeFilter}**\n\n📊 Total gastos: ${expensesFiltered.length}\n💰 Total gastado: €${totalMonthExpenses.toFixed(2)}\n📈 Últimos gastos válidos:\n${validExpenses.length > 0 ?
+          validExpenses.map((exp: any) => `• ${exp.vendor || 'Sin nombre'}: €${exp.amount}`).join('\n') :
+          'Sin gastos válidos este período'}`
       }
 
-      return `💸 **Estado de Gastos**\n\n📊 Total gastos: ${stats.total_expenses}\n💰 Total gastado: €${stats.total_expenses_amount.toFixed(2)}\n📈 Últimos gastos:\n${businessData.recentExpenses?.slice(0, 3).map((exp: any) => `• ${exp.vendor}: €${exp.amount}`).join('\n') || 'Sin gastos recientes'}`
+      // Si quiere ver también invoices
+      if (query.includes('invoice') || query.includes('factura')) {
+        const recentInvoices = businessData.recentInvoices?.slice(0, 3).map((inv: any) =>
+          `• ${inv.number || 'N/A'}: \$${inv.total_amount || '0.00'} (${inv.client_name || 'Sin cliente'})`
+        ).join('\n') || 'Sin invoices recientes'
+
+        return `📄 **Estado de Gastos e Income**\n\n💸 Gastos: ${stats.total_expenses} por €${stats.total_expenses_amount.toFixed(2)}\n📄 Facturas: ${stats.total_invoices}\n💰 Ingresos: €${stats.total_revenue.toFixed(2)}\n\n📈 Últimas 3 facturas:\n${recentInvoices}`
+      }
+
+      return `💸 **Estado de Gastos**\n\n📊 Total gastos: ${stats.total_expenses}\n💰 Total gastado: €${stats.total_expenses_amount.toFixed(2)}\n📈 Últimos gastos válidos:\n${businessData.recentExpenses?.filter((exp: any) => parseFloat(exp.amount) > 0).slice(0, 3).map((exp: any) => `• ${exp.vendor || 'Sin nombre'}: €${exp.amount}`).join('\n') || 'Sin gastos válidos'}`
     }
 
     if (query.includes('ingreso') || query.includes('ingresos') || query.includes('revenue')) {
@@ -1044,6 +1083,21 @@ async function generateManualResponse(queryText: string, businessData: any): Pro
 
     if (query.includes('cliente') || query.includes('clientes')) {
       return `👥 **Estado de Clientes**\n\n📊 Total clientes: ${stats.total_clients}\n💰 Ingresos totales: €${stats.total_revenue.toFixed(2)}\n📄 Facturas emitidas: ${stats.total_invoices}\n💡 Cliente promedio: €${stats.total_clients > 0 ? (stats.total_revenue / stats.total_clients).toFixed(2) : '0.00'} por cliente`
+    }
+
+    // Consulta específica para invoices
+    if (query.includes('invoice') || query.includes('factura') || query.includes('últimas') || query.includes('ultimas')) {
+      const recentInvoices = businessData.recentInvoices?.slice(0, 3)
+
+      if (recentInvoices && recentInvoices.length > 0) {
+        const invoicesList = recentInvoices.map((inv: any) =>
+          `• ${inv.number || 'N/A'}: €${inv.total_amount || '0.00'}\n  Cliente: ${inv.client_name || 'Sin cliente'}\n  Fecha: ${inv.issue_date || 'Sin fecha'}`
+        ).join('\n\n')
+
+        return `📄 **Últimas 3 Facturas**\n\n${invoicesList}\n\n💰 Total ingresos: €${stats.total_revenue.toFixed(2)}`
+      }
+
+      return `📄 **Estado de Facturas**\n\n📊 Total facturas: ${stats.total_invoices}\n💰 Total ingresos: €${stats.total_revenue.toFixed(2)}\n🔄 No hay facturas recientes con datos completos`
     }
 
     // Respuesta genérica inteligente
