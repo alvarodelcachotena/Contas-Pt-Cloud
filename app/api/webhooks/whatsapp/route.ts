@@ -341,27 +341,37 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         return
       }
 
-      // Verificar si este media ID ya foi procesado y cleanup del cache
+      // Crear cache permanente para evitar duplicados completamente
+      const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
+
+      // Verificar si este media ID ya fue procesado alguna vez desde este número
+      const { data: existingDocs } = await supabase
+        .from('documents')
+        .select('id, processing_status, extracted_data')
+        .eq('extracted_data->whatsapp_message->id', mediaDetails.id)
+        .eq('extracted_data->sender_phone', message.from)
+        .limit(1)
+
+      if (existingDocs && existingDocs.length > 0) {
+        const timeSinceProcessed = new Date().getTime() - new Date(existingDocs[0].extracted_data?.whatsapp_message?.timestamp * 1000).getTime()
+        console.log(`⚠️ MEDIA YA PROCESADO PREVIAMENTE: ${mediaDetails.id} - ${Math.round(timeSinceProcessed / 1000)}s atrás`)
+
+        // Solo enviar mensaje si fue hace menos de 10 minutos (para evitar spam)
+        if (timeSinceProcessed < 600000) {
+          await sendWhatsAppMessage(message.from, `📄 **Imagen ya procesada**\n\nEsta imagen ya fue analizada anteriormente.\n\n✅ Ya aparece en tu panel de control.`)
+        }
+        return
+      }
+
+      // Verificar si ya está en proceso en memoria
+      if (processedMediaCache.has(mediaCacheKey)) {
+        console.log(`⚠️ MEDIA YA EN PROCESO: ${mediaDetails.id}`)
+        return // No enviar mensaje adicional
+      }
+
+      // Marcar como procesando INMEDIATAMENTE para evitar duplicados
       const now = Date.now()
-      for (const [mediaId, data] of processedMediaCache.entries()) {
-        if (now - data.processed_at > PROCESSING_TIMEOUT) {
-          processedMediaCache.delete(mediaId)
-          console.log(`🧹 Limpiando cache de media antiguo: ${mediaId}`)
-        }
-      }
-
-      const cachedMedia = processedMediaCache.get(mediaDetails.id)
-      if (cachedMedia) {
-        const timeSinceProcessed = now - cachedMedia.processed_at
-        if (timeSinceProcessed < PROCESSING_TIMEOUT) {
-          console.log(`⚠️ MEDIA YA PROCESADO RECIENTEMENTE: ${mediaDetails.id} - ${Math.round(timeSinceProcessed / 1000)}s atrás`)
-          await sendWhatsAppMessage(message.from, `📄 **Imagen ya procesada recientemente**\n\nEsta imagen fue analizada hace ${Math.round(timeSinceProcessed / 1000)} segundos.\n\n✅ No se realizará un nuevo análisis para evitar duplicados.`)
-          return
-        }
-      }
-
-      // Marcar como procesando ANTES de continuar
-      processedMediaCache.set(mediaDetails.id, {
+      processedMediaCache.set(mediaCacheKey, {
         id: mediaDetails.id,
         processed_at: now
       })
@@ -416,7 +426,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
           console.log(`✅ Created document record: ${document.id}`)
 
           // Send initial confirmation message
-          const initialMessage = `📥 Imagen recibida y procesando...\n\n📄 Archivo: ${mediaData.filename}\n📏 Tamaño: ${(mediaData.size / 1024).toFixed(1)} KB\n🤖 Analizando con IA...\n\nTe avisaré cuando esté listo.`
+          const initialMessage = `📥 **Procesando documento**\n\n🤖 Analizando con IA...\n\n✅ Te notificaré cuando esté listo.`
           await sendWhatsAppMessage(message.from, initialMessage)
 
           // Store the media file in Supabase Storage
@@ -702,8 +712,13 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             // Siempre mostrar tarjeta como tipo de pago
             const paymentTypeText = '\n💳 Tipo de pago: Tarjeta'
 
-            const successMessage = `✅ Documento procesado exitosamente!\n\n📄 Tipo: ${documentTypeText}\n🎯 Confianza: ${(analysisResult.confidence * 100).toFixed(1)}%\n📊 Datos extraídos: ${Object.keys(analysisResult.extracted_data).length} campos${dataSummary}${paymentTypeText}\n💰 Guardado en ${locationText} (no se creó cliente)\n\n${dropboxStatus}\nEl documento aparecerá en la sección correspondiente.`
+            const successMessage = `✅ **Documento procesado**\n\n📄 ${extractedData?.vendor_name || 'Proveedor'}\n💰 Total: €${extractedData?.total_amount || extractedData?.amount || 0}\n🎯 Confidencia: ${(analysisResult.confidence * 100).toFixed(1)}%\n\n✅ Ya está disponible en tu panel.`
             await sendWhatsAppMessage(message.from, successMessage)
+
+            // Limpiar cache después de completar procesamiento
+            const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
+            processedMediaCache.delete(mediaCacheKey)
+            console.log(`🧹 Cache limpiado para media: ${mediaDetails.id}`)
 
             // Store interaction for continuous learning
             try {
@@ -750,19 +765,19 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
               })
               .eq('id', document.id)
 
-            // Determinar mensaje de error más útil
-            let errorMessage = ''
+            // Mensaje de error simplificado
+            let errorMessage = `⚠️ **Procesando documento**\n\n🤖 El análisis está tardando más de lo esperado.\n\n✅ Recibirás los resultados cuando esté listo.`
+
             if (aiError instanceof Error && aiError.message.includes('TOTAL_ZERO_DETECTED')) {
-              errorMessage = `💰 **Total no detectado - Reintentando**\n\n⚠️ El análisis detectó un total de €0.00, lo cual no es válido.\n\n🔄 **Reintentando automáticamente** con mejor precisión\n\n✅ Recibirás el análisis completo cuando esté listo.\n\n💡 El documento está guardado mientras tanto.`
-            } else if (aiError instanceof Error && aiError.message.includes('503')) {
-              errorMessage = `📥 **Procesamiento Continuará**\n\n🤖 Los servidores de IA están temporalmente sobrecargados. El documento se guardó correctamente.\n\n🔄 **El sistema seguirá intentando automáticamente**\n\n✅ Recibirás los resultados cuando la IA esté disponible.\n\n📊 **Mientras tanto**, el documento está disponible en tu panel para revisión manual.`
-            } else if (aiError instanceof Error && aiError.message.includes('Timeout')) {
-              errorMessage = `⏰ **Procesamiento Continuará**\n\nEl análisis está tardando más de lo esperado. El documento se guardó correctamente.\n\n🔄 **El sistema seguirá intentando automáticamente**\n\n✅ Recibirás los resultados cuando esté listo.\n\n📊 **Mientras tanto**, el documento está disponible en tu panel.`
-            } else {
-              errorMessage = `⚠️ **Procesamiento Continuará**\n\n🔍 Error temporal en análisis: ${aiError instanceof Error ? aiError.message : 'Error desconocido'}\n\n📄 El documento se guardó y el análisis continuará automáticamente.\n\n✅ Recibirás los resultados cuando esté listo.`
+              errorMessage = `⚠️ **Reintentando análisis**\n\n🤖 Mejorando precisión del análisis.\n\n✅ Recibirás los resultados cuando esté completo.`
             }
 
             await sendWhatsAppMessage(message.from, errorMessage)
+
+            // Limpiar cache después de error también
+            const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
+            processedMediaCache.delete(mediaCacheKey)
+            console.log(`🧹 Cache limpiado después de error para media: ${mediaDetails.id}`)
           }
         }
       } else {
