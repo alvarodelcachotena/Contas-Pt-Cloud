@@ -19,8 +19,21 @@ async function getBusinessData(tenantId: number = 1) {
     const baseUrl = process.env.SUPABASE_URL
     const anonKey = process.env.SUPABASE_ANON_KEY
 
-    if (!baseUrl || !anonKey) {
-      throw new Error('SUPABASE_URL ou SUPABASE_ANON_KEY não configurados')
+    if (!baseUrl || !anonKey || baseUrl.includes('tu_supabase_url_aqui')) {
+      console.warn('⚠️ Supabase not properly configured, returning empty business data');
+      return {
+        stats: {
+          total_invoices: 0,
+          total_expenses: 0,
+          total_clients: 0,
+          total_revenue: 0,
+          total_expenses_amount: 0,
+          profit: 0,
+          payment_type_stats: {}
+        },
+        recentInvoices: [],
+        recentExpenses: []
+      };
     }
 
     // Función helper para fazer requisições

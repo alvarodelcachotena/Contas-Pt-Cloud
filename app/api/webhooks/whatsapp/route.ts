@@ -893,29 +893,17 @@ INSTRUCCIONES:
     // Crear prompt para el usuario
     const userPrompt = `Consulta del usuario: "${queryText}"\n\nFecha actual: ${new Date().toLocaleDateString('es-ES')}\n\nResponde basándose en los datos financieros proporcionados.`
 
-    // Analizar intención primero
-    const userIntent = analyzeUserIntent(queryText)
-    console.log(`🎯 Intención del usuario detectada: ${userIntent}`)
+    // Para consultas financieras, usar IA con datos o respuesta manual
+    let aiResponse = ''
+    try {
+      console.log('🤖 Generando respuesta financiera...')
+      aiResponse = await generateAIResponse(systemPrompt, userPrompt)
+      console.log('✅ Respuesta IA generada:', aiResponse.substring(0, 100) + '...')
+    } catch (aiError) {
+      console.error('❌ Error generando respuesta IA:', aiError)
 
-    // Para saludos, responder directamente sin IA
-    if (userIntent === 'greeting') {
-      aiResponse = `👋 **Hola! ¿En qué puedo ayudarte?**\n\n💡 Puedes preguntarme:\n• ¿Cuántas facturas tienes?\n• ¿Cuántos gastos llevas?\n• Resume mis finanzas\n• Muestra las últimos gastos\n\n📱 ¡Escríbeme tu consulta financiera!`
-    } else if (userIntent === 'ambiguous') {
-      aiResponse = `🤔 **¿Qué información necesitas?**\n\n💡 Puedo ayudarte con:\n• Gastos de este mes\n• Gastos de octubre\n• Últimos gastos\n• Total de gastos\n\n📝 Por favor, sé más específico con tu pregunta.`
-    } else if (userIntent === 'general') {
-      aiResponse = `🤖 **¿Cómo puedo ayudarte?**\n\n💡 Soy tu asistente financiero y puedo:\n• Mostrar datos de gastos\n• Información de facturas\n• Resumen financiero\n• Estadísticas de ingresos\n\n📱 Escribe tu consulta específica.`
-    } else {
-      // Para consultas financieras, usar IA con datos o respuesta manual
-      try {
-        console.log('🤖 Generando respuesta financiera...')
-        aiResponse = await generateAIResponse(systemPrompt, userPrompt)
-        console.log('✅ Respuesta IA generada:', aiResponse.substring(0, 100) + '...')
-      } catch (aiError) {
-        console.error('❌ Error generando respuesta IA:', aiError)
-
-        // Generar respuesta inteligente manual basada en la consulta
-        aiResponse = await generateManualResponse(queryText, businessData)
-      }
+      // Generar respuesta inteligente manual basada en la consulta
+      aiResponse = await generateManualResponse(queryText, businessData)
     }
 
     // Enviar respuesta al usuario con formato más natural

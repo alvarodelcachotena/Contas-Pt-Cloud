@@ -1,4 +1,4 @@
-import { createClient } from '@supabase/supabase-js';
+import { getSupabaseClient, isSupabaseConfigured } from './supabase-client';
 import { ragQueryLog, type InsertRagQueryLog } from '../shared/schema';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -46,13 +46,17 @@ export interface ExportOptions {
 }
 
 export class AuditLoggingService {
-  private supabase: any;
   private isEnabled: boolean = true;
 
   constructor() {
-    const supabaseUrl = process.env.SUPABASE_URL!;
-    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY!;
-    this.supabase = createClient(supabaseUrl, supabaseKey);
+    if (!isSupabaseConfigured()) {
+      console.warn('⚠️ Supabase not configured for audit logging. Audit logging disabled.');
+      this.isEnabled = false;
+    }
+  }
+
+  private getSupabase() {
+    return getSupabaseClient();
   }
 
   /**
@@ -61,6 +65,11 @@ export class AuditLoggingService {
   async logRAGQuery(logData: RAGQueryLogData): Promise<{ success: boolean; logId?: string; error?: string }> {
     if (!this.isEnabled) {
       return { success: true, logId: 'audit-disabled' };
+    }
+
+    const supabase = this.getSupabase();
+    if (!supabase) {
+      return { success: true, logId: 'supabase-not-configured' };
     }
 
     try {
@@ -86,7 +95,7 @@ export class AuditLoggingService {
         requestHeaders: logData.requestHeaders || {}
       };
 
-      const { data, error } = await this.supabase
+      const { data, error } = await supabase
         .from('rag_query_log')
         .insert(logEntry)
         .select('id')
@@ -102,9 +111,9 @@ export class AuditLoggingService {
 
     } catch (error) {
       console.error('❌ Error logging RAG query:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -117,9 +126,13 @@ export class AuditLoggingService {
     startDate?: Date,
     endDate?: Date
   ): Promise<{ success: boolean; stats?: AuditLogStats; error?: string }> {
+    if (!this.isEnabled || !this.supabase) {
+      return { success: true, stats: this.getDefaultStats() };
+    }
+
     try {
       let query = this.supabase.rpc('get_rag_query_stats');
-      
+
       if (tenantId) {
         query = query.eq('p_tenant_id', tenantId);
       }
@@ -161,9 +174,9 @@ export class AuditLoggingService {
 
     } catch (error) {
       console.error('❌ Error getting audit log stats:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -213,7 +226,7 @@ export class AuditLoggingService {
         queryCounts[log.query_text] = (queryCounts[log.query_text] || 0) + 1;
       });
       const topQueries = Object.entries(queryCounts)
-        .sort(([,a], [,b]) => b - a)
+        .sort(([, a], [, b]) => b - a)
         .slice(0, 10)
         .map(([query]) => query);
 
@@ -247,9 +260,9 @@ export class AuditLoggingService {
 
     } catch (error) {
       console.error('❌ Error in manual stats calculation:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -258,9 +271,13 @@ export class AuditLoggingService {
    * Export audit logs for analysis
    */
   async exportAuditLogs(options: ExportOptions): Promise<{ success: boolean; data?: string; error?: string }> {
+    if (!this.isEnabled || !this.supabase) {
+      return { success: true, data: options.format === 'csv' ? '' : '[]' };
+    }
+
     try {
       let query = this.supabase.rpc('export_rag_query_logs');
-      
+
       if (options.tenantId) {
         query = query.eq('p_tenant_id', options.tenantId);
       }
@@ -285,9 +302,9 @@ export class AuditLoggingService {
 
     } catch (error) {
       console.error('❌ Error exporting audit logs:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -327,9 +344,9 @@ export class AuditLoggingService {
 
     } catch (error) {
       console.error('❌ Error in manual export:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -343,7 +360,7 @@ export class AuditLoggingService {
     const headers = Object.keys(data[0]);
     const csvRows = [
       headers.join(','),
-      ...data.map((row: any) => 
+      ...data.map((row: any) =>
         headers.map((header: string) => {
           const value = row[header];
           if (typeof value === 'string' && value.includes(',')) {
@@ -361,9 +378,13 @@ export class AuditLoggingService {
    * Clean old audit logs (retention policy)
    */
   async cleanOldLogs(daysToKeep: number = 90, tenantId?: number): Promise<{ success: boolean; deletedCount?: number; error?: string }> {
+    if (!this.isEnabled || !this.supabase) {
+      return { success: true, deletedCount: 0 };
+    }
+
     try {
       let query = this.supabase.rpc('clean_old_rag_logs');
-      
+
       if (daysToKeep) {
         query = query.eq('p_days_to_keep', daysToKeep);
       }
@@ -382,9 +403,9 @@ export class AuditLoggingService {
 
     } catch (error) {
       console.error('❌ Error cleaning old logs:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -416,9 +437,9 @@ export class AuditLoggingService {
 
     } catch (error) {
       console.error('❌ Error in manual cleanup:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
   }
@@ -430,6 +451,10 @@ export class AuditLoggingService {
     limit: number = 100,
     tenantId?: number
   ): Promise<{ success: boolean; logs?: any[]; error?: string }> {
+    if (!this.isEnabled || !this.supabase) {
+      return { success: true, logs: [] };
+    }
+
     try {
       let query = this.supabase
         .from('rag_query_log')
@@ -451,11 +476,30 @@ export class AuditLoggingService {
 
     } catch (error) {
       console.error('❌ Error getting recent logs:', error);
-      return { 
-        success: false, 
-        error: error instanceof Error ? error.message : 'Unknown error' 
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Unknown error'
       };
     }
+  }
+
+  /**
+   * Get default stats when Supabase is not available
+   */
+  private getDefaultStats(): AuditLogStats {
+    return {
+      totalQueries: 0,
+      uniqueUsers: 0,
+      avgResponseTime: 0,
+      cacheHitRate: 0,
+      topQueries: [],
+      queryTypes: {},
+      performanceMetrics: {
+        avgProcessingTime: 0,
+        avgTokensUsed: 0,
+        totalCostEstimate: 0
+      }
+    };
   }
 
   /**

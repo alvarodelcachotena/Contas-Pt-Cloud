@@ -1,10 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
 
-const supabase = createClient(
-    process.env.SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!
-)
+let supabase: any = null;
+
+// Initialize Supabase client with validation
+try {
+    const supabaseUrl = process.env.SUPABASE_URL;
+    const supabaseKey = process.env.SUPABASE_SERVICE_ROLE_KEY;
+
+    if (supabaseUrl && supabaseKey && !supabaseUrl.includes('tu_supabase_url_aqui')) {
+        supabase = createClient(supabaseUrl, supabaseKey);
+    } else {
+        console.warn('⚠️ Supabase not properly configured for images API');
+    }
+} catch (error) {
+    console.warn('⚠️ Failed to initialize Supabase client for images API:', error);
+}
 
 // GET - Obtener todas las imágenes del tenant
 export async function GET(request: NextRequest) {
@@ -12,6 +23,10 @@ export async function GET(request: NextRequest) {
         const tenantId = request.headers.get('x-tenant-id') || '1'
 
         console.log('🖼️ Fetching images for tenant:', tenantId)
+
+        if (!supabase) {
+            return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+        }
 
         const { data: images, error } = await supabase
             .from('images')
@@ -61,6 +76,10 @@ export async function POST(request: NextRequest) {
             )
         }
 
+        if (!supabase) {
+            return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+        }
+
         // Insertar imagen en la base de datos
         const { data: newImage, error } = await supabase
             .from('images')
@@ -105,6 +124,10 @@ export async function DELETE(request: NextRequest) {
         }
 
         console.log('🗑️ Deleting image:', imageId)
+
+        if (!supabase) {
+            return NextResponse.json({ error: 'Supabase not configured' }, { status: 503 });
+        }
 
         const { error } = await supabase
             .from('images')
