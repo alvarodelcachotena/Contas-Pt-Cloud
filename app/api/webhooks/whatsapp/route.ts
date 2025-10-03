@@ -814,10 +814,43 @@ async function handleTextQuery(senderPhone: string, queryText: string, credentia
   try {
     console.log(`💬 Procesando consulta de texto desde ${senderPhone}: "${queryText}"`)
 
-    // Enviar mensaje indicando que está procesando
+    // Analizar intención primero SIN enviar mensaje de procesamiento
+    const userIntent = analyzeUserIntent(queryText)
+    console.log(`🎯 Intención del usuario detectada: ${userIntent}`)
+
+    // Para saludos y consultas simples, responder inmediatamente
+    if (userIntent === 'greeting' || userIntent === 'ambiguous' || userIntent === 'general') {
+      let immediateResponse = ''
+
+      if (userIntent === 'greeting') {
+        immediateResponse = `👋 **Hola! ¿En qué puedo ayudarte?**\n\n💡 Puedes preguntarme:\n• ¿Cuántas facturas tienes?\n• ¿Cuántos gastos llevas?\n• Resume mis finanzas\n• Muestra las últimos gastos\n\n📱 ¡Escríbeme tu consulta financiera!`
+      } else if (userIntent === 'ambiguous') {
+        immediateResponse = `🤔 **¿Qué información necesitas?**\n\n💡 Puedo ayudarte con:\n• Gastos de este mes\n• Gastos de octubre\n• Últimos gastos\n• Total de gastos\n\n📝 Por favor, sé más específico con tu pregunta.`
+      } else {
+        // Detectar consultas específicas para dar respuestas útiles
+        if (queryText.toLowerCase().includes('que dia es hoy') || queryText.toLowerCase().includes('fecha')) {
+          const today = new Date().toLocaleDateString('es-ES', {
+            weekday: 'long',
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          })
+          immediateResponse = `📅 **Hoy es ${today}**\n\n💡 ¿En qué puedo ayudarte hoy?\n• Gastos de hoy\n• Facturas del mes\n• Resumen financiero`
+        } else if (queryText.toLowerCase().includes('como estas') || queryText.toLowerCase().includes('como te llamas')) {
+          immediateResponse = `🤖 **¡Hola! Soy tu asistente financiero**\n\n📱 Estoy aquí para ayudarte con:\n• Consultas sobre gastos\n• Información de facturas\n• Estado financiero\n• Revisión de datos\n\n💡 ¿Qué información necesitas?`
+        } else {
+          immediateResponse = `🤖 **¿Cómo puedo ayudarte?**\n\n💡 Soy tu asistente financiero y puedo:\n• Mostrar datos de gastos\n• Información de facturas\n• resumen financiero\n• Estadísticas de ingresos\n\n📱 Escribe tu consulta específica.`
+        }
+      }
+
+      await sendWhatsAppMessage(senderPhone, immediateResponse)
+      return // Salir inmediatamente, sin procesar datos financieros
+    }
+
+    // Solo para consultas financieras reales, enviar mensaje de procesamiento
     await sendWhatsAppMessage(senderPhone, `🤖 **Procesando consulta**\n\n📋 "${queryText}"\n\n🔍 Buscando información...`)
 
-    // Obtener datos financieros usando la función getBusinessData existente
+    // Obtener dados financieros usando la función getBusinessData existente
     console.log('🔍 Obteniendo datos financieros para respuesta...')
     const businessData = await getBusinessData(1) // Tenant ID por defecto
 
@@ -885,8 +918,8 @@ INSTRUCCIONES:
       }
     }
 
-    // Enviar respuesta al usuario
-    const finalMessage = `🤖 **Consulta Respondida**\n\n${aiResponse}\n\n📱 ¿Alguna otra pregunta sobre tus finanzas?`
+    // Enviar respuesta al usuario con formato más natural
+    const finalMessage = `\n${aiResponse}\n\n📱 ¿Necesitas más información?`
     await sendWhatsAppMessage(senderPhone, finalMessage)
 
     console.log(`✅ Consulta respondida exitosamente para ${senderPhone}`)
@@ -894,8 +927,16 @@ INSTRUCCIONES:
   } catch (error) {
     console.error('❌ Error procesando consulta de texto:', error)
 
-    // Mensaje de error simple
-    await sendWhatsAppMessage(senderPhone, `❌ **Error procesando consulta**\n\n🔍 Hubo un problema técnico. Una de las siguientes causas puede ser:\n\n• Problemas temporales con la IA\n• Datos no disponibles\n• Sobrevelocidad temporal\n\n🔄 Por favor intentá de nuevo en unos minutos.\n\n📞 Si el problema persiste, contacta al administrador.`)
+    // Mensaje de error más amigable según la intención detectada
+    const intent = analyzeUserIntent(queryText)
+
+    if (intent === 'greeting') {
+      await sendWhatsAppMessage(senderPhone, `👋 **¡Hola!**\n\n📱 ¿En qué puedo ayudarte hoy?\n\n💡 Puedes preguntarme sobre tus finanzas, gastos o facturas.`)
+    } else if (intent === 'financial_query') {
+      await sendWhatsAppMessage(senderPhone, `📊 **Información financiera temporalmente no disponible**\n\n🔄 Los datos están cargándose. Intenta de nuevo en un momento.\n\n📱 ¿Alguna otra consulta que pueda ayudarte mientras tanto?`)
+    } else {
+      await sendWhatsAppMessage(senderPhone, `🤖 **¿Cómo puedo ayudarte?**\n\n💡 Soy tu asistente financiero. Puedes preguntarme sobre:\n• Tus gastos\n• Facturas\n• Estado financiero\n\n📱 ¡Escríbeme tu consulta!`)
+    }
   }
 }
 
@@ -1022,6 +1063,16 @@ function analyzeUserIntent(queryText: string): string {
   const greetings = ['hola', 'hello', 'hi', 'buenos días', 'buenas tardes', 'buenas noches', 'saludos', 'hey']
   if (greetings.some(greeting => query === greeting || query.includes(greeting))) {
     return 'greeting'
+  }
+
+  // Detectar consultas simples no financieras
+  const simpleQueries = [
+    'que dia es hoy', 'qué día es hoy', 'fecha', 'fecha actual',
+    'como estas', 'cómo estás', 'como te llamas', 'cómo te llamas',
+    'ayuda', 'help', 'info', 'información'
+  ]
+  if (simpleQueries.some(simpleQuery => query.includes(simpleQuery))) {
+    return 'general'
   }
 
   // Detectar consultas financieras específicas
