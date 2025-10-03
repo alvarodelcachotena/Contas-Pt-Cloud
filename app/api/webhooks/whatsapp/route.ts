@@ -794,6 +794,11 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         // Send error message to user
         const errorMessage = `❌ Error al descargar la imagen\n\n🔍 No se pudo descargar la imagen de WhatsApp. Inténtalo de nuevo.`
         await sendWhatsAppMessage(message.from, errorMessage)
+
+        // Limpiar cache después de error de descarga también
+        const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
+        processedMediaCache.delete(mediaCacheKey)
+        console.log(`🧹 Cache limpiado después de error de descarga para media: ${mediaDetails.id}`)
       }
     } else if (message.type === 'text') {
       console.log(`💬 Text message received: ${message.text?.body}`)
