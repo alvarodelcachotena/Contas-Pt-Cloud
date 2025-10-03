@@ -855,11 +855,15 @@ INSTRUCCIONES:
     // Usar Gemini AI para generar respuesta
     let aiResponse = ''
     try {
+      console.log('🤖 Iniciando generación de respuesta IA...')
       aiResponse = await generateAIResponse(systemPrompt, userPrompt)
-      console.log('✅ Respuesta AI generada exitosamente')
+      console.log('✅ Respuesta AI generada exitosamente:', aiResponse.substring(0, 100) + '...')
     } catch (aiError) {
       console.error('❌ Error generando respuesta AI:', aiError)
-      aiResponse = `⚠️ Lo siento, no puedo procesar tu consulta ahora. Los datos están disponibles pero hay un problema técnico.\n\n📊 **Datos básicos:**\n• Facturas totales: ${businessData.stats?.total_invoices || 0}\n• Gastos totales: €${(businessData.stats?.total_expenses_amount || 0).toFixed(2)}\n• Beneficio: €${businessData.stats?.profit || 0}\n\n🔄 Intentá de nuevo en unos minutos.`
+      console.error('❌ Detalles del error:', aiError instanceof Error ? aiError.message : 'Error desconocido')
+
+      // Generar respuesta inteligente manual basada en la consulta
+      aiResponse = await generateManualResponse(queryText, businessData)
     }
 
     // Enviar respuesta al usuario
@@ -989,15 +993,87 @@ async function getBusinessData(tenantId: number = 1) {
   }
 }
 
+// Función para generar respuesta manual cuando IA falla
+async function generateManualResponse(queryText: string, businessData: any): Promise<string> {
+  try {
+    console.log('🔧 Generando respuesta manual inteligente...')
+
+    const query = queryText.toLowerCase()
+    const stats = businessData.stats
+
+    // Respuestas específicas según el tipo de consulta
+    if (query.includes('factura') || query.includes('facturas')) {
+      if (query.includes('cuántas') || query.includes('cuantos')) {
+        const today = new Date().toISOString().split('T')[0]
+        const todayInvoices = businessData.recentInvoices?.filter((inv: any) =>
+          inv.issue_date && inv.issue_date.includes(today)
+        ) || []
+
+        return `📊 **Tienes ${stats.total_invoices} facturas en total**\n\n💰 Ingresos totales: €${stats.total_revenue.toFixed(2)}\n📅 Hoy: ${todayInvoices.length} facturas\n💯 ¡Sigue así con tus ingresos!`
+      }
+
+      return `📄 **Estado de Facturas**\n\n📊 Total facturas: ${stats.total_invoices}\n💰 Ingresos: €${stats.total_revenue.toFixed(2)}\n💳 Métodos de pago más usados:\n${Object.entries(stats.payment_type_stats || {}).slice(0, 3).map(([type, count]) => `• ${type}: ${count}`).join('\n')}`
+    }
+
+    if (query.includes('gasto') || query.includes('gastos')) {
+      if (query.includes('cuántos') || query.includes('cuantas')) {
+        const today = new Date().toISOString().split('T')[0]
+        const todayExpenses = businessData.recentExpenses?.filter((exp: any) =>
+          exp.expense_date && exp.expense_date.includes(today)
+        ) || []
+
+        return `💸 **Tienes ${stats.total_expenses} gastos en total**\n\n📅 Hoy: ${todayExpenses.length} gastos\n💰 Total gastado: €${stats.total_expenses_amount.toFixed(2)}\n📊 Categorías principales disponibles`
+      }
+
+      return `💸 **Estado de Gastos**\n\n📊 Total gastos: ${stats.total_expenses}\n💰 Total gastado: €${stats.total_expenses_amount.toFixed(2)}\n📈 Últimos gastos:\n${businessData.recentExpenses?.slice(0, 3).map((exp: any) => `• ${exp.vendor}: €${exp.amount}`).join('\n') || 'Sin gastos recientes'}`
+    }
+
+    if (query.includes('ingreso') || query.includes('ingresos') || query.includes('revenue')) {
+      return `💰 **Estado de Ingresos**\n\n📊 Total ingresos: €${stats.total_revenue.toFixed(2)}\n📄 Facturas: ${stats.total_invoices}\n💡 Beneficio: €${stats.profit.toFixed(2)}\n📈 Margen: ${stats.profitMargin}%`
+    }
+
+    if (query.includes('beneficio') || query.includes('profit') || query.includes('ganancia')) {
+      const profitColor = stats.profit >= 0 ? '✅' : '⚠️'
+      return `${profitColor} **Beneficio Actual**\n\n💰 Beneficio: €${stats.profit.toFixed(2)}\n📊 Margen: ${stats.profitMargin}%\n📈 Ingresos: €${stats.total_revenue.toFixed(2)}\n💸 Gastos: €${stats.total_expenses_amount.toFixed(2)}`
+    }
+
+    if (query.includes('resume') || query.includes('resumen') || query.includes('summary')) {
+      const profitColor = stats.profit >= 0 ? '✅' : '⚠️'
+      return `📈 **RESUMEN FINANCIERO**\n\n💰 Ingresos: €${stats.total_revenue.toFixed(2)}\n💸 Gastos: €${stats.total_expenses_amount.toFixed(2)}\n${profitColor} Beneficio: €${stats.profit.toFixed(2)}\n📊 Margen: ${stats.profitMargin}%\n👥 Clientes: ${stats.total_clients}\n📄 Facturas: ${stats.total_invoices}`
+    }
+
+    if (query.includes('cliente') || query.includes('clientes')) {
+      return `👥 **Estado de Clientes**\n\n📊 Total clientes: ${stats.total_clients}\n💰 Ingresos totales: €${stats.total_revenue.toFixed(2)}\n📄 Facturas emitidas: ${stats.total_invoices}\n💡 Cliente promedio: €${stats.total_clients > 0 ? (stats.total_revenue / stats.total_clients).toFixed(2) : '0.00'} por cliente`
+    }
+
+    // Respuesta genérica inteligente
+    const topExpenses = businessData.recentExpenses?.slice(0, 2) || []
+    const topInvoices = businessData.recentInvoices?.slice(0, 2) || []
+
+    return `📊 **Resumen Financiero**\n\n💰 Ingresos: €${stats.total_revenue.toFixed(2)}\n💸 Gastos: €${stats.total_expenses_amount.toFixed(2)}\n📄 Facturas: ${stats.total_invoices}\n💸 Gastos: ${stats.total_expenses}\n👥 Clientes: ${stats.total_clients}\n\n📋 Últimos movimientos:\n${topInvoices.map((inv: any) => `• Ingreso: €${inv.total_amount}`).join('\n')}\n${topExpenses.map((exp: any) => `• Gasto: €${exp.amount} (${exp.vendor})`).join('\n')}`
+
+  } catch (error) {
+    console.error('❌ Error en respuesta manual:', error)
+
+    // Respuesta de emergencia más simple
+    return `📊 **Datos Disponibles**\n\n• Facturas: ${businessData.stats?.total_invoices || 0}\n• Gastos: €${(businessData.stats?.total_expenses_amount || 0).toFixed(2)}\n• Ingresos: €${(businessData.stats?.total_revenue || 0).toFixed(2)}\n\n🔄 Intenta otra consulta específica`
+  }
+}
+
 // Función para generar respuesta con Gemini AI
 async function generateAIResponse(systemPrompt: string, userPrompt: string): Promise<string> {
   try {
+    console.log('🤖 Iniciando llamada a Gemini AI...')
+
     const apiKey = process.env.GOOGLE_AI_API_KEY
     if (!apiKey) {
+      console.error('❌ GOOGLE_AI_API_KEY no configurado')
       throw new Error('GOOGLE_AI_API_KEY no configurado')
     }
 
+    console.log('🔑 API Key encontrada, inicializando Gemini...')
     const genAI = new GoogleGenerativeAI(apiKey)
+
     const model = genAI.getGenerativeModel({
       model: "gemini-1.5-flash",
       generationConfig: {
@@ -1015,6 +1091,7 @@ async function generateAIResponse(systemPrompt: string, userPrompt: string): Pro
     })
 
     const prompt = `${systemPrompt}\n\n${userPrompt}`
+    console.log('📝 Prompt creado:', prompt.substring(0, 200) + '...')
 
     const result = await Promise.race([
       model.generateContent(prompt),
@@ -1023,14 +1100,17 @@ async function generateAIResponse(systemPrompt: string, userPrompt: string): Pro
       )
     ])
 
+    console.log('✅ Contenido generado por Gemini, obteniendo respuesta...')
     const response = await result.response
     const text = response.text()
 
-    console.log('✅ Respuesta AI generada exitosamente')
+    console.log('✅ Respuesta AI generada exitosamente:', text.substring(0, 100) + '...')
     return text.trim()
 
   } catch (error) {
     console.error('❌ Error generando respuesta AI:', error)
+    console.error('❌ Tipo de error:', typeof error)
+    console.error('❌ Mensaje:', error instanceof Error ? error.message : String(error))
     throw error
   }
 }
