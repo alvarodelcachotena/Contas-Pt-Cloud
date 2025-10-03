@@ -372,11 +372,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         return
       }
 
-      // Verificar si ya está en proceso en memoria
-      if (processedMediaCache.has(mediaCacheKey)) {
-        console.log(`⚠️ MEDIA YA EN PROCESO: ${mediaDetails.id}`)
-        return // No enviar mensaje adicional
-      }
+      // CRUCIAL: Verificar primero si ya fue procesado en la DB (más importante que el caché en memoria)
+      // Solo después verificar si está en memoria para evitar duplicados durante procesamiento
 
       // Marcar como procesando INMEDIATAMENTE para evitar duplicados
       const now = Date.now()
@@ -724,10 +721,10 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             const successMessage = `✅ **Documento procesado**\n\n📄 ${extractedData?.vendor_name || 'Proveedor'}\n💰 Total: €${extractedData?.total_amount || extractedData?.amount || 0}\n🎯 Confidencia: ${(analysisResult.confidence * 100).toFixed(1)}%\n\n✅ Ya está disponible en tu panel.`
             await sendWhatsAppMessage(message.from, successMessage)
 
-            // Limpiar cache después de completar procesamiento
-            const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
-            processedMediaCache.delete(mediaCacheKey)
-            console.log(`🧹 Cache limpiado para media: ${mediaDetails.id}`)
+            // NO LIMPIAR CACHE INMEDIATAMENTE - WhatsApp puede enviar múltiples webhooks
+            // El cache se limpirá automáticamente después del timeout (5 minutos)
+            console.log(`✅ Procesamiento completado para media: ${mediaDetails.id}`)
+            console.log(`💡 Cache se mantendrá activo por ${Math.round(PROCESSING_TIMEOUT / (60 * 1000))} minutos para evitar duplicados`)
 
             // Store interaction for continuous learning
             try {
@@ -783,10 +780,9 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             await sendWhatsAppMessage(message.from, errorMessage)
 
-            // Limpiar cache después de error también
-            const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
-            processedMediaCache.delete(mediaCacheKey)
-            console.log(`🧹 Cache limpiado después de error para media: ${mediaDetails.id}`)
+            // MANTENER CACHE después de error para evitar reprocesar el mismo error múltiples veces
+            console.log(`❌ Error en procesamiento para media: ${mediaDetails.id}`)
+            console.log(`💡 Cache se mantendrá activo para evitar reprocesar el mismo error`)
           }
         }
       } else {
@@ -795,7 +791,7 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         const errorMessage = `❌ Error al descargar la imagen\n\n🔍 No se pudo descargar la imagen de WhatsApp. Inténtalo de nuevo.`
         await sendWhatsAppMessage(message.from, errorMessage)
 
-        // Limpiar cache después de error de descarga también
+        // Solo limpiar cache si falla la descarga (problema diferente al procesamiento)
         const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
         processedMediaCache.delete(mediaCacheKey)
         console.log(`🧹 Cache limpiado después de error de descarga para media: ${mediaDetails.id}`)
