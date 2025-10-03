@@ -1099,13 +1099,33 @@ function analyzeUserIntent(queryText: string): string {
     word.includes(keyword) || keyword.includes(word)
   ))
 
-  // Si tiene saludo + pregunta financiera, es consulta
-  if (greetings.some(greeting => query.includes(greeting)) && financialWords.length > 0) {
-    return 'financial_query'
-  }
+  // Si tiene saludo combinado con otras palabras, encontrar la intención principal
+  if (greetings.some(greeting => query.includes(greeting))) {
+    // Eliminar el saludo para evaluar el resto de la consulta
+    let queryWithoutGreeting = query
+    greetings.forEach(greeting => {
+      queryWithoutGreeting = queryWithoutGreeting.replace(greeting, '').trim()
+    })
 
-  // Si solo tiene saludo, es saludo
-  if (greetings.some(greeting => query === greeting)) {
+    // Re-evaluar la consulta sin el saludo para casos específicos
+    if (dateQueries.some(dateQuery => queryWithoutGreeting.includes(dateQuery))) {
+      return 'date_query'
+    }
+
+    if (aboutQueries.some(aboutQuery => queryWithoutGreeting.includes(aboutQuery))) {
+      return 'about_query'
+    }
+
+    if (helpQueries.some(helpQuery => queryWithoutGreeting.includes(helpQuery))) {
+      return 'help_query'
+    }
+
+    // Solo después evaluar si es consulta financiera
+    if (financialWords.length > 0 && words.length >= 2) {
+      return 'financial_query'
+    }
+
+    // Si no hay más contenido, es solo saludo
     return 'greeting'
   }
 
