@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { createClient } from '@supabase/supabase-js'
+import { GoogleGenerativeAI } from '@google/generative-ai'
 import { loadEnvStrict } from '../../../../lib/env-loader.js'
 import {
   WhatsAppWebhookPayload,
@@ -13,35 +14,15 @@ import { DocumentAIService } from '../../../../lib/gemini-ai-service'
 import { DropboxApiClient } from '../../../../server/dropbox-api-client'
 import { continuousLearningService } from '../../../../lib/continuous-learning-service'
 
-// Cache más robusto para evitar duplicados
+// Cache simple en memoria para media IDs procesados con timestamp
 interface ProcessedMedia {
   id: string
   processed_at: number
   document_id?: number
-  status: 'processing' | 'completed' | 'error'
-  message_id?: string
 }
 
 const processedMediaCache = new Map<string, ProcessedMedia>()
-const PROCESSING_TIMEOUT = 10 * 60 * 1000 // 10 minutos
-const PROCESSING_LOCK_TIMEOUT = 30 * 1000 // 30 segundos para obtener lock
-
-// Limpieza automática de cache cada 5 minutos
-setInterval(() => {
-  const now = Date.now()
-  let cleanedCount = 0
-
-  for (const [key, data] of processedMediaCache.entries()) {
-    if (now - data.processed_at > PROCESSING_TIMEOUT) {
-      processedMediaCache.delete(key)
-      cleanedCount++
-    }
-  }
-
-  if (cleanedCount > 0) {
-    console.log(`🧹 Cache limpiado automáticamente: ${cleanedCount} entradas eliminadas`)
-  }
-}, PROCESSING_TIMEOUT / 2) // Cada 5 minutos
+const PROCESSING_TIMEOUT = 5 * 60 * 1000 // 5 minutos
 
 // Función de verificación de API key
 function verifyApiKey() {
@@ -348,6 +329,14 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
     const tenantId = authorizedUser.tenant_id
     const userRole = authorizedUser.role
 
+    // Verificar si es mensaje de texto (consulta financiera)
+    if (message.type === 'text' && message.text?.body) {
+      console.log('💬 Procesando consulta de texto:', message.text.body)
+      const credentials = getWhatsAppCredentials(phoneNumberId)
+      await handleTextQuery(message.from, message.text.body, credentials)
+      return
+    }
+
     // Check if message contains media
     if (message.type === 'image' || message.type === 'document' || message.type === 'audio' || message.type === 'video') {
       console.log(`📎 Media message detected: ${message.type}`)
@@ -361,71 +350,41 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
         return
       }
 
-      // Sistema robusto anti-duplicado
+      // Crear cache permanente para evitar duplicados completamente
       const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
-      const messageId = message.id || `${mediaDetails.id}_${Date.now()}`
-      const now = Date.now()
 
-      console.log(`🔍 Verificando procesamiento para media: ${mediaDetails.id}, mensaje: ${messageId}`)
-
-      // 1. Verificar si ya está siendo procesado (lock activo)
-      const cachedItem = processedMediaCache.get(mediaCacheKey)
-      if (cachedItem) {
-        const timeSinceStart = now - cachedItem.processed_at
-
-        if (cachedItem.status === 'processing') {
-          if (timeSinceStart < PROCESSING_LOCK_TIMEOUT) {
-            console.log(`⏳ MEDIA YA EN PROCESO: ${mediaDetails.id} - ${timeSinceStart}ms desde inicio`)
-            return // No hacer nada si ya está procesando
-          } else {
-            console.log(`⚠️ PROCESAMIENTO TIMEOUT: ${mediaDetails.id} - liberando lock`)
-            processedMediaCache.delete(mediaCacheKey)
-          }
-        } else if (cachedItem.status === 'completed') {
-          if (timeSinceStart < PROCESSING_TIMEOUT) {
-            console.log(`✅ MEDIA YA PROCESADO: ${mediaDetails.id} - ${Math.round(timeSinceStart / 1000)}s atrás`)
-            return
-          }
-        }
-      }
-
-      // 2. Verificar en base de datos si ya existe
+      // Verificar si este media ID ya fue procesado alguna vez desde este número
       const { data: existingDocs } = await supabase
         .from('documents')
-        .select('id, processing_status, extracted_data, created_at')
+        .select('id, processing_status, extracted_data')
         .eq('extracted_data->whatsapp_message->id', mediaDetails.id)
         .eq('extracted_data->sender_phone', message.from)
-        .order('created_at', { ascending: false })
         .limit(1)
 
       if (existingDocs && existingDocs.length > 0) {
-        const doc = existingDocs[0]
-        const timeSinceProcessed = new Date().getTime() - new Date(doc.created_at).getTime()
+        const timeSinceProcessed = new Date().getTime() - new Date(existingDocs[0].extracted_data?.whatsapp_message?.timestamp * 1000).getTime()
+        console.log(`⚠️ MEDIA YA PROCESADO PREVIAMENTE: ${mediaDetails.id} - ${Math.round(timeSinceProcessed / 1000)}s atrás`)
 
-        if (timeSinceProcessed < PROCESSING_TIMEOUT) {
-          console.log(`📄 DOCUMENTO YA EXISTE EN DB: ${doc.id} - ${Math.round(timeSinceProcessed / 1000)}s atrás`)
-
-          // Actualizar cache para evitar futuras consultas
-          processedMediaCache.set(mediaCacheKey, {
-            id: mediaDetails.id,
-            processed_at: new Date(doc.created_at).getTime(),
-            document_id: doc.id,
-            status: 'completed',
-            message_id: messageId
-          })
-
-          return
+        // Solo enviar mensaje si fue hace menos de 10 minutos (para evitar spam)
+        if (timeSinceProcessed < 600000) {
+          await sendWhatsAppMessage(message.from, `📄 **Imagen ya procesada**\n\nEsta imagen ya fue analizada anteriormente.\n\n✅ Ya aparece en tu panel de control.`)
         }
+        return
       }
 
-      // 3. Establecer lock de procesamiento
-      console.log(`🔒 ESTABLECIENDO LOCK: ${mediaDetails.id} - Comenzando procesamiento`)
+      // Verificar si ya está en proceso en memoria
+      if (processedMediaCache.has(mediaCacheKey)) {
+        console.log(`⚠️ MEDIA YA EN PROCESO: ${mediaDetails.id}`)
+        return // No enviar mensaje adicional
+      }
+
+      // Marcar como procesando INMEDIATAMENTE para evitar duplicados
+      const now = Date.now()
       processedMediaCache.set(mediaCacheKey, {
         id: mediaDetails.id,
-        processed_at: now,
-        status: 'processing',
-        message_id: messageId
+        processed_at: now
       })
+      console.log(`🔄 Procesando media: ${mediaDetails.id} - Nuevo archivo`)
 
       // Download media from WhatsApp
       const mediaData = await downloadWhatsAppMedia(mediaDetails.id, credentials.accessToken)
@@ -765,16 +724,10 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             const successMessage = `✅ **Documento procesado**\n\n📄 ${extractedData?.vendor_name || 'Proveedor'}\n💰 Total: €${extractedData?.total_amount || extractedData?.amount || 0}\n🎯 Confidencia: ${(analysisResult.confidence * 100).toFixed(1)}%\n\n✅ Ya está disponible en tu panel.`
             await sendWhatsAppMessage(message.from, successMessage)
 
-            // Marcar como completado en cache
+            // Limpiar cache después de completar procesamiento
             const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
-            processedMediaCache.set(mediaCacheKey, {
-              id: mediaDetails.id,
-              processed_at: now,
-              document_id: document.id,
-              status: 'completed',
-              message_id: messageId
-            })
-            console.log(`✅ Cache actualizado como COMPLETADO para media: ${mediaDetails.id}`)
+            processedMediaCache.delete(mediaCacheKey)
+            console.log(`🧹 Cache limpiado para media: ${mediaDetails.id}`)
 
             // Store interaction for continuous learning
             try {
@@ -830,41 +783,255 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
 
             await sendWhatsAppMessage(message.from, errorMessage)
 
-            // Marcar como error en cache
+            // Limpiar cache después de error también
             const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
-            processedMediaCache.set(mediaCacheKey, {
-              id: mediaDetails.id,
-              processed_at: now,
-              status: 'error',
-              message_id: messageId
-            })
-            console.log(`⚠️ Cache actualizado como ERROR para media: ${mediaDetails.id}`)
+            processedMediaCache.delete(mediaCacheKey)
+            console.log(`🧹 Cache limpiado después de error para media: ${mediaDetails.id}`)
           }
         }
       } else {
         console.error('❌ Failed to download media from WhatsApp')
-
-        // Marcar como error de descarga en cache
-        const mediaCacheKey = `media_${mediaDetails.id}_${message.from}`
-        processedMediaCache.set(mediaCacheKey, {
-          id: mediaDetails.id,
-          processed_at: now,
-          status: 'error',
-          message_id: messageId
-        })
-        console.log(`❌ Cache actualizado como ERROR DE DESCARGA para media: ${mediaDetails.id}`)
-
         // Send error message to user
         const errorMessage = `❌ Error al descargar la imagen\n\n🔍 No se pudo descargar la imagen de WhatsApp. Inténtalo de nuevo.`
         await sendWhatsAppMessage(message.from, errorMessage)
       }
     } else if (message.type === 'text') {
       console.log(`💬 Text message received: ${message.text?.body}`)
-      // Handle text messages if needed
+      const credentials = getWhatsAppCredentials(phoneNumberId)
+      await handleTextQuery(message.from, message.text?.body || '', credentials)
+    } else {
+      console.log(`⚠️ Tipo de mensaje no soportado: ${message.type}`)
+      await sendWhatsAppMessage(message.from, "📱 Solo puedo procesar imágenes y responder consultas de texto.\n\n💡 **Puedes preguntarme:**\n• ¿Cuántas facturas tengo hoy?\n• ¿Cuántos gastos llevo?\n• ¿Cuál es mi ingreso total?\n• Resume mis finanzas")
     }
 
   } catch (error) {
     console.error('Error in processWhatsAppMessage:', error)
+  }
+}
+
+// Función para manejar consultas de texto usando RAG
+async function handleTextQuery(senderPhone: string, queryText: string, credentials: any) {
+  try {
+    console.log(`💬 Procesando consulta de texto desde ${senderPhone}: "${queryText}"`)
+
+    // Enviar mensaje indicando que está procesando
+    await sendWhatsAppMessage(senderPhone, `🤖 **Procesando consulta**\n\n📋 "${queryText}"\n\n🔍 Buscando información...`)
+
+    // Obtener datos financieros usando la función getBusinessData existente
+    console.log('🔍 Obteniendo datos financieros para respuesta...')
+    const businessData = await getBusinessData(1) // Tenant ID por defecto
+
+    // Crear prompt con datos financieros
+    const systemPrompt = `Eres un asistente financiero que responde consultas sobre documentos financieros. Los datos que tienes disponibles son:
+
+DATOS FINANCIEROS DEL USUARIO:
+• Total de Facturas: ${businessData.stats?.total_invoices || 0}
+• Total de Gastos: ${businessData.stats?.total_expenses || 0}
+• Total de Clientes: ${businessData.stats?.total_clients || 0}
+• Ingresos Totales: €${(businessData.stats?.total_revenue || 0).toFixed(2)}
+• Total Gastado: €${(businessData.stats?.total_expenses_amount || 0).toFixed(2)}
+• Beneficio: €${businessData.stats?.profit || 0}
+
+ESTATÍSTICAS DE MÉTODOS DE PAGAMENTO:
+${Object.entries(businessData.stats?.payment_type_stats || {}).map(([type, count]) => `• ${type}: ${count} documentos`).join('\n')}
+
+FATURAS RECIENTES:
+${businessData.recentInvoices?.slice(0, 5).map((inv: any) => `• ${inv.number}: €${inv.total_amount} (${inv.issue_date})`).join('\n') || 'Nenhuma fatura'}
+
+GASTOS RECENTES:
+${businessData.recentExpenses?.slice(0, 5).map((exp: any) => `• ${exp.vendor}: €${exp.amount} (${exp.expense_date})`).join('\n') || 'Nenhum gasto'}
+
+INSTRUCCIONES:
+1. Responde PREFERIBLEMENTE en español
+2. Usa los datos REALES proporcionados arriba
+3. Si preguntan sobre datos específicos, da números exactos
+4. Sé conciso y útil
+5. Usa emojis apropiados para hacer la respuesta atractiva
+6. Si preguntan por datos del día actual, calcula basado en fecha_actual`
+
+    // Crear prompt para el usuario
+    const userPrompt = `Consulta del usuario: "${queryText}"\n\nFecha actual: ${new Date().toLocaleDateString('es-ES')}\n\nResponde basándose en los datos financieros proporcionados.`
+
+    // Usar Gemini AI para generar respuesta
+    let aiResponse = ''
+    try {
+      aiResponse = await generateAIResponse(systemPrompt, userPrompt)
+      console.log('✅ Respuesta AI generada exitosamente')
+    } catch (aiError) {
+      console.error('❌ Error generando respuesta AI:', aiError)
+      aiResponse = `⚠️ Lo siento, no puedo procesar tu consulta ahora. Los datos están disponibles pero hay un problema técnico.\n\n📊 **Datos básicos:**\n• Facturas totales: ${businessData.stats?.total_invoices || 0}\n• Gastos totales: €${(businessData.stats?.total_expenses_amount || 0).toFixed(2)}\n• Beneficio: €${businessData.stats?.profit || 0}\n\n🔄 Intentá de nuevo en unos minutos.`
+    }
+
+    // Enviar respuesta al usuario
+    const finalMessage = `🤖 **Consulta Respondida**\n\n${aiResponse}\n\n📱 ¿Alguna otra pregunta sobre tus finanzas?`
+    await sendWhatsAppMessage(senderPhone, finalMessage)
+
+    console.log(`✅ Consulta respondida exitosamente para ${senderPhone}`)
+
+  } catch (error) {
+    console.error('❌ Error procesando consulta de texto:', error)
+
+    // Mensaje de error simple
+    await sendWhatsAppMessage(senderPhone, `❌ **Error procesando consulta**\n\n🔍 Hubo un problema técnico. Una de las siguientes causas puede ser:\n\n• Problemas temporales con la IA\n• Datos no disponibles\n• Sobrevelocidad temporal\n\n🔄 Por favor intentá de nuevo en unos minutos.\n\n📞 Si el problema persiste, contacta al administrador.`)
+  }
+}
+
+// Función para obtener datos financieros (reutilizada del ai-chat)
+async function getBusinessData(tenantId: number = 1) {
+  try {
+    console.log('🔍 Obteniendo datos financieros...')
+
+    const baseUrl = process.env.SUPABASE_URL
+    const anonKey = process.env.SUPABASE_ANON_KEY
+
+    if (!baseUrl || !anonKey) {
+      throw new Error('SUPABASE_URL o SUPABASE_ANON_KEY no configurados')
+    }
+
+    const fetchFromSupabase = async (endpoint: string) => {
+      const response = await fetch(`${baseUrl}/rest/v1/${endpoint}`, {
+        headers: {
+          'apikey': anonKey,
+          'Authorization': `Bearer ${anonKey}`,
+          'Content-Type': 'application/json'
+        }
+      })
+
+      if (!response.ok) {
+        throw new Error(`Error en API ${endpoint}: ${response.status}`)
+      }
+
+      return response.json()
+    }
+
+    // Buscar datos básicos
+    const [clients, invoices, expenses] = await Promise.allSettled([
+      fetchFromSupabase(`clients?select=*&tenant_id=eq.${tenantId}`),
+      fetchFromSupabase(`invoices?select=*&tenant_id=eq.${tenantId}`),
+      fetchFromSupabase(`expenses?select=*&tenant_id=eq.${tenantId}`)
+    ])
+
+    const clientsData = clients.status === 'fulfilled' ? clients.value : []
+    const clientsCount = clientsData.length
+
+    const invoicesData = invoices.status === 'fulfilled' ? invoices.value : []
+    const invoicesCount = invoicesData.length
+    const totalRevenue = invoicesData.reduce((sum: number, inv: any) => sum + (parseFloat(inv.total_amount) || 0), 0)
+
+    const expensesData = expenses.status === 'fulfilled' ? expenses.value : []
+    const expensesCount = expensesData.length
+    const totalExpensesAmount = expensesData.reduce((sum: number, exp: any) => sum + (parseFloat(exp.amount) || 0), 0)
+
+    const profit = totalRevenue - totalExpensesAmount
+    const profitMargin = totalRevenue > 0 ? ((profit / totalRevenue) * 100).toFixed(2) : '0.00'
+
+    // Estadísticas de métodos de pago
+    const paymentTypeStats: Record<string, number> = {}
+    invoicesData.forEach((inv: any) => {
+      const paymentType = inv.payment_type || 'unknown'
+      paymentTypeStats[paymentType] = (paymentTypeStats[paymentType] || 0) + 1
+    })
+
+    // Gastos recientes (últimos 10)
+    const recentExpenses = expensesData
+      .sort((a: any, b: any) => new Date(b.expense_date).getTime() - new Date(a.expense_date).getTime())
+      .slice(0, 10)
+
+    // Faturas recientes (últimos 10)
+    const recentInvoices = invoicesData
+      .sort((a: any, b: any) => new Date(b.issue_date).getTime() - new Date(a.issue_date).getTime())
+      .slice(0, 10)
+
+    const businessData = {
+      stats: {
+        total_clients: clientsCount,
+        total_invoices: invoicesCount,
+        total_expenses: expensesCount,
+        total_revenue: totalRevenue,
+        total_expenses_amount: totalExpensesAmount,
+        profit: profit,
+        profitMargin: profitMargin,
+        payment_type_stats: paymentTypeStats
+      },
+      clients: clientsData,
+      recentInvoices,
+      recentExpenses
+    }
+
+    console.log('✅ Datos financieros obtenidos:', {
+      clients: clientsCount,
+      invoices: invoicesCount,
+      expenses: expensesCount,
+      revenue: totalRevenue,
+      profit: profit
+    })
+
+    return businessData
+
+  } catch (error) {
+    console.error('❌ Error obteniendo datos financieros:', error)
+    // Retornar datos vacíos pero con estructura válida
+    return {
+      stats: {
+        total_clients: 0,
+        total_invoices: 0,
+        total_expenses: 0,
+        total_revenue: 0,
+        total_expenses_amount: 0,
+        profit: 0,
+        profitMargin: '0.00',
+        payment_type_stats: {}
+      },
+      clients: [],
+      recentInvoices: [],
+      recentExpenses: []
+    }
+  }
+}
+
+// Función para generar respuesta con Gemini AI
+async function generateAIResponse(systemPrompt: string, userPrompt: string): Promise<string> {
+  try {
+    const apiKey = process.env.GOOGLE_AI_API_KEY
+    if (!apiKey) {
+      throw new Error('GOOGLE_AI_API_KEY no configurado')
+    }
+
+    const genAI = new GoogleGenerativeAI(apiKey)
+    const model = genAI.getGenerativeModel({
+      model: "gemini-1.5-flash",
+      generationConfig: {
+        maxOutputTokens: 1000,
+        temperature: 0.1,
+        topP: 0.8,
+        topK: 40,
+      },
+      safetySettings: [
+        { category: "HARM_CATEGORY_HARASSMENT" as any, threshold: "BLOCK_NONE" as any },
+        { category: "HARM_CATEGORY_HATE_SPEECH" as any, threshold: "BLOCK_NONE" as any },
+        { category: "HARM_CATEGORY_SEXUALLY_EXPLICIT" as any, threshold: "BLOCK_NONE" as any },
+        { category: "HARM_CATEGORY_DANGEROUS_CONTENT" as any, threshold: "BLOCK_NONE" as any }
+      ]
+    })
+
+    const prompt = `${systemPrompt}\n\n${userPrompt}`
+
+    const result = await Promise.race([
+      model.generateContent(prompt),
+      new Promise<never>((_, reject) =>
+        setTimeout(() => reject(new Error('Timeout después de 15 segundos')), 15000)
+      )
+    ])
+
+    const response = await result.response
+    const text = response.text()
+
+    console.log('✅ Respuesta AI generada exitosamente')
+    return text.trim()
+
+  } catch (error) {
+    console.error('❌ Error generando respuesta AI:', error)
+    throw error
   }
 }
 
