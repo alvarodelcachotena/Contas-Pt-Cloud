@@ -283,47 +283,8 @@ export default function AIAssistantPage() {
       console.log('✅ Response data:', data)
 
       if (data.success) {
-        // Crear mensaje de respuesta con datos extraídos
-        let responseMessage = t.aiAssistant.analysisComplete + '\n\n'
-
-        if (data.extractedData) {
-          const extracted = data.extractedData
-          responseMessage += t.aiAssistant.extractedData + '\n'
-
-          // Verificar se é da nossa empresa
-          const isMyCompany = extracted.nif === 'PT517124548' || extracted.nif === '517124548'
-
-          if (isMyCompany) {
-            responseMessage += t.aiAssistant.ownCompany + '\n\n'
-          } else {
-            responseMessage += t.aiAssistant.externalCompany + '\n\n'
-          }
-
-          responseMessage += `• **${t.aiAssistant.fields.vendor}:** ${extracted.vendor || 'N/A'}\n`
-          // Limpiar NIF: quitar prefijo ES si existe
-          const cleanNif = extracted.nif ? extracted.nif.replace(/^ES/, '') : 'N/A'
-          responseMessage += `• **${t.aiAssistant.fields.nif}:** ${cleanNif}\n`
-          responseMessage += `• **${t.aiAssistant.fields.country}:** ${extracted.nifCountry || 'N/A'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.address}:** ${extracted.vendorAddress || 'N/A'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.invoiceNumber}:** ${extracted.invoiceNumber || 'N/A'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.date}:** ${extracted.issueDate || 'N/A'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.netAmount}:** €${extracted.netAmount || '0.00'}\n`
-          // Calcular porcentaje como en WhatsApp
-          const vatPercentage = extracted.vatRate ? (extracted.vatRate * 100).toFixed(0) : '0'
-          console.log('🔍 VAT Debug:', { vatRate: extracted.vatRate, vatPercentage, vatAmount: extracted.vatAmount })
-          responseMessage += `• **${t.aiAssistant.fields.vat}:** €${extracted.vatAmount || '0.00'} (${vatPercentage}%)\n`
-          responseMessage += `• **${t.aiAssistant.fields.total}:** €${extracted.total || '0.00'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.category}:** ${extracted.category || 'N/A'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.description}:** ${extracted.description || 'N/A'}\n`
-          responseMessage += `• **${t.aiAssistant.fields.confidence}:** ${(extracted.confidence * 100).toFixed(1)}%\n`
-
-          if (extracted.extractionIssues && extracted.extractionIssues.length > 0) {
-            responseMessage += `\n⚠️  **${t.aiAssistant.issuesDetected}:**\n${extracted.extractionIssues.map((issue: string) => `• ${issue}`).join('\n')}`
-          }
-
-          // Guardar automáticamente como factura
-          responseMessage += `\n\n💾 **${t.aiAssistant.autoSave.title}**`
-        }
+        // Mensaje simple de confirmación
+        const responseMessage = "✅ *Documento procesado*"
 
         const assistantMessage: ChatMessage = {
           id: Date.now() + 1,
