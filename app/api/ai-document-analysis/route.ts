@@ -143,7 +143,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Cache de deduplicación en memoria (por proceso) - MEJORADO
-    type CacheEntry = { result: any, ts: number, hash: string }
+    type CacheEntry = { result: any, ts: number, hash: string, fileName: string }
     const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hora (más tiempo)
 
     // Inicializar maps globales si no existen
@@ -156,6 +156,12 @@ export async function POST(request: NextRequest) {
 
     const inflightMap = (globalThis as any).__doc_analysis_inflight
     const cacheMap = (globalThis as any).__doc_analysis_cache
+
+    // Función para generar un ID único más simple
+    function generateFileId(fileBuffer: Buffer, fileName: string, fileType: string): string {
+      const hash = crypto.createHash('md5').update(fileBuffer).digest('hex')
+      return `${hash}-${fileName}-${fileType}`
+    }
 
     // Usar base64 si está disponible, sino usar el archivo
     let fileToProcess: any
@@ -213,12 +219,10 @@ export async function POST(request: NextRequest) {
 
     console.log(`📄 Processando arquivo: ${finalFileName} (${finalFileType}, ${(fileToProcess.size / 1024).toFixed(1)}KB)`)
 
-    // Calcular hash del contenido para deduplicación
-    const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex')
-    const cacheKey = `${fileHash}:${finalFileType}`
+    // Generar ID único del archivo para deduplicación
+    const fileId = generateFileId(fileBuffer, finalFileName, finalFileType)
 
-    console.log(`🔍 Hash del archivo: ${fileHash.substring(0, 16)}...`)
-    console.log(`🔑 Cache key: ${cacheKey}`)
+    console.log(`🔍 File ID: ${fileId}`)
     console.log(`📊 Cache actual: ${cacheMap.size} entradas, In-flight: ${inflightMap.size} solicitudes`)
 
     // Limpiar cache expirado
@@ -235,17 +239,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Responder desde cache si existe
-    const cached = cacheMap.get(cacheKey)
+    const cached = cacheMap.get(fileId)
     if (cached) {
-      console.log(`♻️ CACHE HIT: Devolviendo resultado cacheado para archivo ${finalFileName} (hash: ${fileHash.substring(0, 16)}...)`)
+      console.log(`♻️ CACHE HIT: Devolviendo resultado cacheado para archivo ${finalFileName}`)
       console.log(`⏰ Cacheado hace: ${Math.round((now - cached.ts) / 1000)} segundos`)
+      console.log(`📁 Archivo cacheado: ${cached.fileName}`)
       return NextResponse.json(cached.result)
     }
 
     // Compartir solicitud en vuelo si ya se está procesando el mismo archivo
-    if (inflightMap.has(cacheKey)) {
+    if (inflightMap.has(fileId)) {
       console.log(`⏳ IN-FLIGHT SHARING: Aguardando análisis ya en curso para archivo ${finalFileName}`)
-      const sharedResult = await inflightMap.get(cacheKey)!
+      const sharedResult = await inflightMap.get(fileId)!
       console.log(`✅ IN-FLIGHT COMPLETADO: Resultado compartido para ${finalFileName}`)
       return NextResponse.json(sharedResult)
     }
@@ -487,7 +492,7 @@ export async function POST(request: NextRequest) {
           primaryAPI: 'Google AI',
           ocrText: ocrText.substring(0, 200) + '...',
           processedAt: new Date().toISOString(),
-          fileHash
+          fileId: fileId
         },
         availableAPIs: {
           googleAI: !!googleAIKey,
@@ -498,22 +503,22 @@ export async function POST(request: NextRequest) {
       return resultPayload
     }
 
-    console.log(`🚀 NUEVO ANÁLISIS: Iniciando procesamiento para archivo ${finalFileName} (hash: ${fileHash.substring(0, 16)}...)`)
+    console.log(`🚀 NUEVO ANÁLISIS: Iniciando procesamiento para archivo ${finalFileName} (ID: ${fileId.substring(0, 20)}...)`)
 
     const inflightPromise = runAnalysis()
-    inflightMap.set(cacheKey, inflightPromise)
+    inflightMap.set(fileId, inflightPromise)
 
     try {
       const result = await inflightPromise
       console.log(`✅ ANÁLISIS COMPLETADO: Guardando en cache para archivo ${finalFileName}`)
-      cacheMap.set(cacheKey, { result, ts: Date.now(), hash: fileHash })
+      cacheMap.set(fileId, { result, ts: Date.now(), hash: fileId, fileName: finalFileName })
       console.log(`💾 CACHE GUARDADO: ${cacheMap.size} entradas en cache`)
       return NextResponse.json(result)
     } catch (error) {
       console.error(`❌ ERROR EN ANÁLISIS: ${error}`)
       throw error
     } finally {
-      inflightMap.delete(cacheKey)
+      inflightMap.delete(fileId)
       console.log(`🧹 LIMPIEZA: Removido de in-flight, quedan ${inflightMap.size} solicitudes`)
     }
 

@@ -38,6 +38,7 @@ export default function AIAssistantPage() {
   const [selectedFile, setSelectedFile] = useState<File | null>(null)
   const [isProcessingFile, setIsProcessingFile] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
+  const [processingFileId, setProcessingFileId] = useState<string | null>(null)
   const fileInputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
 
@@ -204,8 +205,20 @@ export default function AIAssistantPage() {
   const sendFileForAnalysis = async () => {
     if (!selectedFile || isProcessingFile) return
 
+    // Generar ID único del archivo para evitar procesamiento múltiple
+    const fileId = `${selectedFile.name}-${selectedFile.size}-${selectedFile.lastModified}`
+
+    // Verificar si ya se está procesando este archivo
+    if (processingFileId === fileId) {
+      console.log('⚠️ Archivo ya se está procesando, ignorando solicitud duplicada')
+      return
+    }
+
     setIsProcessingFile(true)
     setIsTyping(true)
+    setProcessingFileId(fileId)
+
+    console.log(`🚀 Iniciando análisis de archivo: ${selectedFile.name} (ID: ${fileId})`)
 
     // Convertir archivo a base64 UNA SOLA VEZ para vista previa y envío
     const { filePreview, base64 } = await new Promise<{ filePreview: string, base64: string }>((resolve, reject) => {
@@ -424,6 +437,7 @@ export default function AIAssistantPage() {
     } finally {
       setIsProcessingFile(false)
       setIsTyping(false)
+      setProcessingFileId(null)
       removeSelectedFile()
     }
   }
