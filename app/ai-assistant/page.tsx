@@ -282,9 +282,9 @@ export default function AIAssistantPage() {
       const data = await response.json()
       console.log('✅ Response data:', data)
 
-      if (data.success) {
-        // Mensaje simple de confirmación
-        const responseMessage = "✅ *Documento procesado*"
+        if (data.success) {
+          // Mensaje simple de confirmación
+          const responseMessage = "✅ *Documento procesado*"
 
         const assistantMessage: ChatMessage = {
           id: Date.now() + 1,
