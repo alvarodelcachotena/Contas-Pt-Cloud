@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server'
 import { AgentExtractorGemini } from '@/server/agents/AgentExtractorGemini'
 import { AgentExtractorOpenAI } from '@/server/agents/AgentExtractorOpenAI'
+import crypto from 'crypto'
 
 // Tipo extendido para incluir información de empresa
 interface ExtendedExtractionData {
@@ -79,6 +80,12 @@ export async function POST(request: NextRequest) {
       )
     }
 
+    // Cache de deduplicación en memoria (por proceso)
+    type CacheEntry = { result: any, ts: number }
+    const CACHE_TTL_MS = 30 * 60 * 1000 // 30 minutos
+    const inflightMap = (globalThis as any).__doc_analysis_inflight || ((globalThis as any).__doc_analysis_inflight = new Map<string, Promise<any>>())
+    const cacheMap = (globalThis as any).__doc_analysis_cache || ((globalThis as any).__doc_analysis_cache = new Map<string, CacheEntry>())
+
     // Usar base64 si está disponible, sino usar el archivo
     let fileToProcess: any
     let fileBuffer: Buffer
@@ -135,6 +142,30 @@ export async function POST(request: NextRequest) {
 
     console.log(`📄 Processando arquivo: ${finalFileName} (${finalFileType}, ${(fileToProcess.size / 1024).toFixed(1)}KB)`)
 
+    // Calcular hash del contenido para deduplicación
+    const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex')
+    const cacheKey = `${fileHash}:${finalFileType}`
+
+    // Limpiar cache expirado sencillo
+    const now = Date.now()
+    for (const [k, v] of cacheMap) {
+      if (now - v.ts > CACHE_TTL_MS) cacheMap.delete(k)
+    }
+
+    // Responder desde cache si existe
+    const cached = cacheMap.get(cacheKey)
+    if (cached) {
+      console.log('♻️ Devolviendo resultado cacheado para este archivo (hash coincidente)')
+      return NextResponse.json(cached.result)
+    }
+
+    // Compartir solicitud en vuelo si ya se está procesando el mismo archivo
+    if (inflightMap.has(cacheKey)) {
+      console.log('⏳ Aguardando análise já em curso para este arquivo (in-flight sharing)')
+      const sharedResult = await inflightMap.get(cacheKey)!
+      return NextResponse.json(sharedResult)
+    }
+
     // Verificar se pelo menos una API está disponible
     const googleAIKey = process.env.GOOGLE_AI_API_KEY || process.env.GEMINI_API_KEY
     const openAIKey = process.env.OPENAI_API_KEY
@@ -170,89 +201,157 @@ export async function POST(request: NextRequest) {
     let ocrText = ''
 
     // PRIMEIRA TENTATIVA: Google AI (Gemini) - PRINCIPAL
-    if (googleAIKey) {
-      try {
-        console.log('🔄 Tentando extração com Google AI (Gemini)...')
-        console.log('🔑 API Key length:', googleAIKey.length)
-        console.log('🔑 API Key starts with:', googleAIKey.substring(0, 10))
+    const runAnalysis = async () => {
+      let extractedData = null
+      let extendedData: ExtendedExtractionData | null = null
+      let usedModel = ''
+      let fallbackUsed = false
+      let ocrText = ''
+      if (googleAIKey) {
+        try {
+          console.log('🔄 Tentando extração com Google AI (Gemini)...')
+          console.log('🔑 API Key length:', googleAIKey.length)
+          console.log('🔑 API Key starts with:', googleAIKey.substring(0, 10))
 
-        const geminiExtractor = new AgentExtractorGemini(googleAIKey)
+          const geminiExtractor = new AgentExtractorGemini(googleAIKey)
 
-        if (finalFileType === 'application/pdf') {
-          // Processar PDF
-          const result = await geminiExtractor.extractFromPDF(fileBuffer, finalFileName)
-          extractedData = result.data
-          ocrText = 'PDF processado via Gemini Vision'
-          usedModel = 'Google AI (Gemini-1.5-Pro) - PDF Vision'
-          console.log('✅ Extração PDF com Google AI concluída')
-        } else {
-          // Processar imagem
-          const result = await geminiExtractor.extractFromImage(fileBuffer, finalFileType, finalFileName)
-          extractedData = result.data
-          ocrText = 'Imagem processada via Gemini Vision'
-          usedModel = 'Google AI (Gemini-1.5-Pro) - Image Vision'
-          console.log('✅ Extração de imagem com Google AI concluída')
-        }
+          if (finalFileType === 'application/pdf') {
+            // Processar PDF
+            const result = await geminiExtractor.extractFromPDF(fileBuffer, finalFileName)
+            extractedData = result.data
+            ocrText = 'PDF processado via Gemini Vision'
+            usedModel = 'Google AI (Gemini-1.5-Pro) - PDF Vision'
+            console.log('✅ Extração PDF com Google AI concluída')
+          } else {
+            // Processar imagem
+            const result = await geminiExtractor.extractFromImage(fileBuffer, finalFileType, finalFileName)
+            extractedData = result.data
+            ocrText = 'Imagem processada via Gemini Vision'
+            usedModel = 'Google AI (Gemini-1.5-Pro) - Image Vision'
+            console.log('✅ Extração de imagem com Google AI concluída')
+          }
 
-        // Adicionar detecção de empresa própria
-        if (extractedData && extractedData.nif) {
-          const nif = extractedData.nif.toString().replace(/[^0-9]/g, '')
-          if (nif === '517124548') {
-            extendedData = {
-              ...extractedData,
-              isMyCompany: true,
-              companyType: 'PRÓPRIA'
+          // Adicionar detecção de empresa própria
+          if (extractedData && extractedData.nif) {
+            const nif = extractedData.nif.toString().replace(/[^0-9]/g, '')
+            if (nif === '517124548') {
+              extendedData = {
+                ...extractedData,
+                isMyCompany: true,
+                companyType: 'PRÓPRIA'
+              }
+              console.log('🏢 Empresa própria detectada (NIF: 517124548)')
+            } else {
+              extendedData = {
+                ...extractedData,
+                isMyCompany: false,
+                companyType: 'EXTERNA'
+              }
+              console.log('🏪 Empresa externa detectada')
             }
-            console.log('🏢 Empresa própria detectada (NIF: 517124548)')
           } else {
             extendedData = {
               ...extractedData,
               isMyCompany: false,
               companyType: 'EXTERNA'
             }
-            console.log('🏪 Empresa externa detectada')
           }
-        } else {
-          extendedData = {
-            ...extractedData,
-            isMyCompany: false,
-            companyType: 'EXTERNA'
+
+        } catch (googleError: any) {
+          console.error('❌ Erro na Google AI, tentando fallback para OpenAI:', googleError.message)
+          console.error('❌ Google AI Error details:', {
+            name: googleError.name,
+            message: googleError.message,
+            code: googleError.code,
+            status: googleError.status
+          })
+          fallbackUsed = true
+
+          // SEGUNDA TENTATIVA: OpenAI (Fallback)
+          if (openAIKey) {
+            try {
+              console.log('🔄 Usando OpenAI como fallback...')
+
+              const openAIExtractor = new AgentExtractorOpenAI(openAIKey)
+
+              if (finalFileType === 'application/pdf') {
+                // Para PDF, primeiro converter a OCR e depois processar
+                // Por ahora, simplificamos usando solo el texto
+                const result = await openAIExtractor.extract('Documento PDF - processamento limitado', finalFileName)
+                extractedData = result.data
+                ocrText = 'PDF processado via OpenAI (limitado)'
+                usedModel = 'OpenAI (GPT-4o-Mini) - Fallback PDF'
+              } else {
+                // Para imagem, usar GPT-4 Vision
+                const result = await openAIExtractor.extractFromImage(fileBuffer, finalFileType, finalFileName)
+                extractedData = result.data
+                ocrText = 'Imagem processada via OpenAI Vision'
+                usedModel = 'OpenAI (GPT-4o-Mini) - Fallback Image Vision'
+              }
+
+              console.log('✅ Extração com OpenAI (fallback) concluída')
+
+              // Adicionar detecção de empresa própria
+              if (extractedData && extractedData.nif) {
+                const nif = extractedData.nif.toString().replace(/[^0-9]/g, '')
+                if (nif === '517124548') {
+                  extendedData = {
+                    ...extractedData,
+                    isMyCompany: true,
+                    companyType: 'PRÓPRIA'
+                  }
+                  console.log('🏢 Empresa própria detectada (NIF: 517124548)')
+                } else {
+                  extendedData = {
+                    ...extractedData,
+                    isMyCompany: false,
+                    companyType: 'EXTERNA'
+                  }
+                  console.log('🏪 Empresa externa detectada')
+                }
+              } else {
+                extendedData = {
+                  ...extractedData,
+                  isMyCompany: false,
+                  companyType: 'EXTERNA'
+                }
+              }
+
+            } catch (openAIError: any) {
+              console.error('❌ Erro também na OpenAI (fallback):', openAIError)
+              console.error('❌ OpenAI Error details:', {
+                name: openAIError.name,
+                message: openAIError.message,
+                code: openAIError.code,
+                status: openAIError.status
+              })
+              throw new Error(`Ambas as APIs falharam - Google AI: ${googleError.message}, OpenAI: ${openAIError.message}`)
+            }
+          } else {
+            throw new Error(`Google AI falhou e OpenAI não está configurada: ${googleError.message}`)
           }
         }
-
-      } catch (googleError: any) {
-        console.error('❌ Erro na Google AI, tentando fallback para OpenAI:', googleError.message)
-        console.error('❌ Google AI Error details:', {
-          name: googleError.name,
-          message: googleError.message,
-          code: googleError.code,
-          status: googleError.status
-        })
-        fallbackUsed = true
-
-        // SEGUNDA TENTATIVA: OpenAI (Fallback)
+      } else {
+        // Se Google AI não está configurada, usar OpenAI diretamente
         if (openAIKey) {
           try {
-            console.log('🔄 Usando OpenAI como fallback...')
+            console.log('🔄 Google AI não configurada, usando OpenAI...')
 
             const openAIExtractor = new AgentExtractorOpenAI(openAIKey)
 
             if (finalFileType === 'application/pdf') {
-              // Para PDF, primeiro converter a OCR e depois processar
-              // Por ahora, simplificamos usando solo el texto
               const result = await openAIExtractor.extract('Documento PDF - processamento limitado', finalFileName)
               extractedData = result.data
               ocrText = 'PDF processado via OpenAI (limitado)'
-              usedModel = 'OpenAI (GPT-4o-Mini) - Fallback PDF'
+              usedModel = 'OpenAI (GPT-4o-Mini) - Única disponível PDF'
             } else {
-              // Para imagem, usar GPT-4 Vision
               const result = await openAIExtractor.extractFromImage(fileBuffer, finalFileType, finalFileName)
               extractedData = result.data
               ocrText = 'Imagem processada via OpenAI Vision'
-              usedModel = 'OpenAI (GPT-4o-Mini) - Fallback Image Vision'
+              usedModel = 'OpenAI (GPT-4o-Mini) - Única disponível Image Vision'
             }
 
-            console.log('✅ Extração com OpenAI (fallback) concluída')
+            console.log('✅ Extração com OpenAI concluída')
 
             // Adicionar detecção de empresa própria
             if (extractedData && extractedData.nif) {
@@ -281,97 +380,50 @@ export async function POST(request: NextRequest) {
             }
 
           } catch (openAIError: any) {
-            console.error('❌ Erro também na OpenAI (fallback):', openAIError)
-            console.error('❌ OpenAI Error details:', {
-              name: openAIError.name,
-              message: openAIError.message,
-              code: openAIError.code,
-              status: openAIError.status
-            })
-            throw new Error(`Ambas as APIs falharam - Google AI: ${googleError.message}, OpenAI: ${openAIError.message}`)
+            throw openAIError
           }
-        } else {
-          throw new Error(`Google AI falhou e OpenAI não está configurada: ${googleError.message}`)
         }
       }
-    } else {
-      // Se Google AI não está configurada, usar OpenAI diretamente
-      if (openAIKey) {
-        try {
-          console.log('🔄 Google AI não configurada, usando OpenAI...')
 
-          const openAIExtractor = new AgentExtractorOpenAI(openAIKey)
+      if (!extendedData) {
+        throw new Error('Falha na extração de dados do documento')
+      }
 
-          if (finalFileType === 'application/pdf') {
-            const result = await openAIExtractor.extract('Documento PDF - processamento limitado', finalFileName)
-            extractedData = result.data
-            ocrText = 'PDF processado via OpenAI (limitado)'
-            usedModel = 'OpenAI (GPT-4o-Mini) - Única disponível PDF'
-          } else {
-            const result = await openAIExtractor.extractFromImage(fileBuffer, finalFileType, finalFileName)
-            extractedData = result.data
-            ocrText = 'Imagem processada via OpenAI Vision'
-            usedModel = 'OpenAI (GPT-4o-Mini) - Única disponível Image Vision'
-          }
+      console.log(`✅ Análise concluída com ${usedModel}`)
 
-          console.log('✅ Extração com OpenAI concluída')
-
-          // Adicionar detecção de empresa própria
-          if (extractedData && extractedData.nif) {
-            const nif = extractedData.nif.toString().replace(/[^0-9]/g, '')
-            if (nif === '517124548') {
-              extendedData = {
-                ...extractedData,
-                isMyCompany: true,
-                companyType: 'PRÓPRIA'
-              }
-              console.log('🏢 Empresa própria detectada (NIF: 517124548)')
-            } else {
-              extendedData = {
-                ...extractedData,
-                isMyCompany: false,
-                companyType: 'EXTERNA'
-              }
-              console.log('🏪 Empresa externa detectada')
-            }
-          } else {
-            extendedData = {
-              ...extractedData,
-              isMyCompany: false,
-              companyType: 'EXTERNA'
-            }
-          }
-
-        } catch (openAIError: any) {
-          throw openAIError
+      const resultPayload = {
+        success: true,
+        extractedData: extendedData,
+        metadata: {
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          model: usedModel,
+          fallbackUsed: fallbackUsed,
+          primaryAPI: 'Google AI',
+          ocrText: ocrText.substring(0, 200) + '...',
+          processedAt: new Date().toISOString(),
+          fileHash
+        },
+        availableAPIs: {
+          googleAI: !!googleAIKey,
+          openAI: !!openAIKey
         }
       }
+
+      return resultPayload
     }
 
-    if (!extendedData) {
-      throw new Error('Falha na extração de dados do documento')
+    const inflightPromise = runAnalysis()
+    inflightMap.set(cacheKey, inflightPromise)
+
+    try {
+      const result = await inflightPromise
+      cacheMap.set(cacheKey, { result, ts: Date.now() })
+      return NextResponse.json(result)
+    } finally {
+      inflightMap.delete(cacheKey)
     }
-
-    console.log(`✅ Análise concluída com ${usedModel}`)
-
-    return NextResponse.json({
-      success: true,
-      extractedData: extendedData,
-      metadata: {
-        fileName: file.name,
-        fileType: file.type,
-        fileSize: file.size,
-        model: usedModel,
-        fallbackUsed: fallbackUsed,
-        primaryAPI: 'Google AI',
-        ocrText: ocrText.substring(0, 200) + '...',
-        processedAt: new Date().toISOString()
-      },
-      availableAPIs: {
-        googleAI: !!googleAIKey,
-        openAI: !!openAIKey
-      }
-    })
 
   } catch (error: any) {
     console.error('❌ Erro geral na análise de documento:', error)

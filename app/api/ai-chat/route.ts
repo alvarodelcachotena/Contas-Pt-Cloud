@@ -10,6 +10,22 @@ import { continuousLearningService } from '@/lib/continuous-learning-service'
 const googleAI = process.env.GOOGLE_AI_API_KEY ? new GoogleGenerativeAI(process.env.GOOGLE_AI_API_KEY) : null
 const openai = process.env.OPENAI_API_KEY ? new OpenAI({ apiKey: process.env.OPENAI_API_KEY }) : null
 
+// Simple mecanismo global de parada con TTL
+let stopAllUntilTs = 0 // epoch ms hasta cuando se detiene
+const STOP_DEFAULT_TTL_MS = 5 * 60 * 1000 // 5 minutos
+
+function isStopActive(): boolean {
+  return Date.now() < stopAllUntilTs
+}
+
+function activateStop(ttlMs: number = STOP_DEFAULT_TTL_MS) {
+  stopAllUntilTs = Date.now() + Math.max(1_000, ttlMs)
+}
+
+function clearStop() {
+  stopAllUntilTs = 0
+}
+
 // Función para obtener datos de la base de datos usando APIs REST de Supabase
 async function getBusinessData(tenantId: number = 1) {
   try {
@@ -780,6 +796,41 @@ export async function POST(request: NextRequest) {
     console.log('📨 Nova requisição recebida em /api/ai-chat')
     console.log('📋 Body da requisição:', { message })
     console.log('📤 Mensagem extraída:', message)
+
+    // Comandos de control: parar / continuar
+    const lowerMsg = message.toLowerCase()
+    const isStopCommand = ['para', 'parar', 'detente', 'stop', 'cancela', 'cancelar'].some(k => lowerMsg === k || lowerMsg.startsWith(k + ' '))
+    const isResumeCommand = ['continua', 'continuar', 'sigue', 'resume', 'reanudar'].some(k => lowerMsg === k || lowerMsg.startsWith(k + ' '))
+
+    if (isStopCommand) {
+      const ttlMatch = lowerMsg.match(/(\d+)\s*(min|minutos|minutes)?/)
+      const ttlMs = ttlMatch ? Number(ttlMatch[1]) * 60 * 1000 : STOP_DEFAULT_TTL_MS
+      activateStop(ttlMs)
+      return NextResponse.json({
+        success: true,
+        stopped: true,
+        message: `Procesamiento detenido durante ${Math.round((ttlMs) / 60000)} min. Di "continuar" para reanudar.`,
+        stopUntil: new Date(stopAllUntilTs).toISOString()
+      })
+    }
+
+    if (isResumeCommand) {
+      clearStop()
+      return NextResponse.json({
+        success: true,
+        stopped: false,
+        message: 'Procesamiento reanudado.'
+      })
+    }
+
+    if (isStopActive()) {
+      return NextResponse.json({
+        success: false,
+        stopped: true,
+        error: 'El asistente está en pausa por orden de "para". Di "continuar" para reanudar.',
+        stopUntil: new Date(stopAllUntilTs).toISOString()
+      }, { status: 409 })
+    }
 
     // Detectar idioma del mensaje
     const detectLanguage = (message: string): string => {
