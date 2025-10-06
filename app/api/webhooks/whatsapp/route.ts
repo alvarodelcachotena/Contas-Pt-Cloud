@@ -580,45 +580,27 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
             console.log(`💾 GUARDANDO DATOS EXTRAÍDOS OBLIGATORIAMENTE`)
             console.log(`🔍 Datos extraídos:`, JSON.stringify(analysisResult.extracted_data, null, 2))
 
-            // Intentar guardar como INVOICE primero (para restaurantes y facturas)
-            let savedAsInvoice = false
-            if (finalDocumentType === 'invoice' || isRestaurantReceipt) {
-              console.log(`💰 Intentando guardar como INVOICE`)
+            // TODAS las facturas de WhatsApp van a GASTOS (no a ingresos)
+            console.log(`💰 TODAS las facturas de WhatsApp van a GASTOS`)
+            console.log(`🔄 Guardando como EXPENSE (gasto)`)
+
+            try {
+              await processExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
+              console.log(`✅ processExpense completado exitosamente`)
+            } catch (error) {
+              console.error(`❌ Error en processExpense:`, error instanceof Error ? error.message : 'Unknown error')
+
+              // Error en processExpense - continuar con registro mínimo
+              console.log(`⚠️ Error en processExpense, continuando con registro mínimo`)
+
+              console.log(`⚠️ FALLO TOTAL: No se pudo guardar ni como invoice ni como expense`)
+
+              // Crear un registro mínimo en expenses como último recurso
               try {
-                await processInvoice(analysisResult.extracted_data, document.id, supabase, tenantId)
-                console.log(`✅ processInvoice completado exitosamente`)
-                savedAsInvoice = true
-              } catch (error) {
-                console.error(`❌ Error en processInvoice:`, error instanceof Error ? error.message : 'Unknown error')
-
-                // Error en processInvoice - continuar con expense
-                console.log(`⚠️ Error en processInvoice, continuando con expense`)
-
-                console.log(`🔄 Intentando guardar como EXPENSE como fallback`)
-              }
-            }
-
-            // Si no se guardó como invoice, intentar como expense
-            if (!savedAsInvoice) {
-              console.log(`💰 Guardando como EXPENSE`)
-              try {
-                await processExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
-                console.log(`✅ processExpense completado exitosamente`)
-              } catch (error) {
-                console.error(`❌ Error en processExpense:`, error instanceof Error ? error.message : 'Unknown error')
-
-                // Error en processExpense - continuar con registro mínimo
-                console.log(`⚠️ Error en processExpense, continuando con registro mínimo`)
-
-                console.log(`⚠️ FALLO TOTAL: No se pudo guardar ni como invoice ni como expense`)
-
-                // Crear un registro mínimo en expenses como último recurso
-                try {
-                  await createMinimalExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
-                  console.log(`✅ Registro mínimo creado como último recurso`)
-                } catch (minimalError) {
-                  console.error(`❌ Error crítico: No se pudo crear registro mínimo:`, minimalError instanceof Error ? minimalError.message : 'Unknown error')
-                }
+                await createMinimalExpense(analysisResult.extracted_data, document.id, supabase, tenantId)
+                console.log(`✅ Registro mínimo creado como último recurso`)
+              } catch (minimalError) {
+                console.error(`❌ Error crítico: No se pudo crear registro mínimo:`, minimalError instanceof Error ? minimalError.message : 'Unknown error')
               }
             }
 
@@ -745,8 +727,8 @@ async function processWhatsAppMessage(message: WhatsAppMessage, phoneNumberId?: 
                   filename: mediaData.filename,
                   fileSize: mediaData.size,
                   mimeType: mediaData.mime_type,
-                  savedAsInvoice: savedAsInvoice,
-                  savedAsExpense: !savedAsInvoice,
+                  savedAsInvoice: false,
+                  savedAsExpense: true,
                   dropboxUploaded: !!dropboxStatus
                 }
               })

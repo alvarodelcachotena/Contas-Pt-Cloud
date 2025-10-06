@@ -5,6 +5,7 @@ import { useLanguage } from '@/hooks/useLanguage'
 import FilesModal from '@/components/files-modal'
 import { Button } from '@/components/ui/button'
 import { HardDrive } from 'lucide-react'
+import { useRouter } from 'next/navigation'
 
 interface DashboardMetrics {
   // Counts
@@ -31,6 +32,7 @@ interface DashboardMetrics {
 
 export default function Dashboard() {
   const { t } = useLanguage()
+  const router = useRouter()
   const { data: metrics, isLoading, error } = useQuery<DashboardMetrics>({
     queryKey: ['/api/dashboard/metrics'],
     queryFn: async () => {
@@ -190,7 +192,10 @@ export default function Dashboard() {
 
         {/* Financial Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div className="metric-card">
+          <div
+            className="metric-card cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push('/invoices')}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">{t.dashboard.metrics.totalRevenue.title}</h3>
               <div className="w-8 h-8 bg-green-100 rounded-full flex items-center justify-center">
@@ -208,7 +213,10 @@ export default function Dashboard() {
             </div>
           </div>
 
-          <div className="metric-card">
+          <div
+            className="metric-card cursor-pointer hover:shadow-lg transition-shadow"
+            onClick={() => router.push('/expenses')}
+          >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">{t.dashboard.metrics.totalExpenses.title}</h3>
               <div className="w-8 h-8 bg-red-100 rounded-full flex items-center justify-center">
