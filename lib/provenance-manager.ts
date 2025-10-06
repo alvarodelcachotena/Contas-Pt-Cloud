@@ -1,16 +1,4 @@
 import { db } from '@/server/db';
-import {
-    fieldProvenance,
-    lineItemProvenance,
-    consensusMetadata,
-    type InsertFieldProvenance,
-    type InsertLineItemProvenance,
-    type InsertConsensusMetadata,
-    type FieldProvenance as DBFieldProvenance,
-    type LineItemProvenance as DBLineItemProvenance,
-    type ConsensusMetadata as DBConsensusMetadata
-} from '@/shared/schema';
-import { eq, and, desc } from 'drizzle-orm';
 import type { FieldProvenance, LineItemProvenance, ExtractionResult } from '@/shared/types';
 
 /**
@@ -38,7 +26,7 @@ export class ProvenanceManager {
         provenance: FieldProvenance
     ): Promise<void> {
         try {
-            const provenanceData: InsertFieldProvenance = {
+            const provenanceData: any = {
                 tenantId,
                 documentId,
                 fieldName,
@@ -53,7 +41,8 @@ export class ProvenanceManager {
                 timestamp: provenance.timestamp
             };
 
-            await db.insert(fieldProvenance).values(provenanceData);
+            const { error } = await db.from('field_provenance').insert(provenanceData);
+            if (error) throw error;
         } catch (error) {
             console.error('Error storing field provenance:', error);
             throw new Error(`Failed to store field provenance: ${error instanceof Error ? error.message : String(error)}`);
@@ -72,7 +61,7 @@ export class ProvenanceManager {
         provenance: FieldProvenance
     ): Promise<void> {
         try {
-            const provenanceData: InsertLineItemProvenance = {
+            const provenanceData: any = {
                 tenantId,
                 documentId,
                 rowIndex,
@@ -88,7 +77,8 @@ export class ProvenanceManager {
                 timestamp: provenance.timestamp
             };
 
-            await db.insert(lineItemProvenance).values(provenanceData);
+            const { error } = await db.from('line_item_provenance').insert(provenanceData);
+            if (error) throw error;
         } catch (error) {
             console.error('Error storing line item provenance:', error);
             throw new Error(`Failed to store line item provenance: ${error instanceof Error ? error.message : String(error)}`);
@@ -109,7 +99,7 @@ export class ProvenanceManager {
         processingTimeMs?: number
     ): Promise<void> {
         try {
-            const consensusData: InsertConsensusMetadata = {
+            const consensusData: any = {
                 tenantId,
                 documentId,
                 totalModels,
@@ -120,7 +110,8 @@ export class ProvenanceManager {
                 processingTimeMs
             };
 
-            await db.insert(consensusMetadata).values(consensusData);
+            const { error } = await db.from('consensus_metadata').insert(consensusData);
+            if (error) throw error;
         } catch (error) {
             console.error('Error storing consensus metadata:', error);
             throw new Error(`Failed to store consensus metadata: ${error instanceof Error ? error.message : String(error)}`);
@@ -133,20 +124,17 @@ export class ProvenanceManager {
     async getFieldProvenance(
         tenantId: number,
         documentId: string
-    ): Promise<DBFieldProvenance[]> {
+    ): Promise<any[]> {
         try {
-            const results = await db
+            const { data: results, error } = await db
+                .from('field_provenance')
                 .select()
-                .from(fieldProvenance)
-                .where(
-                    and(
-                        eq(fieldProvenance.tenantId, tenantId),
-                        eq(fieldProvenance.documentId, documentId)
-                    )
-                )
-                .orderBy(desc(fieldProvenance.timestamp));
+                .eq('tenant_id', tenantId)
+                .eq('document_id', documentId)
+                .order('timestamp', { ascending: false });
 
-            return results;
+            if (error) throw error;
+            return results || [];
         } catch (error) {
             console.error('Error retrieving field provenance:', error);
             throw new Error(`Failed to retrieve field provenance: ${error instanceof Error ? error.message : String(error)}`);
@@ -159,20 +147,17 @@ export class ProvenanceManager {
     async getLineItemProvenance(
         tenantId: number,
         documentId: string
-    ): Promise<DBLineItemProvenance[]> {
+    ): Promise<any[]> {
         try {
-            const results = await db
+            const { data: results, error } = await db
+                .from('line_item_provenance')
                 .select()
-                .from(lineItemProvenance)
-                .where(
-                    and(
-                        eq(lineItemProvenance.tenantId, tenantId),
-                        eq(lineItemProvenance.documentId, documentId)
-                    )
-                )
-                .orderBy(desc(lineItemProvenance.timestamp));
+                .eq('tenant_id', tenantId)
+                .eq('document_id', documentId)
+                .order('timestamp', { ascending: false });
 
-            return results;
+            if (error) throw error;
+            return results || [];
         } catch (error) {
             console.error('Error retrieving line item provenance:', error);
             throw new Error(`Failed to retrieve line item provenance: ${error instanceof Error ? error.message : String(error)}`);
@@ -185,20 +170,18 @@ export class ProvenanceManager {
     async getConsensusMetadata(
         tenantId: number,
         documentId: string
-    ): Promise<DBConsensusMetadata | null> {
+
+    ): Promise<any | null> {
         try {
-            const results = await db
+            const { data: results, error } = await db
+                .from('consensus_metadata')
                 .select()
-                .from(consensusMetadata)
-                .where(
-                    and(
-                        eq(consensusMetadata.tenantId, tenantId),
-                        eq(consensusMetadata.documentId, documentId)
-                    )
-                )
+                .eq('tenant_id', tenantId)
+                .eq('document_id', documentId)
                 .limit(1);
 
-            return results[0] || null;
+            if (error) throw error;
+            return results?.[0] || null;
         } catch (error) {
             console.error('Error retrieving consensus metadata:', error);
             throw new Error(`Failed to retrieve consensus metadata: ${error instanceof Error ? error.message : String(error)}`);
@@ -212,9 +195,9 @@ export class ProvenanceManager {
         tenantId: number,
         documentId: string
     ): Promise<{
-        fieldProvenance: DBFieldProvenance[];
-        lineItemProvenance: DBLineItemProvenance[];
-        consensusMetadata: DBConsensusMetadata | null;
+        fieldProvenance: any[];
+        lineItemProvenance: any[];
+        consensusMetadata: any | null;
     }> {
         try {
             const [fieldProv, lineItemProv, consensusMeta] = await Promise.all([
@@ -346,34 +329,29 @@ export class ProvenanceManager {
             cutoffDate.setDate(cutoffDate.getDate() - olderThanDays);
 
             // Delete old field provenance
-            const deletedFieldProv = await db
-                .delete(fieldProvenance)
-                .where(
-                    and(
-                        eq(fieldProvenance.tenantId, tenantId),
-                        // Add date condition here
-                    )
-                );
+            const { error: fieldError } = await db
+                .from('field_provenance')
+                .delete()
+                .eq('tenant_id', tenantId);
+
+            if (fieldError) throw fieldError;
 
             // Delete old line item provenance
-            const deletedLineItemProv = await db
-                .delete(lineItemProvenance)
-                .where(
-                    and(
-                        eq(lineItemProvenance.tenantId, tenantId),
-                        // Add date condition here
-                    )
-                );
+            const { error: lineItemError } = await db
+                .from('line_item_provenance')
+                .delete()
+                .eq('tenant_id', tenantId);
+
+            if (lineItemError) throw lineItemError;
+
 
             // Delete old consensus metadata
-            const deletedConsensusMeta = await db
-                .delete(consensusMetadata)
-                .where(
-                    and(
-                        eq(consensusMetadata.tenantId, tenantId),
-                        // Add date condition here
-                    )
-                );
+            const { error: consensusError } = await db
+                .from('consensus_metadata')
+                .delete()
+                .eq('tenant_id', tenantId);
+
+            if (consensusError) throw consensusError;
 
             return 0; // Return actual count of deleted records
         } catch (error) {
