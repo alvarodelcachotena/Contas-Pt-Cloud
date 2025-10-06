@@ -16,7 +16,7 @@ export interface Translations {
             dashboard: string
             invoices: string
             expenses: string
-            payments: string
+            income: string
             clients: string
             suppliers: string
             documents: string
@@ -208,15 +208,15 @@ export interface Translations {
         }
     }
 
-    // Payments
-    payments: {
+    // Income
+    income: {
         title: string
         subtitle: string
         searchPlaceholder: string
-        registerPayment: string
+        registerIncome: string
         export: string
-        noPayments: string
-        totalPayments: string
+        noIncome: string
+        totalIncome: string
         totalValue: string
         loading: string
 
@@ -936,7 +936,7 @@ export const translations: Record<Language, Translations> = {
                 dashboard: 'Dashboard',
                 invoices: 'Faturas',
                 expenses: 'Despesas',
-                payments: 'Pagamentos',
+                income: 'Receitas',
                 clients: 'Clientes',
                 suppliers: 'Fornecedores',
                 documents: 'Documentos',
@@ -1126,15 +1126,15 @@ export const translations: Record<Language, Translations> = {
             }
         },
 
-        // Payments
-        payments: {
-            title: 'Pagamentos',
-            subtitle: 'Gestão de pagamentos e recebimentos',
-            searchPlaceholder: 'Procurar pagamentos...',
-            registerPayment: 'Registar Pagamento',
+        // Income
+        income: {
+            title: 'Receitas',
+            subtitle: 'Gestão de receitas e recebimentos',
+            searchPlaceholder: 'Procurar receitas...',
+            registerIncome: 'Registar Receita',
             export: 'Exportar',
-            noPayments: 'Nenhum pagamento registado',
-            totalPayments: 'Total',
+            noIncome: 'Nenhuma receita registada',
+            totalIncome: 'Total',
             totalValue: 'Valor Total',
             loading: 'Carregando...',
 
@@ -1853,7 +1853,7 @@ export const translations: Record<Language, Translations> = {
                 dashboard: 'Dashboard',
                 invoices: 'Invoices',
                 expenses: 'Expenses',
-                payments: 'Payments',
+                income: 'Income',
                 clients: 'Clients',
                 suppliers: 'Suppliers',
                 documents: 'Documents',
@@ -2043,15 +2043,15 @@ export const translations: Record<Language, Translations> = {
             }
         },
 
-        // Payments
-        payments: {
-            title: 'Payments',
-            subtitle: 'Payment and receipt management',
-            searchPlaceholder: 'Search payments...',
-            registerPayment: 'Register Payment',
+        // Income
+        income: {
+            title: 'Income',
+            subtitle: 'Income and receipt management',
+            searchPlaceholder: 'Search income...',
+            registerIncome: 'Register Income',
             export: 'Export',
-            noPayments: 'No payments registered',
-            totalPayments: 'Total',
+            noIncome: 'No income registered',
+            totalIncome: 'Total',
             totalValue: 'Total Value',
             loading: 'Loading...',
 
@@ -2770,7 +2770,7 @@ export const translations: Record<Language, Translations> = {
                 dashboard: 'Tableau de bord',
                 invoices: 'Factures',
                 expenses: 'Dépenses',
-                payments: 'Paiements',
+                income: 'Revenus',
                 clients: 'Clients',
                 suppliers: 'Fournisseurs',
                 documents: 'Documents',
@@ -2960,15 +2960,15 @@ export const translations: Record<Language, Translations> = {
             }
         },
 
-        // Payments
-        payments: {
-            title: 'Paiements',
-            subtitle: 'Gestion des paiements et recettes',
-            searchPlaceholder: 'Rechercher des paiements...',
-            registerPayment: 'Enregistrer Paiement',
+        // Income
+        income: {
+            title: 'Revenus',
+            subtitle: 'Gestion des revenus et recettes',
+            searchPlaceholder: 'Rechercher des revenus...',
+            registerIncome: 'Enregistrer Revenu',
             export: 'Exporter',
-            noPayments: 'Aucun paiement enregistré',
-            totalPayments: 'Total',
+            noIncome: 'Aucun revenu enregistré',
+            totalIncome: 'Total',
             totalValue: 'Valeur Totale',
             loading: 'Chargement...',
 
@@ -3687,7 +3687,7 @@ export const translations: Record<Language, Translations> = {
                 dashboard: 'Panel de Control',
                 invoices: 'Facturas',
                 expenses: 'Gastos',
-                payments: 'Pagos',
+                income: 'Ingresos',
                 clients: 'Clientes',
                 suppliers: 'Proveedores',
                 documents: 'Documentos',
@@ -3861,14 +3861,14 @@ export const translations: Record<Language, Translations> = {
                 exportError: "No hay gastos para exportar"
             }
         },
-        payments: {
-            title: "Pagos",
-            subtitle: "Gestiona tus pagos",
-            searchPlaceholder: "Buscar pagos...",
-            registerPayment: "Registrar Pago",
+        income: {
+            title: "Ingresos",
+            subtitle: "Gestiona tus ingresos",
+            searchPlaceholder: "Buscar ingresos...",
+            registerIncome: "Registrar Ingreso",
             export: "Exportar",
-            noPayments: "No hay pagos",
-            totalPayments: "Total de Pagos",
+            noIncome: "No hay ingresos",
+            totalIncome: "Total de Ingresos",
             totalValue: "Valor Total",
             loading: "Cargando...",
             metrics: {
@@ -4574,7 +4574,7 @@ export const getLanguageName = (language: Language): string => {
                 dashboard: 'Panel de Control',
                 invoices: 'Facturas',
                 expenses: 'Gastos',
-                payments: 'Pagos',
+                income: 'Ingresos',
                 clients: 'Clientes',
                 suppliers: 'Proveedores',
                 documents: 'Documentos',
@@ -4729,12 +4729,12 @@ export const getLanguageName = (language: Language): string => {
                 cancel: 'Cancelar',
             },
         },
-        payments: {
-            title: 'Pagos',
-            subtitle: 'Gestiona tus pagos',
-            searchPlaceholder: 'Buscar pagos...',
-            addPayment: 'Añadir Pago',
-            noPayments: 'No hay pagos',
+        income: {
+            title: 'Ingresos',
+            subtitle: 'Gestiona tus ingresos',
+            searchPlaceholder: 'Buscar ingresos...',
+            addIncome: 'Añadir Ingreso',
+            noIncome: 'No hay ingresos',
             table: {
                 invoice: 'Factura',
                 amount: 'Importe',

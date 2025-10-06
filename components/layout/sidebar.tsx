@@ -28,7 +28,7 @@ const getNavigation = (t: any) => [
   { name: t.sidebar.navigation.dashboard, href: '/', icon: LayoutDashboard },
   { name: t.sidebar.navigation.invoices, href: '/invoices', icon: FileText },
   { name: t.sidebar.navigation.expenses, href: '/expenses', icon: Receipt },
-  { name: t.sidebar.navigation.payments, href: '/payments', icon: CreditCard },
+  { name: t.sidebar.navigation.income, href: '/income', icon: CreditCard },
   { name: t.sidebar.navigation.clients, href: '/clients', icon: Users },
   { name: t.sidebar.navigation.suppliers, href: '/suppliers', icon: Truck },
   { name: t.sidebar.navigation.documents, href: '/documents', icon: Folder },

@@ -11,7 +11,7 @@ export const spanishTranslations = {
             dashboard: 'Panel de Control',
             invoices: 'Facturas',
             expenses: 'Gastos',
-            payments: 'Pagos',
+            income: 'Ingresos',
             clients: 'Clientes',
             suppliers: 'Proveedores',
             documents: 'Documentos',
@@ -182,15 +182,15 @@ export const spanishTranslations = {
             exportError: 'No hay gastos para exportar'
         }
     },
-    payments: {
-        title: 'Pagos',
-        subtitle: 'Gestiona tus pagos',
-        searchPlaceholder: 'Buscar pagos...',
-        newPayment: 'Nuevo Pago',
+    income: {
+        title: 'Ingresos',
+        subtitle: 'Gestiona tus ingresos',
+        searchPlaceholder: 'Buscar ingresos...',
+        newIncome: 'Nuevo Ingreso',
         export: 'Exportar',
-        addPayment: 'Añadir Pago',
-        noPayments: 'No hay pagos',
-        totalPayments: 'Total de Pagos',
+        addIncome: 'Añadir Ingreso',
+        noIncome: 'No hay ingresos',
+        totalIncome: 'Total de Ingresos',
         totalValue: 'Valor Total',
         table: {
             invoice: 'Factura',
@@ -201,7 +201,7 @@ export const spanishTranslations = {
             actions: 'Acciones'
         },
         modal: {
-            title: 'Detalles del Pago',
+            title: 'Detalles del Ingreso',
             close: 'Cerrar'
         },
         types: {
@@ -221,10 +221,10 @@ export const spanishTranslations = {
             cancelled: 'Cancelado'
         },
         errors: {
-            loadError: 'Error al cargar pagos',
-            saveError: 'Error al guardar pago',
-            deleteError: 'Error al eliminar pago',
-            exportError: 'No hay pagos para exportar'
+            loadError: 'Error al cargar ingresos',
+            saveError: 'Error al guardar ingreso',
+            deleteError: 'Error al eliminar ingreso',
+            exportError: 'No hay ingresos para exportar'
         }
     },
     clients: {

@@ -192,9 +192,9 @@ export default function Dashboard() {
 
         {/* Financial Overview */}
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-          <div
+          <div 
             className="metric-card cursor-pointer hover:shadow-lg transition-shadow"
-            onClick={() => router.push('/invoices')}
+            onClick={() => router.push('/income')}
           >
             <div className="flex items-center justify-between mb-4">
               <h3 className="text-lg font-semibold text-foreground">{t.dashboard.metrics.totalRevenue.title}</h3>
