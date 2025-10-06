@@ -3,6 +3,18 @@ import { AgentExtractorGemini } from '@/server/agents/AgentExtractorGemini'
 import { AgentExtractorOpenAI } from '@/server/agents/AgentExtractorOpenAI'
 import crypto from 'crypto'
 
+// Función para limpiar cache manualmente
+function clearDocumentAnalysisCache() {
+  if ((globalThis as any).__doc_analysis_cache) {
+    (globalThis as any).__doc_analysis_cache.clear()
+    console.log('🧹 Cache de análisis de documentos limpiado manualmente')
+  }
+  if ((globalThis as any).__doc_analysis_inflight) {
+    (globalThis as any).__doc_analysis_inflight.clear()
+    console.log('🧹 In-flight de análisis de documentos limpiado manualmente')
+  }
+}
+
 // Tipo extendido para incluir información de empresa
 interface ExtendedExtractionData {
   invoiceNumber?: string;
@@ -44,6 +56,56 @@ const ALLOWED_TYPES = [
   'image/vnd.microsoft.icon'
 ]
 
+// Endpoint GET para ver estado del cache y limpiarlo
+export async function GET(request: NextRequest) {
+  const url = new URL(request.url)
+  const action = url.searchParams.get('action')
+
+  if (action === 'clear') {
+    clearDocumentAnalysisCache()
+    return NextResponse.json({
+      success: true,
+      message: 'Cache limpiado exitosamente',
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  if (action === 'status') {
+    const cacheMap = (globalThis as any).__doc_analysis_cache || new Map()
+    const inflightMap = (globalThis as any).__doc_analysis_inflight || new Map()
+
+    const cacheEntries = Array.from(cacheMap.entries()).map((entry) => {
+      const [key, value] = entry as [string, any]
+      return {
+        key: key.substring(0, 50) + '...',
+        hash: value.hash?.substring(0, 16) + '...',
+        ageSeconds: Math.round((Date.now() - value.ts) / 1000),
+        resultSuccess: value.result?.success || false
+      }
+    })
+
+    return NextResponse.json({
+      success: true,
+      cache: {
+        entries: cacheEntries,
+        totalEntries: cacheMap.size,
+        inFlightRequests: inflightMap.size
+      },
+      timestamp: new Date().toISOString()
+    })
+  }
+
+  return NextResponse.json({
+    success: true,
+    message: 'Endpoint de análisis de documentos',
+    availableActions: ['status', 'clear'],
+    usage: {
+      status: '/api/ai-document-analysis?action=status',
+      clear: '/api/ai-document-analysis?action=clear'
+    }
+  })
+}
+
 export async function POST(request: NextRequest) {
   console.log('📎 Nova requisição de análise de documento recebida')
   console.log('🌍 Environment:', process.env.NODE_ENV)
@@ -80,11 +142,20 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Cache de deduplicación en memoria (por proceso)
-    type CacheEntry = { result: any, ts: number }
-    const CACHE_TTL_MS = 30 * 60 * 1000 // 30 minutos
-    const inflightMap = (globalThis as any).__doc_analysis_inflight || ((globalThis as any).__doc_analysis_inflight = new Map<string, Promise<any>>())
-    const cacheMap = (globalThis as any).__doc_analysis_cache || ((globalThis as any).__doc_analysis_cache = new Map<string, CacheEntry>())
+    // Cache de deduplicación en memoria (por proceso) - MEJORADO
+    type CacheEntry = { result: any, ts: number, hash: string }
+    const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hora (más tiempo)
+
+    // Inicializar maps globales si no existen
+    if (!(globalThis as any).__doc_analysis_inflight) {
+      (globalThis as any).__doc_analysis_inflight = new Map<string, Promise<any>>()
+    }
+    if (!(globalThis as any).__doc_analysis_cache) {
+      (globalThis as any).__doc_analysis_cache = new Map<string, CacheEntry>()
+    }
+
+    const inflightMap = (globalThis as any).__doc_analysis_inflight
+    const cacheMap = (globalThis as any).__doc_analysis_cache
 
     // Usar base64 si está disponible, sino usar el archivo
     let fileToProcess: any
@@ -146,23 +217,36 @@ export async function POST(request: NextRequest) {
     const fileHash = crypto.createHash('sha256').update(fileBuffer).digest('hex')
     const cacheKey = `${fileHash}:${finalFileType}`
 
-    // Limpiar cache expirado sencillo
+    console.log(`🔍 Hash del archivo: ${fileHash.substring(0, 16)}...`)
+    console.log(`🔑 Cache key: ${cacheKey}`)
+    console.log(`📊 Cache actual: ${cacheMap.size} entradas, In-flight: ${inflightMap.size} solicitudes`)
+
+    // Limpiar cache expirado
     const now = Date.now()
+    let expiredCount = 0
     for (const [k, v] of cacheMap) {
-      if (now - v.ts > CACHE_TTL_MS) cacheMap.delete(k)
+      if (now - v.ts > CACHE_TTL_MS) {
+        cacheMap.delete(k)
+        expiredCount++
+      }
+    }
+    if (expiredCount > 0) {
+      console.log(`🧹 Limpiadas ${expiredCount} entradas expiradas del cache`)
     }
 
     // Responder desde cache si existe
     const cached = cacheMap.get(cacheKey)
     if (cached) {
-      console.log('♻️ Devolviendo resultado cacheado para este archivo (hash coincidente)')
+      console.log(`♻️ CACHE HIT: Devolviendo resultado cacheado para archivo ${finalFileName} (hash: ${fileHash.substring(0, 16)}...)`)
+      console.log(`⏰ Cacheado hace: ${Math.round((now - cached.ts) / 1000)} segundos`)
       return NextResponse.json(cached.result)
     }
 
     // Compartir solicitud en vuelo si ya se está procesando el mismo archivo
     if (inflightMap.has(cacheKey)) {
-      console.log('⏳ Aguardando análise já em curso para este arquivo (in-flight sharing)')
+      console.log(`⏳ IN-FLIGHT SHARING: Aguardando análisis ya en curso para archivo ${finalFileName}`)
       const sharedResult = await inflightMap.get(cacheKey)!
+      console.log(`✅ IN-FLIGHT COMPLETADO: Resultado compartido para ${finalFileName}`)
       return NextResponse.json(sharedResult)
     }
 
@@ -414,15 +498,23 @@ export async function POST(request: NextRequest) {
       return resultPayload
     }
 
+    console.log(`🚀 NUEVO ANÁLISIS: Iniciando procesamiento para archivo ${finalFileName} (hash: ${fileHash.substring(0, 16)}...)`)
+
     const inflightPromise = runAnalysis()
     inflightMap.set(cacheKey, inflightPromise)
 
     try {
       const result = await inflightPromise
-      cacheMap.set(cacheKey, { result, ts: Date.now() })
+      console.log(`✅ ANÁLISIS COMPLETADO: Guardando en cache para archivo ${finalFileName}`)
+      cacheMap.set(cacheKey, { result, ts: Date.now(), hash: fileHash })
+      console.log(`💾 CACHE GUARDADO: ${cacheMap.size} entradas en cache`)
       return NextResponse.json(result)
+    } catch (error) {
+      console.error(`❌ ERROR EN ANÁLISIS: ${error}`)
+      throw error
     } finally {
       inflightMap.delete(cacheKey)
+      console.log(`🧹 LIMPIEZA: Removido de in-flight, quedan ${inflightMap.size} solicitudes`)
     }
 
   } catch (error: any) {
