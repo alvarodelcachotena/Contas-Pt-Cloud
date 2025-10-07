@@ -41,12 +41,17 @@ export class MLDocumentClassifier {
   private isTrained: boolean = false;
   private trainingData: TrainingData[] = [];
   private featureWeights: { [key: string]: number } = {};
-  
+
   constructor() {
     const supabaseUrl = process.env.SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_ANON_KEY!;
+
+    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('tu_supabase_url_aqui') || supabaseUrl === 'tu_supabase_url_aqui/') {
+      throw new Error('Invalid Supabase configuration for ML document classifier');
+    }
+
     this.supabase = createClient(supabaseUrl, supabaseKey);
-    
+
     // Initialize feature weights based on domain knowledge
     this.initializeFeatureWeights();
   }
@@ -68,35 +73,35 @@ export class MLDocumentClassifier {
    */
   async extractDocumentFeatures(documentBuffer: Buffer, metadata: any): Promise<DocumentFeatures> {
     console.log('🔍 Extracting document features for ML classification...');
-    
+
     try {
       // Document length analysis
       const documentLength = documentBuffer.length;
-      
+
       // OCR quality estimation (placeholder - would integrate with actual OCR)
       const ocrQuality = await this.estimateOCRQuality(documentBuffer);
-      
+
       // File type detection
       const fileType = this.detectFileType(documentBuffer, metadata);
-      
+
       // Keyword density analysis
       const keywordDensity = await this.analyzeKeywordDensity(documentBuffer);
-      
+
       // Table density estimation
       const tableDensity = await this.estimateTableDensity(documentBuffer);
-      
+
       // Image density estimation
       const imageDensity = await this.estimateImageDensity(documentBuffer);
-      
+
       // Text complexity analysis
       const textComplexity = await this.analyzeTextComplexity(documentBuffer);
-      
+
       // Structured data detection
       const hasStructuredData = await this.detectStructuredData(documentBuffer);
-      
+
       // Language detection
       const language = await this.detectLanguage(documentBuffer);
-      
+
       const features: DocumentFeatures = {
         documentLength,
         ocrQuality,
@@ -124,7 +129,7 @@ export class MLDocumentClassifier {
    */
   async classifyDocument(features: DocumentFeatures): Promise<RoutingDecision> {
     console.log('🤖 ML classifier making routing decision...');
-    
+
     try {
       if (!this.isTrained) {
         console.log('⚠️ Model not trained, using fallback rule-based routing');
@@ -133,10 +138,10 @@ export class MLDocumentClassifier {
 
       // Calculate feature scores using trained weights
       const scores = this.calculateFeatureScores(features);
-      
+
       // Apply ML classification logic
       const routingDecision = this.applyMLClassification(scores, features);
-      
+
       console.log('✅ ML routing decision made:', routingDecision);
       return routingDecision;
 
@@ -151,28 +156,28 @@ export class MLDocumentClassifier {
    */
   private calculateFeatureScores(features: DocumentFeatures): { [key: string]: number } {
     const scores: { [key: string]: number } = {};
-    
+
     // Document length score (normalized)
     scores.documentLength = Math.min(features.documentLength / 1000000, 1.0);
-    
+
     // OCR quality score
     scores.ocrQuality = features.ocrQuality;
-    
+
     // File type score (based on complexity)
     scores.fileType = this.getFileTypeComplexityScore(features.fileType);
-    
+
     // Keyword density score
     scores.keywordDensity = this.calculateKeywordDensityScore(features.keywordDensity);
-    
+
     // Table density score
     scores.tableDensity = features.tableDensity;
-    
+
     // Image density score
     scores.imageDensity = features.imageDensity;
-    
+
     // Text complexity score
     scores.textComplexity = features.textComplexity;
-    
+
     return scores;
   }
 
@@ -184,32 +189,32 @@ export class MLDocumentClassifier {
     const visionScore = this.calculateVisionScore(scores);
     const consensusScore = this.calculateConsensusScore(scores);
     const priorityScore = this.calculatePriorityScore(scores);
-    
+
     // Determine routing decisions
     const useVision = visionScore > 0.7;
     const useConsensus = consensusScore > 0.6;
-    
+
     // Priority level determination
     let priorityLevel: 'high' | 'medium' | 'low';
     if (priorityScore > 0.8) priorityLevel = 'high';
     else if (priorityScore > 0.5) priorityLevel = 'medium';
     else priorityLevel = 'low';
-    
+
     // Pipeline recommendation
     let recommendedPipeline: 'vision_enhanced' | 'consensus_enhanced' | 'basic_extraction';
     if (useVision && useConsensus) recommendedPipeline = 'consensus_enhanced';
     else if (useVision) recommendedPipeline = 'vision_enhanced';
     else recommendedPipeline = 'basic_extraction';
-    
+
     // Confidence calculation
     const confidence = Math.min((visionScore + consensusScore + priorityScore) / 3, 1.0);
-    
+
     // Reasoning
     const reasoning = this.generateReasoning(scores, useVision, useConsensus, priorityLevel);
-    
+
     // Estimated processing time
     const estimatedProcessingTime = this.estimateProcessingTime(scores, recommendedPipeline);
-    
+
     return {
       useVision,
       useConsensus,
@@ -231,7 +236,7 @@ export class MLDocumentClassifier {
       fileType: 0.2,
       documentLength: 0.1
     };
-    
+
     return Object.entries(weights).reduce((score, [key, weight]) => {
       return score + (scores[key] || 0) * weight;
     }, 0);
@@ -247,7 +252,7 @@ export class MLDocumentClassifier {
       ocrQuality: 0.2,
       hasStructuredData: 0.2
     };
-    
+
     return Object.entries(weights).reduce((score, [key, weight]) => {
       return score + (scores[key] || 0) * weight;
     }, 0);
@@ -263,7 +268,7 @@ export class MLDocumentClassifier {
       textComplexity: 0.25,
       tableDensity: 0.25
     };
-    
+
     return Object.entries(weights).reduce((score, [key, weight]) => {
       return score + (scores[key] || 0) * weight;
     }, 0);
@@ -274,21 +279,21 @@ export class MLDocumentClassifier {
    */
   private generateReasoning(scores: { [key: string]: number }, useVision: boolean, useConsensus: boolean, priority: string): string {
     const reasons: string[] = [];
-    
+
     if (useVision) {
       if (scores.imageDensity > 0.6) reasons.push('High image content detected');
       if (scores.tableDensity > 0.5) reasons.push('Complex table structures identified');
     }
-    
+
     if (useConsensus) {
       if (scores.textComplexity > 0.7) reasons.push('Complex text requiring consensus');
       if (scores.keywordDensity > 0.6) reasons.push('Rich keyword content for analysis');
     }
-    
+
     if (priority === 'high') {
       reasons.push('Document complexity requires high priority processing');
     }
-    
+
     return reasons.length > 0 ? reasons.join('; ') : 'Standard processing recommended';
   }
 
@@ -297,12 +302,12 @@ export class MLDocumentClassifier {
    */
   private estimateProcessingTime(scores: { [key: string]: number }, pipeline: string): number {
     let baseTime = 1000; // Base time in ms
-    
+
     // Adjust for document complexity
     if (scores.documentLength > 0.8) baseTime *= 2;
     if (scores.textComplexity > 0.7) baseTime *= 1.5;
     if (scores.tableDensity > 0.6) baseTime *= 1.8;
-    
+
     // Adjust for pipeline type
     switch (pipeline) {
       case 'vision_enhanced':
@@ -314,7 +319,7 @@ export class MLDocumentClassifier {
       default:
         baseTime *= 1.0;
     }
-    
+
     return Math.round(baseTime);
   }
 
@@ -323,15 +328,15 @@ export class MLDocumentClassifier {
    */
   private fallbackRuleBasedRouting(features: DocumentFeatures): RoutingDecision {
     const useVision = features.tableDensity > 0.5 || features.imageDensity > 0.6;
-    const useConsensus = features.textComplexity > 0.7 || features.keywordDensity.keyword> 0.6;
-    
+    const useConsensus = features.textComplexity > 0.7 || features.keywordDensity.keyword > 0.6;
+
     let priorityLevel: 'high' | 'medium' | 'low' = 'medium';
     if (features.documentLength > 500000 || features.textComplexity > 0.8) {
       priorityLevel = 'high';
     } else if (features.documentLength < 100000) {
       priorityLevel = 'low';
     }
-    
+
     return {
       useVision,
       useConsensus,
@@ -348,19 +353,19 @@ export class MLDocumentClassifier {
    */
   async trainClassifier(trainingData: TrainingData[]): Promise<void> {
     console.log('🎯 Training ML classifier with', trainingData.length, 'samples...');
-    
+
     try {
       // Store training data
       this.trainingData = trainingData;
-      
+
       // Calculate optimal feature weights based on training data
       this.optimizeFeatureWeights(trainingData);
-      
+
       // Mark as trained
       this.isTrained = true;
-      
+
       console.log('✅ ML classifier trained successfully');
-      
+
     } catch (error) {
       console.error('❌ Error training classifier:', error);
       throw new Error('Failed to train ML classifier');
@@ -372,27 +377,27 @@ export class MLDocumentClassifier {
    */
   private optimizeFeatureWeights(trainingData: TrainingData[]): void {
     console.log('🔧 Optimizing feature weights...');
-    
+
     // Simple optimization: adjust weights based on performance correlation
     const featurePerformance: { [key: string]: number[] } = {};
-    
+
     // Initialize performance tracking
     Object.keys(this.featureWeights).forEach(feature => {
       featurePerformance[feature] = [];
     });
-    
+
     // Analyze performance correlation for each feature
     trainingData.forEach(sample => {
       const features = sample.features;
       const performance = sample.performance.accuracy;
-      
+
       Object.keys(this.featureWeights).forEach(feature => {
         if (features[feature as keyof DocumentFeatures] !== undefined) {
           featurePerformance[feature].push(performance);
         }
       });
     });
-    
+
     // Adjust weights based on performance correlation
     Object.keys(this.featureWeights).forEach(feature => {
       const performances = featurePerformance[feature];
@@ -402,13 +407,13 @@ export class MLDocumentClassifier {
         this.featureWeights[feature] *= (0.8 + avgPerformance * 0.4);
       }
     });
-    
+
     // Normalize weights
     const totalWeight = Object.values(this.featureWeights).reduce((a, b) => a + b, 0);
     Object.keys(this.featureWeights).forEach(feature => {
       this.featureWeights[feature] /= totalWeight;
     });
-    
+
     console.log('✅ Feature weights optimized:', this.featureWeights);
   }
 
@@ -423,39 +428,39 @@ export class MLDocumentClassifier {
     confusionMatrix: any;
   }> {
     console.log('📊 Evaluating ML classifier performance...');
-    
+
     if (!this.isTrained) {
       throw new Error('Classifier must be trained before evaluation');
     }
-    
+
     let correctPredictions = 0;
     let totalPredictions = 0;
     const predictions: any[] = [];
-    
+
     for (const testSample of testData) {
       const prediction = await this.classifyDocument(testSample.features);
       const actual = testSample.actualRouting;
-      
+
       // Compare predictions with actual routing
       const isCorrect = this.compareRoutingDecisions(prediction, actual);
       if (isCorrect) correctPredictions++;
       totalPredictions++;
-      
+
       predictions.push({
         predicted: prediction,
         actual: actual,
         isCorrect
       });
     }
-    
+
     const accuracy = correctPredictions / totalPredictions;
-    
+
     // Calculate additional metrics
     const metrics = this.calculateDetailedMetrics(predictions);
-    
+
     console.log('✅ Classifier evaluation completed');
     console.log(`📈 Accuracy: ${(accuracy * 100).toFixed(2)}%`);
-    
+
     return {
       accuracy,
       ...metrics
@@ -470,10 +475,10 @@ export class MLDocumentClassifier {
     const visionMatch = predicted.useVision === actual.useVision;
     const consensusMatch = predicted.useConsensus === actual.useConsensus;
     const priorityMatch = predicted.priorityLevel === actual.priorityLevel;
-    
+
     // Weight the comparison (vision and consensus are more important than priority)
     const score = (visionMatch ? 0.4 : 0) + (consensusMatch ? 0.4 : 0) + (priorityMatch ? 0.2 : 0);
-    
+
     return score >= 0.6; // Threshold for considering prediction correct
   }
 
@@ -490,11 +495,11 @@ export class MLDocumentClassifier {
     const truePositives = predictions.filter(p => p.isCorrect).length;
     const falsePositives = predictions.filter(p => !p.isCorrect).length;
     const falseNegatives = 0; // Simplified
-    
+
     const precision = truePositives / (truePositives + falsePositives) || 0;
     const recall = truePositives / (truePositives + falseNegatives) || 0;
     const f1Score = 2 * (precision * recall) / (precision + recall) || 0;
-    
+
     return {
       precision,
       recall,
@@ -523,11 +528,11 @@ export class MLDocumentClassifier {
     // Placeholder: would analyze actual text content
     const keywords = ['invoice', 'receipt', 'contract', 'report', 'statement'];
     const density: { [key: string]: number } = {};
-    
+
     keywords.forEach(keyword => {
       density[keyword] = Math.random() * 0.5; // Random density
     });
-    
+
     return density;
   }
 
@@ -564,7 +569,7 @@ export class MLDocumentClassifier {
       'jpg': 0.9,
       'png': 0.9
     };
-    
+
     return complexityMap[fileType] || 0.5;
   }
 
@@ -589,7 +594,7 @@ export class MLDocumentClassifier {
 
       if (error) throw error;
       console.log('✅ Training data saved to database');
-      
+
     } catch (error) {
       console.error('❌ Error saving training data:', error);
       throw new Error('Failed to save training data');
@@ -607,7 +612,7 @@ export class MLDocumentClassifier {
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      
+
       const trainingData: TrainingData[] = data.map((row: any) => ({
         id: row.id,
         features: row.features,
@@ -617,7 +622,7 @@ export class MLDocumentClassifier {
 
       console.log('✅ Training data loaded from database:', trainingData.length, 'samples');
       return trainingData;
-      
+
     } catch (error) {
       console.error('❌ Error loading training data:', error);
       return [];
@@ -637,7 +642,7 @@ export class MLDocumentClassifier {
       isTrained: this.isTrained,
       trainingDataCount: this.trainingData.length,
       featureWeights: this.featureWeights,
-      lastTrainingDate: this.trainingData.length > 0 ? 
+      lastTrainingDate: this.trainingData.length > 0 ?
         new Date().toISOString() : undefined
     };
   }

@@ -1,4 +1,5 @@
 import { GoogleGenerativeAI } from '@google/generative-ai'
+import OpenAI from 'openai'
 import { MAIN_COMPANY_CONFIG, isMainCompany } from './main-company-config'
 
 export interface InvoiceData {
@@ -49,22 +50,34 @@ export interface DocumentAnalysisResult {
 }
 
 export class DocumentAIService {
-    private genAI: GoogleGenerativeAI
+    private genAI?: GoogleGenerativeAI
+    private openai?: OpenAI
 
     constructor() {
-        const apiKey = process.env.GEMINI_API_KEY
-        console.log('🔧 Inicializando DocumentAIService con Gemini AI')
-        console.log(`   API key configurada: ${apiKey ? '✅ Sí' : '❌ No'}`)
-        if (apiKey) {
-            console.log(`   Longitud: ${apiKey.length} caracteres`)
-            console.log(`   Empieza con: ${apiKey.substring(0, 10)}...`)
-            console.log(`   Termina con: ...${apiKey.substring(apiKey.length - 10)}`)
-        }
-        if (!apiKey) {
-            throw new Error('GEMINI_API_KEY no está configurada')
+        const geminiApiKey = process.env.GEMINI_API_KEY
+        const openaiApiKey = process.env.OPENAI_API_KEY
+
+        console.log('🔧 Inicializando DocumentAIService con Gemini AI y OpenAI como fallback')
+        console.log(`   Gemini API key configurada: ${geminiApiKey ? '✅ Sí' : '❌ No'}`)
+        console.log(`   OpenAI API key configurada: ${openaiApiKey ? '✅ Sí' : '❌ No'}`)
+
+        if (geminiApiKey) {
+            console.log(`   Gemini longitud: ${geminiApiKey.length} caracteres`)
+            console.log(`   Gemini empieza con: ${geminiApiKey.substring(0, 10)}...`)
+            console.log(`   Gemini termina con: ...${geminiApiKey.substring(geminiApiKey.length - 10)}`)
         }
 
-        this.genAI = new GoogleGenerativeAI(apiKey)
+        if (!geminiApiKey && !openaiApiKey) {
+            throw new Error('Ni GEMINI_API_KEY ni OPENAI_API_KEY están configuradas')
+        }
+
+        if (geminiApiKey) {
+            this.genAI = new GoogleGenerativeAI(geminiApiKey)
+        }
+
+        if (openaiApiKey) {
+            this.openai = new OpenAI({ apiKey: openaiApiKey })
+        }
     }
 
     async analyzeDocument(fileBuffer: Buffer, filename: string, mimeType?: string): Promise<DocumentAnalysisResult> {
@@ -93,6 +106,9 @@ export class DocumentAIService {
                 console.log(`📄 MIME type por extensión: ${this.getMimeType(filename)}`)
 
                 // Crear el modelo Gemini con configuración de reintentos
+                if (!this.genAI) {
+                    throw new Error('Gemini AI no está inicializado')
+                }
                 const model = this.genAI.getGenerativeModel({
                     model: modelName,
                     generationConfig: {
@@ -204,8 +220,18 @@ export class DocumentAIService {
             return successfulResult
         }
 
-        // Si todos los modelos fallaron, usar procesamiento offline como respaldo
-        console.log('🔄 Todos los modelos de Gemini fallaron, usando procesamiento offline como respaldo...')
+        // Si todos los modelos de Gemini fallaron, intentar con OpenAI como fallback
+        if (this.openai) {
+            console.log('🔄 Todos los modelos de Gemini fallaron, intentando con OpenAI como fallback...')
+            try {
+                return await this.analyzeWithOpenAI(fileBuffer, filename, mimeType)
+            } catch (openaiError) {
+                console.error('❌ OpenAI también falló:', openaiError)
+            }
+        }
+
+        // Si todo falla, usar procesamiento offline como último recurso
+        console.log('🔄 Todos los servicios de IA fallaron, usando procesamiento offline como último recurso...')
         return this.createOfflineAnalysis(filename)
     }
 
@@ -487,6 +513,78 @@ RECUERDA: Extrae TODOS los números y texto que veas en el documento. NO OMITAS 
     private isValidDate(dateString: string): boolean {
         const date = new Date(dateString)
         return date instanceof Date && !isNaN(date.getTime())
+    }
+
+    private async analyzeWithOpenAI(fileBuffer: Buffer, filename: string, mimeType?: string): Promise<DocumentAnalysisResult> {
+        console.log('🤖 Analizando documento con OpenAI...')
+
+        // Convertir imagen a base64
+        const base64Data = fileBuffer.toString('base64')
+        const detectedMimeType = mimeType || this.getMimeType(filename)
+
+        const prompt = `Analiza esta imagen de un documento (factura, recibo, etc.) y extrae la información en formato JSON. 
+
+Responde ÚNICAMENTE con un JSON válido en este formato exacto:
+{
+  "document_type": "invoice" o "expense" o "receipt" o "other",
+  "confidence": 0.95,
+  "extracted_data": {
+    "vendor_name": "Nombre del proveedor",
+    "vendor_nif": "NIF/CIF del proveedor",
+    "invoice_number": "Número de factura",
+    "invoice_date": "YYYY-MM-DD",
+    "total_amount": 123.45,
+    "vat_amount": 23.45,
+    "vat_rate": 21,
+    "description": "Descripción del gasto",
+    "category": "Categoría del gasto"
+  },
+  "processing_notes": ["Nota 1", "Nota 2"]
+}
+
+IMPORTANTE:
+- Si es una factura de restaurante, supermercado, gasolinera, etc., es un GASTO (expense)
+- Si es una factura que TÚ emites a un cliente, es un INGRESO (invoice)
+- Usa "expense" para la mayoría de documentos recibidos por WhatsApp
+- Asegúrate de que el JSON sea válido y completo`
+
+        try {
+            if (!this.openai) {
+                throw new Error('OpenAI no está inicializado')
+            }
+            const response = await this.openai.chat.completions.create({
+                model: "gpt-4o-mini",
+                messages: [
+                    {
+                        role: "user",
+                        content: [
+                            { type: "text", text: prompt },
+                            {
+                                type: "image_url",
+                                image_url: {
+                                    url: `data:${detectedMimeType};base64,${base64Data}`,
+                                    detail: "high"
+                                }
+                            }
+                        ]
+                    }
+                ],
+                max_tokens: 2000,
+                temperature: 0.1
+            })
+
+            const content = response.choices[0]?.message?.content
+            if (!content) {
+                throw new Error('No se recibió respuesta de OpenAI')
+            }
+
+            console.log('📊 Respuesta de OpenAI:', content)
+            return this.processResponse(content)
+
+        } catch (error) {
+            console.error('❌ Error en análisis con OpenAI:', error)
+            throw error
+        }
     }
 
     private createOfflineAnalysis(filename: string): DocumentAnalysisResult {

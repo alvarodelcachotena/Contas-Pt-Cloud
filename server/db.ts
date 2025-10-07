@@ -8,6 +8,11 @@ if (!process.env.SUPABASE_SERVICE_ROLE_KEY) {
     throw new Error('SUPABASE_SERVICE_ROLE_KEY no está configurada');
 }
 
+// Validar URL antes de crear el cliente
+if (process.env.SUPABASE_URL.includes('tu_supabase_url_aqui') || process.env.SUPABASE_URL === 'tu_supabase_url_aqui/') {
+    throw new Error('SUPABASE_URL contiene URL inválida');
+}
+
 // Crear cliente de Supabase
 export const supabase = createClient(
     process.env.SUPABASE_URL,

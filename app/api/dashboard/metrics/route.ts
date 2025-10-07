@@ -70,21 +70,21 @@ export async function GET(request: NextRequest) {
       console.error('❌ Error fetching clients:', clientsError)
     }
 
-    // 6. Revenue calculation (sum of all invoice amounts EXCEPT WhatsApp invoices)
-    // Las facturas de WhatsApp son gastos, no ingresos
+    // 6. Revenue calculation (sum of all income payments)
+    // Los ingresos vienen de la tabla payments donde type = 'income'
     const { data: revenueData, error: revenueError } = await supabase
-      .from('invoices')
-      .select('total_amount, status, description')
+      .from('payments')
+      .select('amount, type, status')
       .eq('tenant_id', tenantId)
-      .eq('status', 'paid') // Only count paid invoices
-      .not('description', 'ilike', '%WhatsApp%') // Exclude WhatsApp invoices
+      .eq('type', 'income') // Solo ingresos
+      .eq('status', 'completed') // Solo pagos completados
 
     if (revenueError) {
       console.error('❌ Error fetching revenue:', revenueError)
     }
 
-    const totalRevenue = revenueData?.reduce((sum, invoice) =>
-      sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0) || 0
+    const totalRevenue = revenueData?.reduce((sum, payment) =>
+      sum + (parseFloat(payment.amount?.toString() || '0') || 0), 0) || 0
 
     // 7. Expenses calculation (sum of all expense amounts + VAT)
     const { data: expenseData, error: expenseAmountError } = await supabase
@@ -102,21 +102,22 @@ export async function GET(request: NextRequest) {
       return sum + baseAmount + vatAmount
     }, 0) || 0
 
-    // 8. Current month metrics (EXCEPT WhatsApp invoices)
-    const { data: currentMonthInvoices, error: monthInvoicesError } = await supabase
-      .from('invoices')
-      .select('total_amount, status, description')
+    // 8. Current month metrics (income payments)
+    const { data: currentMonthPayments, error: monthPaymentsError } = await supabase
+      .from('payments')
+      .select('amount, type, status, payment_date')
       .eq('tenant_id', tenantId)
-      .gte('issue_date', `${currentMonth}-01`)
-      .lte('issue_date', `${currentMonth}-31`)
-      .not('description', 'ilike', '%WhatsApp%') // Exclude WhatsApp invoices
+      .eq('type', 'income') // Solo ingresos
+      .eq('status', 'completed') // Solo pagos completados
+      .gte('payment_date', `${currentMonth}-01`)
+      .lte('payment_date', `${currentMonth}-31`)
 
-    if (monthInvoicesError) {
-      console.error('❌ Error fetching current month invoices:', monthInvoicesError)
+    if (monthPaymentsError) {
+      console.error('❌ Error fetching current month payments:', monthPaymentsError)
     }
 
-    const currentMonthRevenue = currentMonthInvoices?.reduce((sum, invoice) =>
-      sum + (parseFloat(invoice.total_amount?.toString() || '0') || 0), 0) || 0
+    const currentMonthRevenue = currentMonthPayments?.reduce((sum, payment) =>
+      sum + (parseFloat(payment.amount?.toString() || '0') || 0), 0) || 0
 
     const { data: currentMonthExpenses, error: monthExpensesError } = await supabase
       .from('expenses')

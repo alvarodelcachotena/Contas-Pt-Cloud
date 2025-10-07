@@ -36,6 +36,16 @@ export class EmbeddingService {
     // Initialize Supabase
     const supabaseUrl = process.env.SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_ANON_KEY!;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new Error('Missing Supabase configuration for embedding service');
+    }
+
+    // Solo validar URL inválida si no estamos en modo build
+    if (process.env.NODE_ENV !== 'production' && (supabaseUrl.includes('tu_supabase_url_aqui') || supabaseUrl === 'tu_supabase_url_aqui/')) {
+      throw new Error('Invalid Supabase configuration for embedding service');
+    }
+
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
@@ -47,7 +57,7 @@ export class EmbeddingService {
     preferredModel?: 'openai' | 'instructor' | 'sentence-transformers'
   ): Promise<EmbeddingResult> {
     const startTime = Date.now();
-    
+
     try {
       // Check cache first
       const cacheKey = this.generateCacheKey(content);
@@ -62,7 +72,7 @@ export class EmbeddingService {
 
       // Try preferred model first, then fallback to available models
       const models = this.getAvailableModels(preferredModel);
-      
+
       for (const model of models) {
         try {
           const result = await this.generateEmbeddingWithModel(content, model);
@@ -103,7 +113,7 @@ export class EmbeddingService {
     }
 
     const text = this.prepareTextForEmbedding(content);
-    
+
     const response = await this.openai.embeddings.create({
       model: 'text-embedding-3-small',
       input: text,
@@ -157,7 +167,7 @@ export class EmbeddingService {
    */
   private getAvailableModels(preferredModel?: string): string[] {
     const availableModels: string[] = [];
-    
+
     // Add preferred model first if specified
     if (preferredModel && this.isModelAvailable(preferredModel)) {
       availableModels.push(preferredModel);
@@ -167,11 +177,11 @@ export class EmbeddingService {
     if (this.isModelAvailable('openai')) {
       availableModels.push('openai');
     }
-    
+
     if (this.isModelAvailable('instructor')) {
       availableModels.push('instructor');
     }
-    
+
     if (this.isModelAvailable('sentence-transformers')) {
       availableModels.push('sentence-transformers');
     }
@@ -214,7 +224,7 @@ export class EmbeddingService {
     // Add OCR text (truncated if too long)
     if (content.ocrText && content.ocrText.trim()) {
       const maxOcrLength = 4000; // OpenAI limit is 8192, but we'll be conservative
-      const truncatedOcr = content.ocrText.trim().length > maxOcrLength 
+      const truncatedOcr = content.ocrText.trim().length > maxOcrLength
         ? content.ocrText.trim().substring(0, maxOcrLength) + '...'
         : content.ocrText.trim();
       parts.push(`Content: ${truncatedOcr}`);
@@ -272,7 +282,7 @@ export class EmbeddingService {
   private getCachedEmbedding(cacheKey: string): EmbeddingResult | null {
     const cached = this.cache.get(cacheKey);
     const expiry = this.cacheExpiry.get(cacheKey);
-    
+
     if (!cached || !expiry) {
       return null;
     }
@@ -293,7 +303,7 @@ export class EmbeddingService {
   private cacheEmbedding(cacheKey: string, result: EmbeddingResult): void {
     this.cache.set(cacheKey, result);
     this.cacheExpiry.set(cacheKey, Date.now() + this.CACHE_TTL);
-    
+
     // Clean up old cache entries if cache gets too large
     if (this.cache.size > 1000) {
       this.cleanupCache();

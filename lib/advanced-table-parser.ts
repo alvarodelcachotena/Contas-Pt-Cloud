@@ -84,6 +84,13 @@ export class AdvancedTableParser {
   constructor() {
     const supabaseUrl = process.env.SUPABASE_URL!;
     const supabaseKey = process.env.SUPABASE_ANON_KEY!;
+
+    // Validar URL antes de crear el cliente
+    if (!supabaseUrl || !supabaseKey || supabaseUrl.includes('tu_supabase_url_aqui') || supabaseUrl === 'tu_supabase_url_aqui/') {
+      console.warn('⚠️ Supabase not properly configured for advanced table parser');
+      throw new Error('Supabase credentials not properly configured');
+    }
+
     this.supabase = createClient(supabaseUrl, supabaseKey);
   }
 
@@ -95,13 +102,13 @@ export class AdvancedTableParser {
 
     try {
       console.log('🚀 Initializing advanced table parser models...');
-      
+
       // Initialize LayoutLMv3 for table structure detection
       await this.initializeLayoutLMv3();
-      
+
       // Initialize Donut for document understanding
       await this.initializeDonut();
-      
+
       this.isInitialized = true;
       console.log('✅ Advanced table parser models initialized successfully');
     } catch (error) {
@@ -118,14 +125,14 @@ export class AdvancedTableParser {
       // Note: In production, you would load the actual LayoutLMv3 model
       // For now, we'll use a placeholder that simulates the model
       console.log('📊 Initializing LayoutLMv3 for table detection...');
-      
+
       // Simulate model loading
       this.layoutLMv3Model = {
         name: 'LayoutLMv3',
         version: '1.0.0',
         capabilities: ['table_detection', 'cell_extraction', 'layout_analysis']
       };
-      
+
       console.log('✅ LayoutLMv3 initialized');
     } catch (error) {
       console.warn('⚠️ LayoutLMv3 initialization failed, using fallback:', error);
@@ -138,14 +145,14 @@ export class AdvancedTableParser {
   private async initializeDonut(): Promise<void> {
     try {
       console.log('🍩 Initializing Donut for document understanding...');
-      
+
       // Simulate model loading
       this.donutModel = {
         name: 'Donut',
         version: '1.0.0',
         capabilities: ['document_understanding', 'text_extraction', 'table_parsing']
       };
-      
+
       console.log('✅ Donut initialized');
     } catch (error) {
       console.warn('⚠️ Donut initialization failed, using fallback:', error);
@@ -161,44 +168,44 @@ export class AdvancedTableParser {
     documentId: number
   ): Promise<TableExtractionResult> {
     const startTime = Date.now();
-    
+
     try {
       await this.initialize();
-      
+
       console.log('🔍 Starting advanced table extraction...');
-      
+
       // Step 1: Detect table regions using LayoutLMv3
       const tableRegions = await this.detectTableRegions(pdfBuffer);
-      
+
       if (tableRegions.length === 0) {
         console.log('⚠️ No tables detected, using fallback text extraction');
         return await this.fallbackTextExtraction(pdfBuffer, startTime);
       }
-      
+
       // Step 2: Extract table structures using layout-aware models
       const tables: TableStructure[] = [];
       const allLineItems: LineItem[] = [];
-      
+
       for (const region of tableRegions) {
         try {
-                  const tableResult = await this.extractTableStructure(pdfBuffer, region);
-        if (tableResult.success && tableResult.table) {
-          tables.push(tableResult.table);
-          
-          // Extract line items from this table
-          const lineItems = this.extractLineItemsFromTable(tableResult.table);
-          allLineItems.push(...lineItems);
-        }
+          const tableResult = await this.extractTableStructure(pdfBuffer, region);
+          if (tableResult.success && tableResult.table) {
+            tables.push(tableResult.table);
+
+            // Extract line items from this table
+            const lineItems = this.extractLineItemsFromTable(tableResult.table);
+            allLineItems.push(...lineItems);
+          }
         } catch (error) {
           console.warn(`⚠️ Failed to extract table from region ${region.id}:`, error);
         }
       }
-      
+
       // Step 3: Store extraction results
       await this.storeExtractionResults(tenantId, documentId, tables, allLineItems);
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       return {
         success: true,
         tables,
@@ -208,10 +215,10 @@ export class AdvancedTableParser {
         processingTime,
         fallbackUsed: false
       };
-      
+
     } catch (error) {
       console.error('❌ Advanced table extraction failed:', error);
-      
+
       // Fallback to text extraction
       return await this.fallbackTextExtraction(pdfBuffer, startTime);
     }
@@ -224,14 +231,14 @@ export class AdvancedTableParser {
     try {
       if (this.layoutLMv3Model) {
         console.log('🔍 Using LayoutLMv3 for table region detection...');
-        
+
         // Simulate LayoutLMv3 table detection
         // In production, this would use the actual model
         const mockRegions = [
           { id: 'table_1', page: 1, confidence: 0.95, boundingBox: { x: 50, y: 100, width: 500, height: 300 } },
           { id: 'table_2', page: 2, confidence: 0.87, boundingBox: { x: 50, y: 150, width: 500, height: 250 } }
         ];
-        
+
         return mockRegions;
       } else {
         // Fallback: use basic heuristics
@@ -248,14 +255,14 @@ export class AdvancedTableParser {
    */
   private detectTableRegionsFallback(pdfBuffer: Buffer): any[] {
     console.log('🔄 Using fallback table detection...');
-    
+
     // Basic heuristics: look for patterns that suggest tables
     // This is a simplified version - in production you'd use more sophisticated methods
-    
+
     const mockRegions = [
       { id: 'table_fallback_1', page: 1, confidence: 0.7, boundingBox: { x: 50, y: 100, width: 500, height: 300 } }
     ];
-    
+
     return mockRegions;
   }
 
@@ -268,14 +275,14 @@ export class AdvancedTableParser {
   ): Promise<{ success: boolean; table?: TableStructure; error?: string }> {
     try {
       console.log(`📊 Extracting table structure from region ${region.id}...`);
-      
+
       // Use Donut model for table understanding
       if (this.donutModel) {
         return await this.extractWithDonut(pdfBuffer, region);
       } else {
         return await this.extractWithFallback(pdfBuffer, region);
       }
-      
+
     } catch (error) {
       console.error(`❌ Failed to extract table structure from region ${region.id}:`, error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -288,10 +295,10 @@ export class AdvancedTableParser {
   private async extractWithDonut(pdfBuffer: Buffer, region: any): Promise<{ success: boolean; table?: TableStructure; error?: string }> {
     try {
       console.log('🍩 Using Donut model for table extraction...');
-      
+
       // Simulate Donut extraction
       // In production, this would use the actual Donut model
-      
+
       const mockTable: TableStructure = {
         rows: [
           {
@@ -334,9 +341,9 @@ export class AdvancedTableParser {
         confidence: 0.92,
         extractionMethod: 'donut'
       };
-      
+
       return { success: true, table: mockTable };
-      
+
     } catch (error) {
       console.error('❌ Donut extraction failed:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -349,10 +356,10 @@ export class AdvancedTableParser {
   private async extractWithFallback(pdfBuffer: Buffer, region: any): Promise<{ success: boolean; table?: TableStructure; error?: string }> {
     try {
       console.log('🔄 Using fallback table extraction...');
-      
+
       // Basic table extraction using regex patterns and text analysis
       // This is a simplified version
-      
+
       const mockTable: TableStructure = {
         rows: [
           {
@@ -380,9 +387,9 @@ export class AdvancedTableParser {
         confidence: 0.7,
         extractionMethod: 'fallback'
       };
-      
+
       return { success: true, table: mockTable };
-      
+
     } catch (error) {
       console.error('❌ Fallback extraction failed:', error);
       return { success: false, error: error instanceof Error ? error.message : 'Unknown error' };
@@ -394,13 +401,13 @@ export class AdvancedTableParser {
    */
   private extractLineItemsFromTable(table: TableStructure): LineItem[] {
     const lineItems: LineItem[] = [];
-    
+
     try {
       console.log('📋 Extracting line items from table...');
-      
+
       // Skip header rows
       const dataRows = table.rows.filter(row => !row.isHeader);
-      
+
       for (const row of dataRows) {
         try {
           const lineItem = this.parseRowAsLineItem(row, table.columns);
@@ -411,13 +418,13 @@ export class AdvancedTableParser {
           console.warn(`⚠️ Failed to parse row ${row.id} as line item:`, error);
         }
       }
-      
+
       console.log(`✅ Extracted ${lineItems.length} line items from table`);
-      
+
     } catch (error) {
       console.error('❌ Failed to extract line items:', error);
     }
-    
+
     return lineItems;
   }
 
@@ -427,53 +434,53 @@ export class AdvancedTableParser {
   private parseRowAsLineItem(row: TableRow, columns: TableColumn[]): LineItem | null {
     try {
       // Find relevant columns
-      const descriptionCol = columns.find(col => 
-        col.name.toLowerCase().includes('description') || 
+      const descriptionCol = columns.find(col =>
+        col.name.toLowerCase().includes('description') ||
         col.name.toLowerCase().includes('item') ||
         col.name.toLowerCase().includes('product')
       );
-      
-      const quantityCol = columns.find(col => 
-        col.name.toLowerCase().includes('quantity') || 
+
+      const quantityCol = columns.find(col =>
+        col.name.toLowerCase().includes('quantity') ||
         col.name.toLowerCase().includes('qty') ||
         col.name.toLowerCase().includes('amount')
       );
-      
-      const unitPriceCol = columns.find(col => 
-        col.name.toLowerCase().includes('unit') && 
+
+      const unitPriceCol = columns.find(col =>
+        col.name.toLowerCase().includes('unit') &&
         col.name.toLowerCase().includes('price')
       );
-      
-      const totalCol = columns.find(col => 
-        col.name.toLowerCase().includes('total') || 
+
+      const totalCol = columns.find(col =>
+        col.name.toLowerCase().includes('total') ||
         col.name.toLowerCase().includes('amount')
       );
-      
-      const vatCol = columns.find(col => 
-        col.name.toLowerCase().includes('vat') || 
+
+      const vatCol = columns.find(col =>
+        col.name.toLowerCase().includes('vat') ||
         col.name.toLowerCase().includes('tax')
       );
-      
+
       // Extract values
-      const description = descriptionCol ? 
+      const description = descriptionCol ?
         row.cells.find(cell => cell.colIndex === columns.indexOf(descriptionCol))?.value || '' : '';
-      
-      const quantity = quantityCol ? 
+
+      const quantity = quantityCol ?
         this.parseNumber(row.cells.find(cell => cell.colIndex === columns.indexOf(quantityCol))?.value) : undefined;
-      
-      const unitPrice = unitPriceCol ? 
+
+      const unitPrice = unitPriceCol ?
         this.parseCurrency(row.cells.find(cell => cell.colIndex === columns.indexOf(unitPriceCol))?.value) : undefined;
-      
-      const totalAmount = totalCol ? 
+
+      const totalAmount = totalCol ?
         this.parseCurrency(row.cells.find(cell => cell.colIndex === columns.indexOf(totalCol))?.value) || 0 : 0;
-      
-      const vatRate = vatCol ? 
+
+      const vatRate = vatCol ?
         this.parsePercentage(row.cells.find(cell => cell.colIndex === columns.indexOf(vatCol))?.value) : undefined;
-      
+
       // Calculate VAT amount if not provided
-      const vatAmount = vatRate && totalAmount ? 
+      const vatAmount = vatRate && totalAmount ?
         (totalAmount * vatRate) / 100 : undefined;
-      
+
       // Only create line item if we have essential information
       if (description && totalAmount > 0) {
         return {
@@ -490,9 +497,9 @@ export class AdvancedTableParser {
           boundingBox: this.calculateRowBoundingBox(row)
         };
       }
-      
+
       return null;
-      
+
     } catch (error) {
       console.warn(`⚠️ Failed to parse row as line item:`, error);
       return null;
@@ -504,10 +511,10 @@ export class AdvancedTableParser {
    */
   private parseNumber(value: string | undefined): number | undefined {
     if (!value) return undefined;
-    
+
     const cleaned = value.replace(/[^\d.,]/g, '');
     const parsed = parseFloat(cleaned.replace(',', '.'));
-    
+
     return isNaN(parsed) ? undefined : parsed;
   }
 
@@ -516,10 +523,10 @@ export class AdvancedTableParser {
    */
   private parseCurrency(value: string | undefined): number | undefined {
     if (!value) return undefined;
-    
+
     const cleaned = value.replace(/[^\d.,]/g, '');
     const parsed = parseFloat(cleaned.replace(',', '.'));
-    
+
     return isNaN(parsed) ? undefined : parsed;
   }
 
@@ -528,10 +535,10 @@ export class AdvancedTableParser {
    */
   private parsePercentage(value: string | undefined): number | undefined {
     if (!value) return undefined;
-    
+
     const cleaned = value.replace(/[^\d.,]/g, '');
     const parsed = parseFloat(cleaned.replace(',', '.'));
-    
+
     return isNaN(parsed) ? undefined : parsed;
   }
 
@@ -540,13 +547,13 @@ export class AdvancedTableParser {
    */
   private categorizeLineItem(description: string): string {
     const desc = description.toLowerCase();
-    
+
     if (desc.includes('consulting') || desc.includes('service')) return 'Services';
     if (desc.includes('software') || desc.includes('license')) return 'Software';
     if (desc.includes('hardware') || desc.includes('equipment')) return 'Hardware';
     if (desc.includes('travel') || desc.includes('transport')) return 'Travel';
     if (desc.includes('office') || desc.includes('supplies')) return 'Office Supplies';
-    
+
     return 'Other';
   }
 
@@ -555,7 +562,7 @@ export class AdvancedTableParser {
    */
   private calculateRowBoundingBox(row: TableRow): BoundingBox | undefined {
     if (row.cells.length === 0) return undefined;
-    
+
     // Calculate bounding box based on cell positions
     // This is a simplified version
     return {
@@ -576,12 +583,12 @@ export class AdvancedTableParser {
   ): Promise<TableExtractionResult> {
     try {
       console.log('🔄 Using fallback text extraction...');
-      
+
       // Basic text extraction using pdf-parse or similar
       // This would extract all text and try to identify line items using regex patterns
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       return {
         success: true,
         tables: [],
@@ -591,12 +598,12 @@ export class AdvancedTableParser {
         processingTime,
         fallbackUsed: true
       };
-      
+
     } catch (error) {
       console.error('❌ Fallback text extraction also failed:', error);
-      
+
       const processingTime = Date.now() - startTime;
-      
+
       return {
         success: false,
         tables: [],
@@ -621,7 +628,7 @@ export class AdvancedTableParser {
   ): Promise<void> {
     try {
       console.log('💾 Storing extraction results...');
-      
+
       // Store table structures
       for (const table of tables) {
         await this.supabase
@@ -635,7 +642,7 @@ export class AdvancedTableParser {
             created_at: new Date().toISOString()
           });
       }
-      
+
       // Store line items
       for (const lineItem of lineItems) {
         await this.supabase
@@ -656,9 +663,9 @@ export class AdvancedTableParser {
             created_at: new Date().toISOString()
           });
       }
-      
+
       console.log('✅ Extraction results stored successfully');
-      
+
     } catch (error) {
       console.error('❌ Failed to store extraction results:', error);
       // Don't fail the entire extraction if storage fails
@@ -674,24 +681,24 @@ export class AdvancedTableParser {
         .from('table_extractions')
         .select('extraction_method, confidence, created_at')
         .eq('tenant_id', tenantId);
-      
+
       const { data: lineItemStats } = await this.supabase
         .from('line_items')
         .select('category, confidence, total_amount, created_at')
         .eq('tenant_id', tenantId);
-      
+
       return {
         tableExtractions: tableStats?.length || 0,
         lineItems: lineItemStats?.length || 0,
-        averageConfidence: tableStats ? 
+        averageConfidence: tableStats ?
           tableStats.reduce((sum: number, item: any) => sum + item.confidence, 0) / tableStats.length : 0,
-        extractionMethods: tableStats ? 
+        extractionMethods: tableStats ?
           tableStats.reduce((acc: any, item: any) => {
             acc[item.extraction_method] = (acc[item.extraction_method] || 0) + 1;
             return acc;
           }, {}) : {}
       };
-      
+
     } catch (error) {
       console.error('❌ Failed to get extraction stats:', error);
       return {};

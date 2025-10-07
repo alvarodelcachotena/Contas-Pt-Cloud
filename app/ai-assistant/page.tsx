@@ -39,6 +39,7 @@ export default function AIAssistantPage() {
   const [isProcessingFile, setIsProcessingFile] = useState(false)
   const [isMounted, setIsMounted] = useState(false)
   const [processingFileId, setProcessingFileId] = useState<string | null>(null)
+  const [processedFiles, setProcessedFiles] = useState<Set<string>>(new Set())
   const fileInputRef = useRef<HTMLInputElement>(null)
   const queryClient = useQueryClient()
 
@@ -202,6 +203,11 @@ export default function AIAssistantPage() {
     }
   }
 
+  const clearProcessedFiles = () => {
+    setProcessedFiles(new Set())
+    console.log('🧹 Lista de archivos procesados limpiada')
+  }
+
   const sendFileForAnalysis = async () => {
     if (!selectedFile || isProcessingFile) return
 
@@ -211,6 +217,13 @@ export default function AIAssistantPage() {
     // Verificar si ya se está procesando este archivo
     if (processingFileId === fileId) {
       console.log('⚠️ Archivo ya se está procesando, ignorando solicitud duplicada')
+      return
+    }
+
+    // Verificar si el archivo ya fue procesado anteriormente
+    if (processedFiles.has(fileId)) {
+      console.log('⚠️ Archivo ya fue procesado anteriormente, ignorando solicitud duplicada')
+      alert('Este archivo ya fue procesado anteriormente. Por favor, selecciona un archivo diferente.')
       return
     }
 
@@ -282,9 +295,9 @@ export default function AIAssistantPage() {
       const data = await response.json()
       console.log('✅ Response data:', data)
 
-        if (data.success) {
-          // Mensaje simple de confirmación
-          const responseMessage = "✅ *Documento procesado*"
+      if (data.success) {
+        // Mensaje simple de confirmación
+        const responseMessage = "✅ *Documento procesado*"
 
         const assistantMessage: ChatMessage = {
           id: Date.now() + 1,
@@ -399,6 +412,10 @@ export default function AIAssistantPage() {
       setIsProcessingFile(false)
       setIsTyping(false)
       setProcessingFileId(null)
+
+      // Marcar el archivo como procesado
+      setProcessedFiles(prev => new Set([...prev, fileId]))
+
       removeSelectedFile()
     }
   }
@@ -425,6 +442,15 @@ export default function AIAssistantPage() {
                 <p className="text-gray-600 mt-1">{t.aiAssistant.subtitle}</p>
               </div>
               <div className="flex items-center space-x-2">
+                <Button
+                  onClick={clearProcessedFiles}
+                  variant="outline"
+                  size="sm"
+                  className="text-xs"
+                  title="Limpiar lista de archivos procesados"
+                >
+                  🧹 Limpiar Cache
+                </Button>
                 <Badge variant="default" className="bg-green-100 text-green-800">
                   <Bot className="w-3 h-3 mr-1" />
                   {t.aiAssistant.status.online}

@@ -2,6 +2,53 @@ import { NextRequest, NextResponse } from 'next/server'
 import { AgentExtractorGemini } from '@/server/agents/AgentExtractorGemini'
 import { AgentExtractorOpenAI } from '@/server/agents/AgentExtractorOpenAI'
 import crypto from 'crypto'
+import fs from 'fs'
+import path from 'path'
+
+// Cache persistente en archivo
+const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hora (más tiempo)
+const CACHE_FILE_PATH = path.join(process.cwd(), '.cache', 'document-analysis-cache.json')
+const CACHE_DIR = path.dirname(CACHE_FILE_PATH)
+
+// Asegurar que el directorio de cache existe
+if (!fs.existsSync(CACHE_DIR)) {
+  fs.mkdirSync(CACHE_DIR, { recursive: true })
+}
+
+// Función para cargar cache desde archivo
+function loadCacheFromFile(): Map<string, any> {
+  try {
+    if (fs.existsSync(CACHE_FILE_PATH)) {
+      const cacheData = JSON.parse(fs.readFileSync(CACHE_FILE_PATH, 'utf8'))
+      const cacheMap = new Map()
+
+      // Filtrar entradas expiradas al cargar
+      const now = Date.now()
+      for (const [key, value] of Object.entries(cacheData)) {
+        if (now - (value as any).ts < CACHE_TTL_MS) {
+          cacheMap.set(key, value)
+        }
+      }
+
+      console.log(`📂 Cache cargado desde archivo: ${cacheMap.size} entradas válidas`)
+      return cacheMap
+    }
+  } catch (error) {
+    console.error('❌ Error cargando cache desde archivo:', error)
+  }
+  return new Map()
+}
+
+// Función para guardar cache a archivo
+function saveCacheToFile(cacheMap: Map<string, any>) {
+  try {
+    const cacheData = Object.fromEntries(cacheMap)
+    fs.writeFileSync(CACHE_FILE_PATH, JSON.stringify(cacheData, null, 2))
+    console.log(`💾 Cache guardado en archivo: ${cacheMap.size} entradas`)
+  } catch (error) {
+    console.error('❌ Error guardando cache a archivo:', error)
+  }
+}
 
 // Función para limpiar cache manualmente
 function clearDocumentAnalysisCache() {
@@ -12,6 +59,16 @@ function clearDocumentAnalysisCache() {
   if ((globalThis as any).__doc_analysis_inflight) {
     (globalThis as any).__doc_analysis_inflight.clear()
     console.log('🧹 In-flight de análisis de documentos limpiado manualmente')
+  }
+
+  // Limpiar también el archivo de cache
+  try {
+    if (fs.existsSync(CACHE_FILE_PATH)) {
+      fs.unlinkSync(CACHE_FILE_PATH)
+      console.log('🧹 Archivo de cache eliminado')
+    }
+  } catch (error) {
+    console.error('❌ Error eliminando archivo de cache:', error)
   }
 }
 
@@ -142,16 +199,16 @@ export async function POST(request: NextRequest) {
       )
     }
 
-    // Cache de deduplicación en memoria (por proceso) - MEJORADO
+    // Cache de deduplicación persistente - MEJORADO
     type CacheEntry = { result: any, ts: number, hash: string, fileName: string }
-    const CACHE_TTL_MS = 60 * 60 * 1000 // 1 hora (más tiempo)
 
     // Inicializar maps globales si no existen
     if (!(globalThis as any).__doc_analysis_inflight) {
       (globalThis as any).__doc_analysis_inflight = new Map<string, Promise<any>>()
     }
     if (!(globalThis as any).__doc_analysis_cache) {
-      (globalThis as any).__doc_analysis_cache = new Map<string, CacheEntry>()
+      // Cargar cache desde archivo al inicializar
+      (globalThis as any).__doc_analysis_cache = loadCacheFromFile()
     }
 
     const inflightMap = (globalThis as any).__doc_analysis_inflight
@@ -224,6 +281,9 @@ export async function POST(request: NextRequest) {
 
     console.log(`🔍 File ID: ${fileId}`)
     console.log(`📊 Cache actual: ${cacheMap.size} entradas, In-flight: ${inflightMap.size} solicitudes`)
+    console.log(`🔍 Archivo: ${finalFileName} (${finalFileType})`)
+    console.log(`🔍 Tamaño: ${fileBuffer.length} bytes`)
+    console.log(`🔍 Hash MD5: ${crypto.createHash('md5').update(fileBuffer).digest('hex')}`)
 
     // Limpiar cache expirado
     const now = Date.now()
@@ -513,6 +573,10 @@ export async function POST(request: NextRequest) {
       console.log(`✅ ANÁLISIS COMPLETADO: Guardando en cache para archivo ${finalFileName}`)
       cacheMap.set(fileId, { result, ts: Date.now(), hash: fileId, fileName: finalFileName })
       console.log(`💾 CACHE GUARDADO: ${cacheMap.size} entradas en cache`)
+
+      // Guardar cache en archivo para persistencia
+      saveCacheToFile(cacheMap)
+
       return NextResponse.json(result)
     } catch (error) {
       console.error(`❌ ERROR EN ANÁLISIS: ${error}`)

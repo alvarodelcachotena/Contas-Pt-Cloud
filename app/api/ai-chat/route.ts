@@ -35,7 +35,7 @@ async function getBusinessData(tenantId: number = 1) {
     const baseUrl = process.env.SUPABASE_URL
     const anonKey = process.env.SUPABASE_ANON_KEY
 
-    if (!baseUrl || !anonKey || baseUrl.includes('tu_supabase_url_aqui')) {
+    if (!baseUrl || !anonKey || baseUrl.includes('tu_supabase_url_aqui') || baseUrl === 'tu_supabase_url_aqui/') {
       console.warn('⚠️ Supabase not properly configured, returning empty business data');
       return {
         stats: {
@@ -188,8 +188,8 @@ async function createClientFromAI(clientData: any, tenantId: number = 1) {
     const baseUrl = process.env.SUPABASE_URL
     const anonKey = process.env.SUPABASE_ANON_KEY
 
-    if (!baseUrl || !anonKey) {
-      throw new Error('SUPABASE_URL ou SUPABASE_ANON_KEY não configurados')
+    if (!baseUrl || !anonKey || baseUrl.includes('tu_supabase_url_aqui') || baseUrl === 'tu_supabase_url_aqui/') {
+      throw new Error('SUPABASE_URL ou SUPABASE_ANON_KEY não configurados ou inválidos')
     }
 
     // Preparar datos del cliente
@@ -468,8 +468,8 @@ async function createInvoiceFromAI(invoiceData: any, tenantId: number = 1) {
     const baseUrl = process.env.SUPABASE_URL
     const anonKey = process.env.SUPABASE_ANON_KEY
 
-    if (!baseUrl || !anonKey) {
-      throw new Error('SUPABASE_URL ou SUPABASE_ANON_KEY não configurados')
+    if (!baseUrl || !anonKey || baseUrl.includes('tu_supabase_url_aqui') || baseUrl === 'tu_supabase_url_aqui/') {
+      throw new Error('SUPABASE_URL ou SUPABASE_ANON_KEY não configurados ou inválidos')
     }
 
     // First, search for the client by name (more flexible search)
@@ -713,8 +713,8 @@ async function searchClientByName(clientName: string, tenantId: number = 1) {
     const baseUrl = process.env.SUPABASE_URL
     const anonKey = process.env.SUPABASE_ANON_KEY
 
-    if (!baseUrl || !anonKey) {
-      throw new Error('SUPABASE_URL ou SUPABASE_ANON_KEY não configurados')
+    if (!baseUrl || !anonKey || baseUrl.includes('tu_supabase_url_aqui') || baseUrl === 'tu_supabase_url_aqui/') {
+      throw new Error('SUPABASE_URL ou SUPABASE_ANON_KEY não configurados ou inválidos')
     }
 
     // Buscar cliente por nombre (case-insensitive)

@@ -62,8 +62,8 @@ export class ContinuousLearningService {
         const supabaseUrl = process.env.SUPABASE_URL
         const supabaseServiceKey = process.env.SUPABASE_SERVICE_ROLE_KEY
 
-        if (!supabaseUrl || !supabaseServiceKey) {
-            throw new Error('Missing Supabase configuration')
+        if (!supabaseUrl || !supabaseServiceKey || supabaseUrl.includes('tu_supabase_url_aqui') || supabaseUrl === 'tu_supabase_url_aqui/') {
+            throw new Error('Missing or invalid Supabase configuration')
         }
 
         this.supabase = createClient(supabaseUrl, supabaseServiceKey)
